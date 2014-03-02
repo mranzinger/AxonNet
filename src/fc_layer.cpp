@@ -25,3 +25,4 @@ AXON_SERIALIZE_DERIVED_TYPE(ILayer, FCLayer<LogisticFn>, LogisticFCLayer);
 AXON_SERIALIZE_DERIVED_TYPE(ILayer, FCLayer<RectifierFn>, RectifierFCLayer);
 AXON_SERIALIZE_DERIVED_TYPE(ILayer, FCLayer<TanhFn>, TanhFCLayer);
 AXON_SERIALIZE_DERIVED_TYPE(ILayer, FCLayer<RampFn>, RampFCLayer);
+AXON_SERIALIZE_DERIVED_TYPE(ILayer, FCLayer<SoftPlusFn>, SoftPlusFCLayer);

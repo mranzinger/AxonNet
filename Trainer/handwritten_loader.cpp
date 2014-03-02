@@ -48,10 +48,10 @@ int read(istream &ip, bool flipEndian)
 	return ret;
 }
 
-void cvt_cpy(float *dstBuff, char *srcBuff, size_t buffSize)
+void cvt_cpy(float *dstBuff, unsigned char *srcBuff, size_t buffSize)
 {
-	for (char *end = srcBuff + buffSize; srcBuff != end; ++dstBuff, ++srcBuff)
-		*dstBuff = ((float) *srcBuff) / 255.0;
+	for (unsigned char *end = srcBuff + buffSize; srcBuff != end; ++dstBuff, ++srcBuff)
+		*dstBuff = ((float) *srcBuff) - 128;
 }
 
 vector<Vector> HandwrittenLoader::LoadImages(const std::string &file) const
@@ -79,11 +79,11 @@ vector<Vector> HandwrittenLoader::LoadImages(const std::string &file) const
 	// Create the return value, initializing each image to the correct size
 	vector<Vector> ret(numImages, Vector(imgSize));
 
-	auto readBuf = make_unique<char[]>(imgSize);
+	auto readBuf = make_unique<unsigned char[]>(imgSize);
 
 	for (size_t i = 0; i < numImages; ++i)
 	{
-		fileStream.read(readBuf.get(), imgSize);
+		fileStream.read((char *)readBuf.get(), imgSize);
 		cvt_cpy(ret[i].data(), readBuf.get(), imgSize);
 	}
 

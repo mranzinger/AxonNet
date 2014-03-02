@@ -24,9 +24,10 @@ int main(int argc, char *argv [])
 	NeuralNet net;
 	net.AddLayer(make_shared<LogisticFCLayer>("l1", inputSize, 300));
 	net.AddLayer(make_shared<LogisticFCLayer>("l2", 300, 100));
-	net.AddLayer(make_shared<LogisticFCLayer>("l3", 100, outputSize));
+	net.AddLayer(make_shared<LogisticFCLayer>("l3", 100, 100));
+	net.AddLayer(make_shared<LogisticFCLayer>("l4", 100, outputSize));
 
 	net.SetLearningRate(0.01);
 
-	net.Train(loader, 100000000, 200000, "test");
+	net.Train(loader, 100000000, 50000, "test");
 }

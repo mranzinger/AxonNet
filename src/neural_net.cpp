@@ -59,6 +59,8 @@ void NeuralNet::SetLearningRate(Real rate)
 	{
 		layer->SetLearningRate(rate);
 	}
+
+	_learnRate = rate;
 }
 
 Vector NeuralNet::Compute(const Vector &input)
@@ -116,6 +118,10 @@ void NeuralNet::Train(ITrainProvider &provider, size_t maxIters, size_t testFreq
 
 	Real batchErr = 0;
 
+	WindowStats<100> stats;
+
+	Real rateDev = 5.0;
+
 	for (size_t i = 0; i < maxIters; ++i)
 	{
 		provider.Get(max(0, min(dist(engine), (int)provider.Size())), vals, labels);
@@ -127,12 +133,25 @@ void NeuralNet::Train(ITrainProvider &provider, size_t maxIters, size_t testFreq
 			if ((i % 128) == 0)
 			{
 				cout << "Batch Error: " << batchErr << endl;
+
+				stats.Append(batchErr);
+
 				batchErr = 0;
 			}
 
 			if ((i % testFreq) == 0)
 			{
 				Test(provider, chkRoot, bestError);
+
+				Real stdDev = stats.StdDev();
+
+				if (stdDev < rateDev)
+				{
+					cout << "Detected learning stagnation. Reducing Learning Rate." << endl;
+
+					rateDev *= 0.1;
+					SetLearningRate(_learnRate * 0.1);
+				}
 			}
 		}
 	}

@@ -54,3 +54,77 @@ inline void MaxBinarize(Vector &v)
 
 	v = v.unaryExpr([m](Real r) { return r == m ? 1 : 0; });
 }
+
+
+template<size_t History>
+class WindowStats
+{
+	static_assert(History >= 2, "Cannot have a history with less than 2 elements");
+
+private:
+	Real _history[History];
+	size_t _opIdx = 0;
+	bool _full = false;
+
+	Real _runningSum = 0;
+	Real _runningSumSq = 0;
+
+public:
+	WindowStats()
+	{
+		memset(_history, 0, sizeof(_history));
+	}
+
+	void Append(Real val)
+	{
+		Real old = _history[_opIdx];
+
+		_runningSum -= old;
+		_runningSumSq -= Square(old);
+
+		_history[_opIdx] = val;
+
+		_runningSum += val;
+		_runningSumSq += Square(val);
+
+		++_opIdx;
+		if (_opIdx == History)
+		{
+			_opIdx = 0;
+			_full = true;
+		}
+	}
+
+	bool Full() const
+	{
+		return _full;
+	}
+
+	Real Sum() const {
+		return _runningSum;
+	}
+
+	Real Mean() const
+	{
+		if (_full)
+			return _runningSum / History;
+		else if (_opIdx > 0)
+			return _runningSum / _opIdx;
+		else
+			return 0;
+	}
+
+	Real StdDev() const
+	{
+		size_t n;
+		if (_full)
+			n = History;
+		else if (_opIdx > 0)
+			n = _opIdx;
+		else
+			return 0;
+
+		return sqrt((_runningSumSq / n) - Square(_runningSum / n));
+	}
+
+};

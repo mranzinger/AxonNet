@@ -52,6 +52,7 @@ typedef FCLayer<LogisticFn> LogisticFCLayer;
 typedef FCLayer<RectifierFn> RectifierFCLayer;
 typedef FCLayer<TanhFn> TanhFCLayer;
 typedef FCLayer<RampFn> RampFCLayer;
+typedef FCLayer<SoftPlusFn> SoftPlusFCLayer;
 
 template<typename Fn>
 FCLayer<Fn>::FCLayer(std::string name, size_t numInputs, size_t numOutputs)

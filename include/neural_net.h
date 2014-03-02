@@ -19,6 +19,7 @@ class NEURAL_NET_API NeuralNet
 {
 private:
 	std::vector<ILayer::Ptr> _layers;
+	Real _learnRate = 1.0;
 
 public:
 	void AddLayer(ILayer::Ptr layer);

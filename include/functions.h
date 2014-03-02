@@ -65,3 +65,16 @@ struct NEURAL_NET_API RampFn
 	static Real Compute(Real input);
 	static Real Derivative(Real input, Real lastOut);
 };
+
+struct NEURAL_NET_API SoftPlusFn
+{
+	static std::string Type()
+	{
+		return "SoftPlus";
+	}
+
+	static const bool NEEDS_INPUT = true;
+
+	static Real Compute(Real input);
+	static Real Derivative(Real input, Real lastOut);
+};

@@ -56,3 +56,13 @@ Real RampFn::Derivative(Real input, Real lastOut)
 		return 0;
 	return .5;
 }
+
+Real SoftPlusFn::Compute(Real input)
+{
+	return log(1 + exp(input));
+}
+
+Real SoftPlusFn::Derivative(Real input, Real lastOut)
+{
+	return LogisticFn::Compute(input);
+}
