@@ -47,6 +47,12 @@ public:
 	virtual LayerConfig::Ptr GetConfig() const override;
 };
 
+typedef FCLayer<LinearFn> LinearFCLayer;
+typedef FCLayer<LogisticFn> LogisticFCLayer;
+typedef FCLayer<RectifierFn> RectifierFCLayer;
+typedef FCLayer<TanhFn> TanhFCLayer;
+typedef FCLayer<RampFn> RampFCLayer;
+
 template<typename Fn>
 FCLayer<Fn>::FCLayer(std::string name, size_t numInputs, size_t numOutputs)
 	: LayerBase(std::move(name)), _weights(numOutputs, numInputs), _biases(numOutputs)
