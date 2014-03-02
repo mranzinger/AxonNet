@@ -12,6 +12,8 @@ void BindStruct(const CStructBinder &binder, FCLayerConfig &config)
 template<typename Fn>
 void BindStruct(const CStructBinder &binder, FCLayer<Fn> &layer)
 {
+	BindStruct(binder, (LayerBase&) layer);
+
 	// Nothing really to serialize. It will all be captured in the config
 }
 

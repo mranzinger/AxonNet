@@ -32,6 +32,8 @@ public:
 	Real LearningRate() const {
 		return _learningRate;
 	}
+
+	friend void BindStruct(const axon::serialization::CStructBinder &binder, LayerConfig &config);
 };
 
 class NEURAL_NET_API ILayer

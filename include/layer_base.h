@@ -25,4 +25,13 @@ public:
 
 	virtual void InitializeFromConfig(const LayerConfig::Ptr &config);
 	virtual LayerConfig::Ptr GetConfig() const override;
+
+	friend void BindStruct(const axon::serialization::CStructBinder &binder, LayerBase &layer);
 };
+
+//namespace axon {
+//	namespace serialization {
+
+		//NEURAL_NET_API void BindStruct(const axon::serialization::CStructBinder &binder, LayerBase &layer);
+//	}
+//}

@@ -13,6 +13,12 @@ NEURAL_NET_API void InitializeWeights(Vector &vec, Real mean, Real stdDev);
 NEURAL_NET_API void InitializeWeights(Matrix &mat, Real mean, Real stdDev);
 NEURAL_NET_API void InitializeWeights(Real *iter, Real *end, Real mean, Real stdDev);
 
+template<typename T>
+auto Square(const T &val) -> decltype(val * val)
+{
+	return val * val;
+}
+
 template<typename IterType>
 class Range
 {

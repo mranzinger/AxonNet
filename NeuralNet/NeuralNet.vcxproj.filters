@@ -33,6 +33,9 @@
     <ClInclude Include="..\include\persist_util.h">
       <Filter>include</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\i_train_provider.h">
+      <Filter>include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\i_layer.cpp">
