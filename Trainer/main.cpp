@@ -28,5 +28,5 @@ int main(int argc, char *argv [])
 
 	net.SetLearningRate(0.01);
 
-	net.Train(loader, 100000000, 10000, "test");
+	net.Train(loader, 100000000, 200000, "test");
 }

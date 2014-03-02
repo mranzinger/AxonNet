@@ -19,6 +19,11 @@ auto Square(const T &val) -> decltype(val * val)
 	return val * val;
 }
 
+inline Vector SquareV(const Vector &v)
+{
+	return v.unaryExpr([](Real val) { return val * val; });
+}
+
 template<typename IterType>
 class Range
 {
@@ -41,4 +46,11 @@ template<typename IterType>
 Range<IterType> make_range(IterType begin, IterType end)
 {
 	return Range<IterType>(std::move(begin), std::move(end));
+}
+
+inline void MaxBinarize(Vector &v)
+{
+	Real m = v.maxCoeff();
+
+	v = v.unaryExpr([m](Real r) { return r == m ? 1 : 0; });
 }

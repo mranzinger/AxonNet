@@ -93,6 +93,9 @@
       <AdditionalLibraryDirectories>D:\Projects\Linux\axon\windows\$(Platform)\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>axon.util.lib;axon.serialize.lib;axon.communicate.lib</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>copy "D:\Projects\Linux\axon\windows\$(Platform)\$(Configuration)\*.dll" "$(TargetDir)"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -109,6 +112,9 @@
       <AdditionalLibraryDirectories>D:\Projects\Linux\axon\windows\$(Platform)\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>axon.util.lib;axon.serialize.lib;axon.communicate.lib</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>copy "D:\Projects\Linux\axon\windows\$(Platform)\$(Configuration)\*.dll" "$(TargetDir)"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -129,6 +135,9 @@
       <AdditionalLibraryDirectories>D:\Projects\Linux\axon\windows\$(Platform)\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>axon.util.lib;axon.serialize.lib;axon.communicate.lib</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>copy "D:\Projects\Linux\axon\windows\$(Platform)\$(Configuration)\*.dll" "$(TargetDir)"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -149,6 +158,9 @@
       <AdditionalLibraryDirectories>D:\Projects\Linux\axon\windows\$(Platform)\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>axon.util.lib;axon.serialize.lib;axon.communicate.lib</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>copy "D:\Projects\Linux\axon\windows\$(Platform)\$(Configuration)\*.dll" "$(TargetDir)"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="handwritten_loader.cpp" />

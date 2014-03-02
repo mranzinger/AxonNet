@@ -91,7 +91,7 @@ Real NeuralNet::Backprop(int threadIdx, const Vector &input, const Vector &label
 	if (inputs.back().size() != labels.size())
 		throw runtime_error("The output result set size doesn't match the label size.");
 
-	Vector opErr = .5 * Square(labels - inputs.back());
+	Vector opErr = labels - inputs.back();
 
 	Real totalErr = opErr.sum();
 
@@ -108,13 +108,9 @@ void NeuralNet::Train(ITrainProvider &provider, size_t maxIters, size_t testFreq
 {
 	Real bestError = numeric_limits<Real>::max();
 
-#if _DEBUG
-	std::default_random_engine engine;
-#else
-	std::random_device engine;
-#endif
+	std::default_random_engine engine(4211);
 
-	std::uniform_int_distribution<> dist(0, provider.Size());
+	std::uniform_int_distribution<> dist(0, provider.Size() - 1);
 
 	Vector vals, labels;
 
@@ -122,9 +118,9 @@ void NeuralNet::Train(ITrainProvider &provider, size_t maxIters, size_t testFreq
 
 	for (size_t i = 0; i < maxIters; ++i)
 	{
-		provider.Get(dist(engine), vals, labels);
+		provider.Get(max(0, min(dist(engine), (int)provider.Size())), vals, labels);
 
-		batchErr += Backprop(0, vals, labels);
+		batchErr += Square(Backprop(0, vals, labels));
 
 		if (i != 0)
 		{
@@ -155,15 +151,23 @@ void NeuralNet::Test(ITrainProvider &provider, const std::string &chkRoot, Real 
 	Vector input, labels;
 
 	Real testErr = 0;
+	size_t numRight = 0, numWrong = 0;
 	for (size_t i = 0, end = provider.TestSize(); i < end; ++i)
 	{
 		provider.GetTest(i, input, labels);
 
 		Vector op = Compute(0, input, false);
 
-		Real err = (.5 * Square(labels - op)).sum();
+		Real err = (.5 * SquareV(labels - op)).sum();
 
 		testErr += err;
+
+		MaxBinarize(op);
+
+		if (op == labels)
+			++numRight;
+		else
+			++numWrong;
 	}
 
 	if (testErr < bestError)
@@ -173,7 +177,9 @@ void NeuralNet::Test(ITrainProvider &provider, const std::string &chkRoot, Real 
 	}
 
 	cout << "Finished Testing. Error: " << testErr << endl
-		<< "Best: " << bestError << endl;
+		<< "Best: " << bestError << endl
+		<< "Num Right: " << numRight << endl
+		<< "Num Wrong: " << numWrong << endl;
 }
 
 void NeuralNet::SaveCheckpoint(const std::string &chkRoot)
