@@ -8,8 +8,10 @@ struct NEURAL_NET_API LinearFn
 		return "Linear";
 	}
 
+	static const bool NEEDS_INPUT = false;
+
 	static Real Compute(Real input);
-	static Real Derivative(Real input);
+	static Real Derivative(Real input, Real lastOut);
 };
 
 struct NEURAL_NET_API LogisticFn
@@ -19,8 +21,10 @@ struct NEURAL_NET_API LogisticFn
 		return "Logistic";
 	}
 
+	static const bool NEEDS_INPUT = false;
+
 	static Real Compute(Real input);
-	static Real Derivative(Real input);
+	static Real Derivative(Real input, Real lastOut);
 };
 
 struct NEURAL_NET_API RectifierFn
@@ -30,8 +34,10 @@ struct NEURAL_NET_API RectifierFn
 		return "Rectifier";
 	}
 
+	static const bool NEEDS_INPUT = false;
+
 	static Real Compute(Real input);
-	static Real Derivative(Real input);
+	static Real Derivative(Real input, Real lastOut);
 };
 
 struct NEURAL_NET_API TanhFn
@@ -41,8 +47,10 @@ struct NEURAL_NET_API TanhFn
 		return "Tanh";
 	}
 
+	static const bool NEEDS_INPUT = LogisticFn::NEEDS_INPUT;
+
 	static Real Compute(Real input);
-	static Real Derivative(Real input);
+	static Real Derivative(Real input, Real lastOut);
 };
 
 struct NEURAL_NET_API RampFn
@@ -52,6 +60,8 @@ struct NEURAL_NET_API RampFn
 		return "Ramp";
 	}
 
+	static const bool NEEDS_INPUT = false;
+
 	static Real Compute(Real input);
-	static Real Derivative(Real input);
+	static Real Derivative(Real input, Real lastOut);
 };

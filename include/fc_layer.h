@@ -91,9 +91,9 @@ void FCLayer<Fn>::InitializeFromConfig(const LayerConfig::Ptr &config)
 template<typename Fn>
 Vector FCLayer<Fn>::Compute(int threadIdx, const Vector &input, bool isTraining)
 {
-	Vector op = _weights * input + _biases;
+	auto lin = _weights * input + _biases;
 
-	op = op.unaryExpr([](Real val) { return Fn::Compute(val); });
+	Vector op = lin.unaryExpr([](Real val) { return Fn::Compute(val); });
 
 	return op;
 }
@@ -114,19 +114,33 @@ Vector FCLayer<Fn>::Backprop(int threadIdx, const Vector &lastInput, const Vecto
 
 		Real lastOp = lastOutput[row];
 		Real err = outputErrors[row];
+		Real dvFn = 0.0;
+
+		if (Fn::NEEDS_INPUT)
+		{
+			auto lin = mRow * lastInput + _biases[row];
+
+			dvFn = Fn::Derivative(lin, lastOp);
+		}
+		else
+		{
+			// If the derivative computation doesn't need a weighted sum,
+			// then we can elide the computation and instead just pass what the output was.
+			// This works for all of the functions that have a self-relating differential equation
+			dvFn = Fn::Derivative(0, lastOp);
+		}
 
 		//  dE               dF
 		//  --- = (y - t) *  -- * xi
 		//  dwi              dv
-		gradWts = err * lastOp * lastInput;
-		gradBias = err * lastOp;
+		gradWts = (err * dvFn) * lastInput;
+		gradBias = err * dvFn;
 
-		Real errSum = 0.0;
+		// The input error is proportional to the vertical sum of the product of the weight and error
+		inputErrors += (err * dvFn) * mRow;
 
-		inputErrors += gradWts;
-
-		mRow -= _learningRate * gradWts;
-		_biases[row] -= _learningRate * gradBias;
+		mRow += _learningRate * gradWts;
+		_biases[row] += _learningRate * gradBias;
 	}
 
 	return inputErrors;

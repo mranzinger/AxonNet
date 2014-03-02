@@ -5,7 +5,7 @@ Real LinearFn::Compute(Real input)
 	return input;
 }
 
-Real LinearFn::Derivative(Real input)
+Real LinearFn::Derivative(Real input, Real lastOut)
 {
 	return 1;
 }
@@ -15,11 +15,9 @@ Real LogisticFn::Compute(Real input)
 	return 1.0f / (1.0f + exp(-input));
 }
 
-Real LogisticFn::Derivative(Real input)
+Real LogisticFn::Derivative(Real input, Real lastOut)
 {
-	Real v = Compute(input);
-
-	return v * (1 - v);
+	return lastOut * (1 - lastOut);
 }
 
 Real RectifierFn::Compute(Real input)
@@ -27,9 +25,9 @@ Real RectifierFn::Compute(Real input)
 	return input > 0 ? input : 0;
 }
 
-Real RectifierFn::Derivative(Real input)
+Real RectifierFn::Derivative(Real input, Real lastOut)
 {
-	return input > 0 ? 1 : 0;
+	return lastOut >= 0 ? 1 : 0;
 }
 
 Real TanhFn::Compute(Real input)
@@ -37,9 +35,9 @@ Real TanhFn::Compute(Real input)
 	return 2 * LogisticFn::Compute(input) - 1;
 }
 
-Real TanhFn::Derivative(Real input)
+Real TanhFn::Derivative(Real input, Real lastOut)
 {
-	return 2 * LogisticFn::Derivative(input);
+	return 2 * LogisticFn::Derivative(input, lastOut);
 }
 
 Real RampFn::Compute(Real input)
@@ -52,9 +50,9 @@ Real RampFn::Compute(Real input)
 	return .5 * input;
 }
 
-Real RampFn::Derivative(Real input)
+Real RampFn::Derivative(Real input, Real lastOut)
 {
-	if (input <= -2 || input >= 2)
+	if (lastOut == -1 || lastOut == 1)
 		return 0;
 	return .5;
 }
