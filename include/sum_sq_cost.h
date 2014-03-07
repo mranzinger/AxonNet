@@ -13,6 +13,6 @@ public:
 	}
 
 	virtual Real Compute(const Vector &pred, const Vector &labels) override;
-	virtual Vector ComputeError(const Vector &pred, const Vector &labels) override;
+	virtual Vector ComputeGrad(const Vector &pred, const Vector &labels) override;
 };
 

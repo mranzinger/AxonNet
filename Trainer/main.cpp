@@ -5,6 +5,8 @@
 #include "neural_net.h"
 #include "linear_layer.h"
 #include "neuron_layer.h"
+#include "softmax_layer.h"
+#include "logloss_cost.h"
 #include "handwritten_loader.h"
 
 using namespace std;
@@ -30,9 +32,10 @@ int main(int argc, char *argv [])
 	net.AddLayer(make_shared<LogisticNeuronLayer>("n1"));
 	net.AddLayer(make_shared<LinearLayer>("l2", 300, 100));
 	net.AddLayer(make_shared<LogisticNeuronLayer>("n2"));
-	net.AddLayer(make_shared<LinearLayer>("l3", 100, 100));
-	net.AddLayer(make_shared<LogisticNeuronLayer>("n3"));
 	net.AddLayer(make_shared<LinearLayer>("l4", 100, outputSize));
+	net.AddLayer(make_shared<SoftmaxLayer>("l5"));
+
+	net.SetCost(make_shared<LogLossCost>());
 
 	if (argc == 2)
 	{

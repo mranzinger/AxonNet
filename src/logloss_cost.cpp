@@ -23,7 +23,7 @@ Real LogLossCost::Compute(const Vector &pred, const Vector &labels)
 	return ret;
 }
 
-Vector LogLossCost::ComputeError(const Vector &pred, const Vector &labels)
+Vector LogLossCost::ComputeGrad(const Vector &pred, const Vector &labels)
 {
 	auto safe = pred.unaryExpr(
 		[](Real val)
@@ -40,5 +40,7 @@ Vector LogLossCost::ComputeError(const Vector &pred, const Vector &labels)
 
 	return ret;
 }
+
+void BindStruct(const axon::serialization::CStructBinder &, LogLossCost&) { }
 
 AXON_SERIALIZE_DERIVED_TYPE(ICost, LogLossCost, LogLossCost);

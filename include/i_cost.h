@@ -18,10 +18,10 @@ public:
 	virtual std::string GetType() const = 0;
 
 	virtual Real Compute(const Vector &pred, const Vector &labels) = 0;
-	virtual Vector ComputeError(const Vector &pred, const Vector &labels) = 0;
+	virtual Vector ComputeGrad(const Vector &pred, const Vector &labels) = 0;
 };
 
 // Default for most cost functions
-void BindStruct(const axon::serialization::CStructBinder &, ICost &) { }
+inline void BindStruct(const axon::serialization::CStructBinder &, ICost &) { }
 
 AXON_SERIALIZE_BASE_TYPE(ICost);

@@ -4,24 +4,39 @@
 #include <random>
 #include <iostream>
 
+#include "sum_sq_cost.h"
+
 using namespace std;
 using namespace axon::serialization;
 namespace fs = tr2::sys;
+
+NeuralNet::NeuralNet()
+{
+	SetCost(make_shared<SumSqCost>());
+}
 
 void NeuralNet::AddLayer(ILayer::Ptr layer)
 {
 	_layers.push_back(move(layer));
 }
 
+void NeuralNet::SetCost(ICost::Ptr cost)
+{
+	assert(cost);
+	_cost = move(cost);
+}
+
 void NeuralNet::Load(const NetworkConfig::Ptr &config)
 {
 	for (auto lcfg : config->Configs)
 	{
-		ILayer::Ptr layer = FindLayer(lcfg->Name());
+		ILayer::Ptr layer = FindLayer(lcfg->Name);
 
 		if (layer)
 			layer->InitializeFromConfig(lcfg);
 	}
+
+	SetCost(config->Cost);
 }
 
 void NeuralNet::Load(const std::string &chkFile)
@@ -39,6 +54,8 @@ NetworkConfig::Ptr NeuralNet::GetCheckpoint() const
 	{
 		ret->Configs.push_back(layer->GetConfig());
 	}
+
+	ret->Cost = _cost;
 
 	return move(ret);
 }
@@ -80,6 +97,11 @@ Vector NeuralNet::Compute(int threadIdx, const Vector &input, bool isTraining)
 	return tmp;
 }
 
+Real NeuralNet::GetCost(const Vector &pred, const Vector &labels)
+{
+	return _cost->Compute(pred, labels);
+}
+
 Real NeuralNet::Backprop(int threadIdx, const Vector &input, const Vector &labels)
 {
 	vector<Vector> inputs(_layers.size() + 1);
@@ -93,9 +115,9 @@ Real NeuralNet::Backprop(int threadIdx, const Vector &input, const Vector &label
 	if (inputs.back().size() != labels.size())
 		throw runtime_error("The output result set size doesn't match the label size.");
 
-	Vector opErr = labels - inputs.back();
+	Vector opErr = _cost->ComputeGrad(inputs.back(), labels);
 
-	Real totalErr = opErr.sum();
+	Real totalErr = GetCost(inputs.back(), labels);
 
 	for (int i = _layers.size() - 1; i >= 0; --i)
 	{
@@ -119,10 +141,6 @@ void NeuralNet::Train(ITrainProvider &provider, size_t maxIters, size_t testFreq
 
 	Real batchErr = 0;
 
-	WindowStats<100> stats;
-
-	Real rateDev = 5.0;
-
 	for (size_t i = 0; i < maxIters; ++i)
 	{
 		provider.Get(max(0, min(dist(engine), (int)provider.Size())), vals, labels);
@@ -135,24 +153,12 @@ void NeuralNet::Train(ITrainProvider &provider, size_t maxIters, size_t testFreq
 			{
 				cout << "Batch Error: " << batchErr << endl;
 
-				stats.Append(batchErr);
-
 				batchErr = 0;
 			}
 
 			if ((i % testFreq) == 0)
 			{
 				Test(provider, chkRoot, bestError);
-
-				Real stdDev = stats.StdDev();
-
-				/*if (stdDev < rateDev)
-				{
-					cout << "Detected learning stagnation. Reducing Learning Rate." << endl;
-
-					rateDev *= 0.1;
-					SetLearningRate(_learnRate * 0.1);
-				}*/
 			}
 		}
 	}

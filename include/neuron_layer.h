@@ -4,7 +4,7 @@
 #include "functions.h"
 
 template<typename Fn>
-class NEURAL_NET_API NeuronLayer
+class NeuronLayer
 	: public LayerBase
 {
 public:
