@@ -36,7 +36,7 @@ void NeuralNet::Load(const NetworkConfig::Ptr &config)
 			layer->InitializeFromConfig(lcfg);
 	}
 
-	SetCost(config->Cost);
+	//SetCost(config->Cost);
 }
 
 void NeuralNet::Load(const std::string &chkFile)
@@ -124,6 +124,8 @@ Real NeuralNet::Backprop(int threadIdx, const Vector &input, const Vector &label
 		opErr = _layers[i]->Backprop(threadIdx, inputs[i], inputs[i + 1], opErr);
 	}
 
+	ApplyDeltas();
+
 	return totalErr;
 }
 
@@ -161,6 +163,14 @@ void NeuralNet::Train(ITrainProvider &provider, size_t maxIters, size_t testFreq
 				Test(provider, chkRoot, bestError);
 			}
 		}
+	}
+}
+
+void NeuralNet::ApplyDeltas()
+{
+	for (auto layer : _layers)
+	{
+		layer->ApplyDeltas();
 	}
 }
 
@@ -221,10 +231,12 @@ void NeuralNet::SaveCheckpoint(const std::string &chkRoot)
 
 void BindStruct(const CStructBinder &binder, NetworkConfig &config)
 {
-	binder("layers", config.Configs);
+	binder("layers", config.Configs)
+		("cost", config.Cost);
 }
 
 void BindStruct(const CStructBinder &binder, NeuralNet &net)
 {
-	binder("layers", net._layers);
+	binder("layers", net._layers)
+		  ("cost", net._cost);
 }

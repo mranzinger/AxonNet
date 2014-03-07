@@ -52,6 +52,7 @@ public:
 	friend void BindStruct(const axon::serialization::CStructBinder &binder, NeuralNet &config);
 
 private:
+	void ApplyDeltas();
 	void Test(ITrainProvider &provider, const std::string &chkRoot, Real &bestError);
 	void SaveCheckpoint(const std::string &chkRoot);
 };

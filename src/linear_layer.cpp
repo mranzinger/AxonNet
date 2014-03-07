@@ -84,9 +84,16 @@ LinParams &LinearLayer::GetParams(int threadIdx)
 
 void LinearLayer::ApplyDeltas()
 {
-	for (LinParams &params : _threadParams)
+	if (!_threadParams.empty())
 	{
-		ApplyDeltas(params);
+		for (LinParams &params : _threadParams)
+		{
+			ApplyDeltas(params);
+		}
+	}
+	else
+	{
+		ApplyDeltas(_master);
 	}
 }
 

@@ -35,7 +35,7 @@ Vector LogLossCost::ComputeGrad(const Vector &pred, const Vector &labels)
 		(labels.binaryExpr(safe,
 			[](Real label, Real pred)
 			{
-				return (label / pred) + ((1 - label) / (1 - pred));
+				return (label / pred) - ((1 - label) / (1 - pred));
 			}));
 
 	return ret;

@@ -12,6 +12,9 @@ Real LinearFn::Derivative(Real input)
 
 Real LogisticFn::Compute(Real input)
 {
+	if (input < -50)
+		return 0.9999;
+
 	return 1.0f / (1.0f + exp(-input));
 }
 

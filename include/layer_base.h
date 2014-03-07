@@ -14,8 +14,8 @@ protected:
 public:
 	typedef std::shared_ptr<LayerBase> Ptr;
 
-	LayerBase() : _learningRate(1.0) { }
-	LayerBase(std::string name) : _name(std::move(name)), _learningRate(1.0) { }
+	LayerBase() : _learningRate(1.0), _momentum(0), _weightDecay(0) { }
+	LayerBase(std::string name) : _name(std::move(name)), _learningRate(1.0), _momentum(0), _weightDecay(0) { }
 
 	virtual const std::string &GetLayerName() const override {
 		return _name;
