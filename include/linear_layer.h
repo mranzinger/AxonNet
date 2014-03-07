@@ -34,12 +34,19 @@ struct LinParams
 	LinParams() { }
 	LinParams(size_t numInputs, size_t numOutputs)
 		: Weights(numOutputs, numInputs), Biases(numOutputs),
-		  WeightsRunning(numOutputs, numInputs, 0), BiasRunning(numOutputs, 0),
-		  WeightsIncrement(numOutputs, numInputs, 0), BiasIncrement(numOutputs, 0),
-		  WeightDeltas(numOutputs, numInputs, 0), BiasDeltas(numOutputs, 0)
+		  WeightsRunning(numOutputs, numInputs), BiasRunning(numOutputs),
+		  WeightsIncrement(numOutputs, numInputs), BiasIncrement(numOutputs),
+		  WeightDeltas(numOutputs, numInputs), BiasDeltas(numOutputs)
 	{
 		InitializeWeights(Weights, 0, 1);
 		InitializeWeights(Biases, 0, 1);
+
+		WeightsRunning.setZero();
+		BiasRunning.setZero();
+		WeightsIncrement.setZero();
+		BiasIncrement.setZero();
+		WeightDeltas.setZero();
+		BiasDeltas.setZero();
 	}
 };
 

@@ -3,7 +3,8 @@
 #include <serialization/master.h>
 
 #include "neural_net.h"
-#include "fc_layer.h"
+#include "linear_layer.h"
+#include "neuron_layer.h"
 #include "handwritten_loader.h"
 
 using namespace std;
@@ -25,10 +26,13 @@ int main(int argc, char *argv [])
 	size_t outputSize = tmpLabels.size();
 
 	NeuralNet net;
-	net.AddLayer(make_shared<LogisticFCLayer>("l1", inputSize, 300));
-	net.AddLayer(make_shared<LogisticFCLayer>("l2", 300, 100));
-	net.AddLayer(make_shared<LogisticFCLayer>("l3", 100, 100));
-	net.AddLayer(make_shared<LogisticFCLayer>("l4", 100, outputSize));
+	net.AddLayer(make_shared<LinearLayer>("l1", inputSize, 300));
+	net.AddLayer(make_shared<LogisticNeuronLayer>("n1"));
+	net.AddLayer(make_shared<LinearLayer>("l2", 300, 100));
+	net.AddLayer(make_shared<LogisticNeuronLayer>("n2"));
+	net.AddLayer(make_shared<LinearLayer>("l3", 100, 100));
+	net.AddLayer(make_shared<LogisticNeuronLayer>("n3"));
+	net.AddLayer(make_shared<LinearLayer>("l4", 100, outputSize));
 
 	if (argc == 2)
 	{

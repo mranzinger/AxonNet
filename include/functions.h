@@ -120,7 +120,7 @@ namespace
 	{
 	private:
 		struct no {
-			char[2];
+			char v[2];
 		};
 
 		template<typename C> static char test(char[sizeof(&C::VecCompute)]);
@@ -135,7 +135,7 @@ namespace
 	{
 	private:
 		struct no {
-			char[2];
+			char v[2];
 		};
 
 		template<typename C> static char test(char[sizeof(&C::VecDerivative)]);

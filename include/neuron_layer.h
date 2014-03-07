@@ -10,6 +10,9 @@ class NEURAL_NET_API NeuronLayer
 public:
 	typedef std::shared_ptr<NeuronLayer> Ptr;
 
+	NeuronLayer() { }
+	NeuronLayer(std::string name) : LayerBase(std::move(name)) { }
+
 	virtual std::string GetLayerType() const override {
 		return Fn::Type() + " Neuron Layer";
 	}
@@ -29,11 +32,11 @@ typedef NeuronLayer<HardTanhFn> HardTanhNeuronLayer;
 template<typename Fn>
 Vector NeuronLayer<Fn>::Compute(int threadIdx, const Vector &input, bool isTraining)
 {
-	return ApplyFunction(input);
+	return ApplyFunction<Fn>(input);
 }
 
 template<typename Fn>
 Vector NeuronLayer<Fn>::Backprop(int threadIdx, const Vector &lastInput, const Vector &lastOutput, const Vector &outputErrors)
 {
-	return ApplyDerivative(outputErrors);
+	return ApplyDerivative<Fn>(outputErrors);
 }

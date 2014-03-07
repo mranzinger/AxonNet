@@ -39,6 +39,9 @@
     <ClInclude Include="..\include\neuron_layer.h">
       <Filter>include</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\softmax_layer.h">
+      <Filter>include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\i_layer.cpp">
@@ -63,6 +66,9 @@
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="..\src\neuron_layer.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\softmax_layer.cpp">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>

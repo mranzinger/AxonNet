@@ -29,6 +29,7 @@
     <ClInclude Include="..\include\neural_net.h" />
     <ClInclude Include="..\include\neuron_layer.h" />
     <ClInclude Include="..\include\persist_util.h" />
+    <ClInclude Include="..\include\softmax_layer.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\functions.cpp" />
@@ -39,6 +40,7 @@
     <ClCompile Include="..\src\neural_net.cpp" />
     <ClCompile Include="..\src\neuron_layer.cpp" />
     <ClCompile Include="..\src\persist_util.cpp" />
+    <ClCompile Include="..\src\softmax_layer.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{90CE3AF5-1468-4830-92C9-62E11C7DAA15}</ProjectGuid>
