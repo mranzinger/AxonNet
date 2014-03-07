@@ -19,7 +19,6 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\include\fc_layer.h" />
     <ClInclude Include="..\include\functions.h" />
     <ClInclude Include="..\include\i_train_provider.h" />
     <ClInclude Include="..\include\i_layer.h" />
@@ -28,16 +27,17 @@
     <ClInclude Include="..\include\linear_layer.h" />
     <ClInclude Include="..\include\math_util.h" />
     <ClInclude Include="..\include\neural_net.h" />
+    <ClInclude Include="..\include\neuron_layer.h" />
     <ClInclude Include="..\include\persist_util.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\src\fc_layer.cpp" />
     <ClCompile Include="..\src\functions.cpp" />
     <ClCompile Include="..\src\init_math_util.cpp" />
     <ClCompile Include="..\src\i_layer.cpp" />
     <ClCompile Include="..\src\layer_base.cpp" />
     <ClCompile Include="..\src\linear_layer.cpp" />
     <ClCompile Include="..\src\neural_net.cpp" />
+    <ClCompile Include="..\src\neuron_layer.cpp" />
     <ClCompile Include="..\src\persist_util.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

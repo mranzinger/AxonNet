@@ -24,9 +24,6 @@
     <ClInclude Include="..\include\functions.h">
       <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\fc_layer.h">
-      <Filter>include</Filter>
-    </ClInclude>
     <ClInclude Include="..\include\persist_util.h">
       <Filter>include</Filter>
     </ClInclude>
@@ -37,6 +34,9 @@
       <Filter>include</Filter>
     </ClInclude>
     <ClInclude Include="..\include\linear_layer.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\neuron_layer.h">
       <Filter>include</Filter>
     </ClInclude>
   </ItemGroup>
@@ -53,9 +53,6 @@
     <ClCompile Include="..\src\functions.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\fc_layer.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\persist_util.cpp">
       <Filter>src</Filter>
     </ClCompile>
@@ -63,6 +60,9 @@
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="..\src\linear_layer.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\neuron_layer.cpp">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>
