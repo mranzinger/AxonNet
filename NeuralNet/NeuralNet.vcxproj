@@ -20,16 +20,19 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\functions.h" />
+    <ClInclude Include="..\include\i_cost.h" />
     <ClInclude Include="..\include\i_train_provider.h" />
     <ClInclude Include="..\include\i_layer.h" />
     <ClInclude Include="..\include\dll_include.h" />
     <ClInclude Include="..\include\layer_base.h" />
     <ClInclude Include="..\include\linear_layer.h" />
+    <ClInclude Include="..\include\logloss_cost.h" />
     <ClInclude Include="..\include\math_util.h" />
     <ClInclude Include="..\include\neural_net.h" />
     <ClInclude Include="..\include\neuron_layer.h" />
     <ClInclude Include="..\include\persist_util.h" />
     <ClInclude Include="..\include\softmax_layer.h" />
+    <ClInclude Include="..\include\sum_sq_cost.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\functions.cpp" />
@@ -37,10 +40,12 @@
     <ClCompile Include="..\src\i_layer.cpp" />
     <ClCompile Include="..\src\layer_base.cpp" />
     <ClCompile Include="..\src\linear_layer.cpp" />
+    <ClCompile Include="..\src\logloss_cost.cpp" />
     <ClCompile Include="..\src\neural_net.cpp" />
     <ClCompile Include="..\src\neuron_layer.cpp" />
     <ClCompile Include="..\src\persist_util.cpp" />
     <ClCompile Include="..\src\softmax_layer.cpp" />
+    <ClCompile Include="..\src\sum_sq_cost.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{90CE3AF5-1468-4830-92C9-62E11C7DAA15}</ProjectGuid>

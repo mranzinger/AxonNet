@@ -5,18 +5,12 @@
 class NEURAL_NET_API SoftmaxLayer
 	: public LayerBase
 {
-private:
-	size_t _numOutputs;
-
 public:
 	typedef std::shared_ptr<SoftmaxLayer> Ptr;
 
-	SoftmaxLayer()
-		: _numOutputs(std::numeric_limits<size_t>::max()) { }
+	SoftmaxLayer() { }
 	SoftmaxLayer(std::string name) 
-		: LayerBase(std::move(name)), _numOutputs(std::numeric_limits<size_t>::max()) { }
-	SoftmaxLayer(std::string name, size_t numOutputs) 
-		: LayerBase(std::move(name)), _numOutputs(numOutputs) { }
+		: LayerBase(std::move(name)) { }
 
 	virtual std::string GetLayerType() const override {
 		return "Softmax Layer";

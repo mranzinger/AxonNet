@@ -3,7 +3,7 @@
 #include <memory>
 #include <string>
 
-#include <serialization\master.h>
+#include <serialization/master.h>
 
 #include "dll_include.h"
 #include "math_util.h"
