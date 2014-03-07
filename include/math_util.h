@@ -50,9 +50,25 @@ Range<IterType> make_range(IterType begin, IterType end)
 
 inline void MaxBinarize(Vector &v)
 {
-	Real m = v.maxCoeff();
+	Real m = v[0];
+	size_t bestIdx = 0;
 
-	v = v.unaryExpr([m](Real r) { return r == m ? 1 : 0; });
+	for (size_t i = 1, end = v.size(); i < end; ++i)
+	{
+		if (v[i] > m)
+		{
+			m = v[i];
+			bestIdx = i;
+		}
+	}
+
+	for (size_t i = 0, end = v.size(); i < end; ++i)
+	{
+		if (i != bestIdx)
+			v[i] = 0;
+		else
+			v[i] = 1;
+	}
 }
 
 

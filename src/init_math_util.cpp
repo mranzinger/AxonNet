@@ -14,7 +14,8 @@ void InitializeWeights(Matrix &mat, Real mean, Real stdDev)
 }
 void InitializeWeights(Real *iter, Real *end, Real mean, Real stdDev)
 {
-	std::default_random_engine engine(1234567);
+	//std::default_random_engine engine(1234567);
+	std::random_device engine;
 
 	std::normal_distribution<Real> dist(mean, stdDev);
 

@@ -110,7 +110,8 @@ void NeuralNet::Train(ITrainProvider &provider, size_t maxIters, size_t testFreq
 {
 	Real bestError = numeric_limits<Real>::max();
 
-	std::default_random_engine engine(4211);
+	//std::default_random_engine engine(4211);
+	std::random_device engine;
 
 	std::uniform_int_distribution<> dist(0, provider.Size() - 1);
 
@@ -145,13 +146,13 @@ void NeuralNet::Train(ITrainProvider &provider, size_t maxIters, size_t testFreq
 
 				Real stdDev = stats.StdDev();
 
-				if (stdDev < rateDev)
+				/*if (stdDev < rateDev)
 				{
 					cout << "Detected learning stagnation. Reducing Learning Rate." << endl;
 
 					rateDev *= 0.1;
 					SetLearningRate(_learnRate * 0.1);
-				}
+				}*/
 			}
 		}
 	}

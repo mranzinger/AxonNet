@@ -8,30 +8,21 @@
 #include "dll_include.h"
 #include "math_util.h"
 
-class NEURAL_NET_API LayerConfig
+struct NEURAL_NET_API LayerConfig
 {
-private:
-	std::string _layerName;
-	Real _learningRate;
-
 public:
 	typedef std::shared_ptr<LayerConfig> Ptr;
+
+	std::string Name;
+	Real LearningRate;
+	Real Momentum;
+	Real WeightDecay;
 
 	virtual ~LayerConfig() { }
 
 	LayerConfig() { }
 	LayerConfig(std::string name)
-		: _layerName(std::move(name)) { }
-	LayerConfig(std::string name, Real learningRate)
-		: _layerName(std::move(name)), _learningRate(learningRate) { }
-
-	const std::string &Name() const {
-		return _layerName;
-	}
-
-	Real LearningRate() const {
-		return _learningRate;
-	}
+		: Name(std::move(name)) { }
 
 	friend void BindStruct(const axon::serialization::CStructBinder &binder, LayerConfig &config);
 };
@@ -50,8 +41,15 @@ public:
 	virtual Vector Backprop(int threadIdx, const Vector &lastInput, const Vector &lastOutput, const Vector &outputErrors) = 0;
 
 	virtual void SetLearningRate(Real rate) = 0;
+	virtual void SetMomentum(Real rate) = 0;
+	virtual void SetWeightDecay(Real rate) = 0;
 	virtual void InitializeFromConfig(const LayerConfig::Ptr &config) = 0;
 	virtual LayerConfig::Ptr GetConfig() const = 0;
+
+	virtual void PrepareForThreads(size_t num) = 0;
+
+	virtual void ApplyDeltas() = 0;
+	virtual void ApplyDeltas(int threadIdx) = 0;
 };
 
 

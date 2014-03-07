@@ -1,10 +1,13 @@
 #include <iostream>
 
+#include <serialization/master.h>
+
 #include "neural_net.h"
 #include "fc_layer.h"
 #include "handwritten_loader.h"
 
 using namespace std;
+using namespace axon::serialization;
 
 int main(int argc, char *argv [])
 {
@@ -27,7 +30,12 @@ int main(int argc, char *argv [])
 	net.AddLayer(make_shared<LogisticFCLayer>("l3", 100, 100));
 	net.AddLayer(make_shared<LogisticFCLayer>("l4", 100, outputSize));
 
-	net.SetLearningRate(0.01);
+	if (argc == 2)
+	{
+		net.Load(argv[1]);
+	}
+
+	net.SetLearningRate(0.0001);
 
 	net.Train(loader, 100000000, 50000, "test");
 }

@@ -5,6 +5,8 @@ using namespace axon::serialization;
 
 void BindStruct(const CStructBinder &binder, FCLayerConfig &config)
 {
+	BindStruct(binder, (LayerConfig&) config);
+
 	binder("weights", config.Weights)
 		  ("biases", config.Biases);
 }
@@ -26,3 +28,4 @@ AXON_SERIALIZE_DERIVED_TYPE(ILayer, FCLayer<RectifierFn>, RectifierFCLayer);
 AXON_SERIALIZE_DERIVED_TYPE(ILayer, FCLayer<TanhFn>, TanhFCLayer);
 AXON_SERIALIZE_DERIVED_TYPE(ILayer, FCLayer<RampFn>, RampFCLayer);
 AXON_SERIALIZE_DERIVED_TYPE(ILayer, FCLayer<SoftPlusFn>, SoftPlusFCLayer);
+AXON_SERIALIZE_DERIVED_TYPE(ILayer, FCLayer<HardTanhFn>, HardTanhFCLayer);

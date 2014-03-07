@@ -25,6 +25,7 @@
     <ClInclude Include="..\include\i_layer.h" />
     <ClInclude Include="..\include\dll_include.h" />
     <ClInclude Include="..\include\layer_base.h" />
+    <ClInclude Include="..\include\linear_layer.h" />
     <ClInclude Include="..\include\math_util.h" />
     <ClInclude Include="..\include\neural_net.h" />
     <ClInclude Include="..\include\persist_util.h" />
@@ -35,6 +36,7 @@
     <ClCompile Include="..\src\init_math_util.cpp" />
     <ClCompile Include="..\src\i_layer.cpp" />
     <ClCompile Include="..\src\layer_base.cpp" />
+    <ClCompile Include="..\src\linear_layer.cpp" />
     <ClCompile Include="..\src\neural_net.cpp" />
     <ClCompile Include="..\src\persist_util.cpp" />
   </ItemGroup>
@@ -105,6 +107,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;NEURALNET_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>D:\Users\Mike\Documents\Visual Studio 2013\Projects\AxonNet\include;D:\Projects\ThirdParty\eigen;D:\Projects\Linux\axon\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <MinimalRebuild>false</MinimalRebuild>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -120,6 +123,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;NEURALNET_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>D:\Users\Mike\Documents\Visual Studio 2013\Projects\AxonNet\include;D:\Projects\ThirdParty\eigen;D:\Projects\Linux\axon\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <MinimalRebuild>false</MinimalRebuild>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>

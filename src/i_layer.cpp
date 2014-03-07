@@ -9,8 +9,10 @@ ILayer::~ILayer()
 
 void BindStruct(const CStructBinder &binder, LayerConfig &config)
 {
-	binder("name", config._layerName)
-		  ("learnRate", config._learningRate);
+	binder("name", config.Name)
+		  ("learnRate", config.LearningRate)
+		  ("momentum", config.Momentum)
+		  ("weightDecay", config.WeightDecay);
 }
 
 AXON_SERIALIZE_DERIVED_TYPE(LayerConfig, LayerConfig, LayerConfig);

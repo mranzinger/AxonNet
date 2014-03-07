@@ -8,6 +8,8 @@ class NEURAL_NET_API LayerBase
 protected:
 	std::string _name;
 	Real _learningRate;
+	Real _momentum;
+	Real _weightDecay;
 
 public:
 	typedef std::shared_ptr<LayerBase> Ptr;
@@ -22,16 +24,23 @@ public:
 	virtual void SetLearningRate(Real rate) override {
 		_learningRate = rate;
 	}
+	virtual void SetMomentum(Real rate) override {
+		_momentum = rate;
+	}
+	virtual void SetWeightDecay(Real rate) override {
+		_weightDecay = rate;
+	}
 
 	virtual void InitializeFromConfig(const LayerConfig::Ptr &config);
 	virtual LayerConfig::Ptr GetConfig() const override;
 
 	friend void BindStruct(const axon::serialization::CStructBinder &binder, LayerBase &layer);
+
+	virtual void PrepareForThreads(size_t num) override { }
+
+	virtual void ApplyDeltas() override { }
+	virtual void ApplyDeltas(int threadIdx) override { }
+
+protected:
+	void BuildConfig(LayerConfig &config) const;
 };
-
-//namespace axon {
-//	namespace serialization {
-
-		//NEURAL_NET_API void BindStruct(const axon::serialization::CStructBinder &binder, LayerBase &layer);
-//	}
-//}
