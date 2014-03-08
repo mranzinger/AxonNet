@@ -9,7 +9,6 @@ Real SumSqCost::Compute(const Vector &pred, const Vector &labels)
 
 Vector SumSqCost::ComputeGrad(const Vector &pred, const Vector &labels)
 {
-	//Vector errs = labels - pred;
 	Vector errs = pred - labels;
 
 	return move(errs);

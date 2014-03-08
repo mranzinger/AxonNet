@@ -1,4 +1,5 @@
 #include "softmax_layer.h"
+#include "functions.h"
 
 using namespace std;
 using namespace axon::serialization;
@@ -35,22 +36,9 @@ Vector SoftmaxLayer::Compute(int threadIdx, const Vector &input, bool isTraining
 Vector SoftmaxLayer::Backprop(int threadIdx, const Vector &lastInput, const Vector &lastOutput,
 							  const Vector &outputErrors)
 {
-	Vector inputErrors(outputErrors.size());
-	inputErrors.setZero();
-
-	for (size_t i = 0; i < outputErrors.size(); ++i)
-	{
-		Real v = 0.0;
-		for (size_t k = 0; k < outputErrors.size(); ++k)
-		{
-			// TODO: Get rid of this logical comparator
-			v += outputErrors[i] * ((i == k) - outputErrors[k]);
-		}
-
-		inputErrors[i] += v;
-	}
-
-	return inputErrors;
+	Vector v = ApplyDerivative<LogisticFn>(lastOutput);
+	v = v.binaryExpr(outputErrors, [](Real a, Real b) { return a * b; });
+	return v;
 }
 
 void BindStruct(const CStructBinder &binder, SoftmaxLayer &layer)
