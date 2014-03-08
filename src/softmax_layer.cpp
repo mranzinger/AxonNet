@@ -40,11 +40,14 @@ Vector SoftmaxLayer::Backprop(int threadIdx, const Vector &lastInput, const Vect
 
 	for (size_t i = 0; i < outputErrors.size(); ++i)
 	{
+		Real v = 0.0;
 		for (size_t k = 0; k < outputErrors.size(); ++k)
 		{
 			// TODO: Get rid of this logical comparator
-			inputErrors[i] += outputErrors[i] * ((i == k) - outputErrors[k]);
+			v += outputErrors[i] * ((i == k) - outputErrors[k]);
 		}
+
+		inputErrors[i] += v;
 	}
 
 	return inputErrors;
