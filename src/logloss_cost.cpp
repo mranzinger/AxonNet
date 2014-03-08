@@ -2,7 +2,7 @@
 
 using namespace std;
 
-static const Real s_epss = 0.0001;
+static const Real s_epss = 0.0000001;
 
 Real LogLossCost::Compute(const Vector &preds, const Vector &labels)
 {
@@ -31,25 +31,27 @@ Real LogLossCost::Compute(const Vector &preds, const Vector &labels)
 
 Vector LogLossCost::ComputeGrad(const Vector &pred, const Vector &labels)
 {
-	auto safe = pred.unaryExpr(
-		[](Real val)
-		{
-			return min(max(val, s_epss), 1 - s_epss);
-		});
+	return pred - labels;
 
-	/*Vector ret = (-1.0 / labels.size()) *
-		(labels.binaryExpr(safe,
-		[](Real label, Real pred)
-	{
-		return (label / pred) - ((1 - label) / (1 - pred));
-	})); */
-	Vector ret = labels.binaryExpr(safe,
-		[](Real label, Real pred)
-		{
-			return label / pred;
-		});
+	//auto safe = pred.unaryExpr(
+	//	[](Real val)
+	//	{
+	//		return min(max(val, s_epss), 1 - s_epss);
+	//	});
 
-	return ret;
+	///*Vector ret = (-1.0 / labels.size()) *
+	//	(labels.binaryExpr(safe,
+	//	[](Real label, Real pred)
+	//{
+	//	return (label / pred) - ((1 - label) / (1 - pred));
+	//})); */
+	//Vector ret = labels.binaryExpr(safe,
+	//	[](Real label, Real pred)
+	//	{
+	//		return label / pred;
+	//	});
+
+	//return ret;
 }
 
 void BindStruct(const axon::serialization::CStructBinder &, LogLossCost&) { }
