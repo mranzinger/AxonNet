@@ -51,6 +51,9 @@
     <ClInclude Include="..\include\i_cost.h">
       <Filter>include</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\dropout_layer.h">
+      <Filter>include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\i_layer.cpp">
@@ -84,6 +87,9 @@
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="..\src\logloss_cost.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\dropout_layer.cpp">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>

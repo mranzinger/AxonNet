@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\include\dropout_layer.h" />
     <ClInclude Include="..\include\functions.h" />
     <ClInclude Include="..\include\i_cost.h" />
     <ClInclude Include="..\include\i_train_provider.h" />
@@ -35,6 +36,7 @@
     <ClInclude Include="..\include\sum_sq_cost.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\src\dropout_layer.cpp" />
     <ClCompile Include="..\src\functions.cpp" />
     <ClCompile Include="..\src\init_math_util.cpp" />
     <ClCompile Include="..\src\i_layer.cpp" />

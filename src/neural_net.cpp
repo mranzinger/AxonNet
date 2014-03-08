@@ -194,7 +194,7 @@ void NeuralNet::Test(ITrainProvider &provider, const std::string &chkRoot, Real 
 
 		Vector op = Compute(0, input, false);
 
-		Real err = (.5 * SquareV(labels - op)).sum();
+		Real err = _cost->Compute(op, labels);
 
 		testErr += err;
 
