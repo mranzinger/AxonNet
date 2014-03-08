@@ -12,42 +12,56 @@ DropoutLayer::DropoutLayer(string name, Real dropout)
 
 Vector DropoutLayer::Compute(int threadIdx, const Vector &input, bool isTraining)
 {
+	Vector ret(input.size());
+
 	if (isTraining)
 	{
-		RandVec &vec = _trainRands[threadIdx];
-		DropRand &gen = _trainGens[threadIdx];
+		Dropout(threadIdx, input, ret);
+	}
+	else
+	{
+		ret.noalias() = input * _dropout;
+	}
 
-		vec.resize(input.size() / 64 + 1);
+	return move(ret);
+}
 
-		// Generate a random distribution. 1-bit per input
-		for (uint64_t &val : vec)
-			val = gen.Next();
+Vector DropoutLayer::Backprop(int threadIdx, const Vector &lastInput, const Vector &lastOutput, const Vector &outputErrors)
+{
+	Vector inputErrors(outputErrors.size());
 
-		Vector ret(input.size());
+	Dropout(threadIdx, outputErrors, inputErrors);
 
-		Real *pOut = ret.data();
-		const Real *pIn = input.data();
+	return inputErrors;
+}
 
-		size_t numBatches = ret.size() / 64;
+void DropoutLayer::PrepareForThreads(size_t num)
+{
+	_trainRands.resize(max<size_t>(1, num));
+	_trainGens.resize(max<size_t>(1, num));
+}
 
-		for (size_t i = 0; i < numBatches; ++i)
-		{
-			uint64_t rnd = vec[i];
+void DropoutLayer::Dropout(int threadIdx, const Vector &input, Vector &output)
+{
+	RandVec &vec = _trainRands[threadIdx];
+	DropRand &gen = _trainGens[threadIdx];
 
-			for (Real *pEnd = pOut + 64; pOut != pEnd; ++pOut, ++pIn, rnd >>= 1)
-			{
-				bool act = rnd & 0x1;
+	vec.resize(input.size() / 64 + 1);
 
-				if (act)
-					*pOut = *pIn;
-				else
-					*pOut = 0;
-			}
-		}
+	// Generate a random distribution. 1-bit per input
+	for (uint64_t &val : vec)
+		val = gen.Next();
 
-		uint64_t rnd = vec[numBatches];
+	Real *pOut = output.data();
+	const Real *pIn = input.data();
 
-		for (Real *pEnd = ret.data() + ret.size(); pOut != pEnd; ++pOut, ++pIn, rnd >>= 1)
+	size_t numBatches = output.size() / 64;
+
+	for (size_t i = 0; i < numBatches; ++i)
+	{
+		uint64_t rnd = vec[i];
+
+		for (Real *pEnd = pOut + 64; pOut != pEnd; ++pOut, ++pIn, rnd >>= 1)
 		{
 			bool act = rnd & 0x1;
 
@@ -56,22 +70,24 @@ Vector DropoutLayer::Compute(int threadIdx, const Vector &input, bool isTraining
 			else
 				*pOut = 0;
 		}
-
-		return ret;
 	}
-	else
+
+	uint64_t rnd = vec[numBatches];
+
+	for (Real *pEnd = output.data() + output.size(); pOut != pEnd; ++pOut, ++pIn, rnd >>= 1)
 	{
-		return input * _dropout;
+		bool act = rnd & 0x1;
+
+		if (act)
+			*pOut = *pIn;
+		else
+			*pOut = 0;
 	}
 }
 
-Vector DropoutLayer::Backprop(int threadIdx, const Vector &lastInput, const Vector &lastOutput, const Vector &outputErrors)
+void BindStruct(const CStructBinder &binder, DropoutLayer &layer)
 {
-	return outputErrors;
+	binder("dropout", layer._dropout);
 }
 
-void DropoutLayer::PrepareForThreads(size_t num)
-{
-	_trainRands.resize(max<size_t>(1, num));
-	_trainGens.resize(max<size_t>(1, num));
-}
+AXON_SERIALIZE_DERIVED_TYPE(ILayer, DropoutLayer, DropoutLayer);

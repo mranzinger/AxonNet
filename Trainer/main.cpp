@@ -34,6 +34,7 @@ int main(int argc, char *argv [])
 	net.AddLayer(make_shared<DropoutLayer>("d1"));
 	net.AddLayer(make_shared<LinearLayer>("l2", 300, 100));
 	net.AddLayer(make_shared<LogisticNeuronLayer>("n2"));
+	net.AddLayer(make_shared<DropoutLayer>("d2"));
 	net.AddLayer(make_shared<LinearLayer>("l4", 100, outputSize));
 	net.AddLayer(make_shared<LogisticNeuronLayer>("n3"));
 	//net.AddLayer(make_shared<SoftmaxLayer>("l5"));

@@ -48,4 +48,7 @@ public:
 	virtual void PrepareForThreads(size_t num) override;
 
 	friend void BindStruct(const axon::serialization::CStructBinder &binder, DropoutLayer &layer);
+
+private:
+	void Dropout(int threadIdx, const Vector &input, Vector &output);
 };
