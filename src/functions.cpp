@@ -1,4 +1,5 @@
 #include "functions.h"
+#include <xmmintrin.h>
 
 Real LinearFn::Compute(Real input)
 {
@@ -17,9 +18,12 @@ Real LogisticFn::Compute(Real input)
 
 Real LogisticFn::Derivative(Real input)
 {
-	Real val = Compute(input);
+	return Derivative(input, Compute(input));
+}
 
-	return val * (1 - val);
+Real LogisticFn::Derivative(Real input, Real computeOutput)
+{
+	return computeOutput * (1.0f - computeOutput);
 }
 
 Real RectifierFn::Compute(Real input)
@@ -39,9 +43,12 @@ Real TanhFn::Compute(Real input)
 
 Real TanhFn::Derivative(Real input)
 {
-	Real val = Compute(input);
+	return Derivative(input, Compute(input));
+}
 
-	return 1 - Square(val);
+Real TanhFn::Derivative(Real input, Real computeOutput)
+{
+	return 1.0 - Square(computeOutput);
 }
 
 Real RampFn::Compute(Real input)

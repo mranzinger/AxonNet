@@ -8,6 +8,9 @@ struct NEURAL_NET_API LinearFn
 		return "Linear";
 	}
 
+	static const bool Vectorized = false;
+	static const bool Binary = false;
+
 	static Real Compute(Real input);
 	static Real Derivative(Real input);
 };
@@ -19,8 +22,13 @@ struct NEURAL_NET_API LogisticFn
 		return "Logistic";
 	}
 
+	static const bool Vectorized = false;
+	static const bool Binary = true;
+
 	static Real Compute(Real input);
 	static Real Derivative(Real input);
+
+	static Real Derivative(Real input, Real computeOutput);
 };
 
 struct NEURAL_NET_API RectifierFn
@@ -29,6 +37,9 @@ struct NEURAL_NET_API RectifierFn
 	{
 		return "Rectifier";
 	}
+
+	static const bool Vectorized = false;
+	static const bool Binary = false;
 
 	static Real Compute(Real input);
 	static Real Derivative(Real input);
@@ -41,8 +52,13 @@ struct NEURAL_NET_API TanhFn
 		return "Tanh";
 	}
 
+	static const bool Vectorized = false;
+	static const bool Binary = true;
+
 	static Real Compute(Real input);
 	static Real Derivative(Real input);
+
+	static Real Derivative(Real input, Real computeOutput);
 };
 
 struct NEURAL_NET_API RampFn
@@ -51,6 +67,9 @@ struct NEURAL_NET_API RampFn
 	{
 		return "Ramp";
 	}
+
+	static const bool Vectorized = false;
+	static const bool Binary = false;
 
 	static Real Compute(Real input);
 	static Real Derivative(Real input);
@@ -63,6 +82,9 @@ struct NEURAL_NET_API SoftPlusFn
 		return "SoftPlus";
 	}
 
+	static const bool Vectorized = false;
+	static const bool Binary = false;
+
 	static Real Compute(Real input);
 	static Real Derivative(Real input);
 };
@@ -73,6 +95,9 @@ struct NEURAL_NET_API HardTanhFn
 	{
 		return "HardTanh";
 	}
+
+	static const bool Vectorized = false;
+	static const bool Binary = false;
 
 	static Real Compute(Real input);
 	static Real Derivative(Real input);
@@ -88,72 +113,79 @@ namespace
 			return input.unaryExpr([](Real val) { return Fn::Compute(val); });
 		}
 	};
-	template<typename Fn, bool IsExplicit>
-	struct FnDvApplicator
-	{
-		static Vector Apply(const Vector &input)
-		{
-			return input.unaryExpr([](Real val) { return Fn::Derivative(val); });
-		}
-	};
+
 
 	template<typename Fn>
 	struct FnApplicator<Fn, true>
 	{
 		static Vector Apply(const Vector &input)
 		{
-			return Fn::VecCompute(input);
+			return Fn::Compute(input);
 		}
 	};
 
-	template<typename Fn>
-	struct FnDvApplicator<Fn, true>
+	// No vectorizing, unary
+	template<typename Fn, bool IsExplicit, bool IsBinary>
+	struct FnDvApplicator
 	{
-		static Vector Apply(const Vector &input)
+		static Vector Apply(const Vector &input, const Vector &output)
 		{
-			return Fn::VecDerivative(input);
+			return input.unaryExpr([](Real val) { return Fn::Derivative(val); });
 		}
 	};
 
+	// Vector version, unary
 	template<typename Fn>
-	struct has_vec_compute
+	struct FnDvApplicator<Fn, true, false>
 	{
-	private:
-		struct no {
-			char v[2];
-		};
-
-		template<typename C> static char test(char[sizeof(&C::VecCompute)]);
-		template<typename C> static no   test(...);
-
-	public:
-		enum { value = sizeof(test<Fn>(0)) == sizeof(char) };
+		static Vector Apply(const Vector &input, const Vector &output)
+		{
+			return Fn::Derivative(input);
+		}
 	};
 
+	// No vectorizing, binary
 	template<typename Fn>
-	struct has_vec_derivative
+	struct FnDvApplicator<Fn, false, true>
 	{
-	private:
-		struct no {
-			char v[2];
-		};
+		static Vector Apply(const Vector &input, const Vector &output)
+		{
+			return input.binaryExpr(output,
+						[] (Real in, Real out)
+						{
+							return Fn::Derivative(in, out);
+						}
+			);
+		}
+	};
 
-		template<typename C> static char test(char[sizeof(&C::VecDerivative)]);
-		template<typename C> static no   test(...);
-
-	public:
-		enum { value = sizeof(test<Fn>(0)) == sizeof(char) };
+	// Vectorized, Binary
+	template<typename Fn>
+	struct FnDvApplicator<Fn, true, true>
+	{
+		static Vector Apply(const Vector &input, const Vector &output)
+		{
+			return Fn::Derivative(input, output);
+		}
 	};
 }
 
 template<typename Fn>
 Vector ApplyFunction(const Vector &input)
 {
-	return FnApplicator<Fn, has_vec_compute<Fn>::value>::Apply(input);
+	return FnApplicator<Fn, Fn::Vectorized>::Apply(input);
 }
 
 template<typename Fn>
 Vector ApplyDerivative(const Vector &input)
 {
-	return FnDvApplicator<Fn, has_vec_derivative<Fn>::value>::Apply(input);
+	static Vector s_dummy;
+
+	return FnDvApplicator<Fn, Fn::Vectorized, false>::Apply(input, s_dummy);
+}
+
+template<typename Fn>
+Vector ApplyDerivative(const Vector &input, const Vector &computeOutput)
+{
+	return FnDvApplicator<Fn, Fn::Vectorized, Fn::Binary>::Apply(input, computeOutput);
 }
