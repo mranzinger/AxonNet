@@ -29,14 +29,38 @@ int main(int argc, char *argv [])
 	size_t outputSize = tmpLabels.size();
 
 	NeuralNet net;
-	net.AddLayer(make_shared<LinearLayer>("l1", inputSize, 300));
-	net.AddLayer(make_shared<LogisticNeuronLayer>("n1"));
-	net.AddLayer(make_shared<DropoutLayer>("d1"));
-	net.AddLayer(make_shared<LinearLayer>("l2", 300, 100));
-	net.AddLayer(make_shared<LogisticNeuronLayer>("n2"));
-	net.AddLayer(make_shared<DropoutLayer>("d2"));
-	net.AddLayer(make_shared<LinearLayer>("l4", 100, outputSize));
-	net.AddLayer(make_shared<LogisticNeuronLayer>("n3"));
+
+	net.Add<LinearLayer>("l1", inputSize, 1000);
+	net.Add<LogisticNeuronLayer>("r1");
+	net.Add<DropoutLayer>("d1");
+
+	net.Add<LinearLayer>("l2", 1000, 300);
+	net.Add<LogisticNeuronLayer>("r2");
+	net.Add<DropoutLayer>("d2");
+
+	net.Add<LinearLayer>("l3", 300, 100);
+	net.Add<LogisticNeuronLayer>("r3");
+	net.Add<DropoutLayer>("d3");
+
+	net.Add<LinearLayer>("l4", 100, outputSize);
+
+	//net.Add<LogisticNeuronLayer>("logout");
+
+	net.Add<SoftmaxLayer>("soft");
+
+	net.SetCost<LogLossCost>();
+
+	//net.AddLayer(make_shared<LinearLayer>("l1", inputSize, 300));
+	////net.AddLayer(make_shared<LogisticNeuronLayer>("n1"));
+	//net.AddLayer(make_shared<RectifierNeuronLayer>("r1"));
+	//net.AddLayer(make_shared<DropoutLayer>("d1"));
+	////net.AddLayer(make_shared<DropoutLayer>("d1"));
+	//net.AddLayer(make_shared<LinearLayer>("l2", 300, 100));
+	////net.AddLayer(make_shared<LogisticNeuronLayer>("n2"));
+	//net.AddLayer(make_shared<RectifierNeuronLayer>("r2"));
+	////net.AddLayer(make_shared<DropoutLayer>("d2"));
+	//net.AddLayer(make_shared<LinearLayer>("l4", 100, outputSize));
+	////net.AddLayer(make_shared<LogisticNeuronLayer>("n3"));
 	//net.AddLayer(make_shared<SoftmaxLayer>("l5"));
 
 	//net.SetCost(make_shared<LogLossCost>());

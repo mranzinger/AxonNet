@@ -54,6 +54,9 @@
     <ClInclude Include="..\include\dropout_layer.h">
       <Filter>include</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\sse_mathfun.h">
+      <Filter>include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\i_layer.cpp">
