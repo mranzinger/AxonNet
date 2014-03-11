@@ -147,7 +147,7 @@ void fast_for(IdxType begin, IdxType end, Fn fn)
 void NeuralNet::Train(ITrainProvider &provider, size_t maxIters, size_t testFreq,
 					  const std::string &chkRoot)
 {
-	static const int s_NumThreads = 8;
+	static const int s_NumThreads = 1;
 
 	PrepareThreads(s_NumThreads);
 	maxIters /= s_NumThreads;

@@ -54,7 +54,10 @@ void LinearLayer::BuildConfig(LinearLayerConfig &config) const
 
 void LinearLayer::PrepareForThreads(size_t num)
 {
-	_threadParams.resize(num, _master);
+	if (num > 1)
+		_threadParams.resize(num, _master);
+	else
+		_threadParams.clear();
 }
 
 Vector LinearLayer::Compute(int threadIdx, const Vector &input, bool isTraining)
@@ -99,7 +102,7 @@ void LinearLayer::ApplyDeltas()
 
 void LinearLayer::ApplyDeltas(int threadIdx)
 {
-	ApplyDeltas(_threadParams[threadIdx]);
+	ApplyDeltas(GetParams(threadIdx));
 }
 
 void LinearLayer::ApplyDeltas(LinParams &prms)
