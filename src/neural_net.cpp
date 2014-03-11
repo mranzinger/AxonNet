@@ -3,6 +3,8 @@
 #include <filesystem>
 #include <random>
 #include <iostream>
+#include <ppl.h>
+#include <numeric>
 
 #include "sum_sq_cost.h"
 
@@ -12,6 +14,8 @@ namespace fs = tr2::sys;
 
 NeuralNet::NeuralNet()
 {
+	_MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
+
 	SetCost(make_shared<SumSqCost>());
 }
 
@@ -119,58 +123,90 @@ Real NeuralNet::Backprop(int threadIdx, const Vector &input, const Vector &label
 
 	Real totalErr = GetCost(inputs.back(), labels);
 
-	for (int i = _layers.size() - 1; i >= 0; --i)
+	if (totalErr != 0)
 	{
-		opErr = _layers[i]->Backprop(threadIdx, inputs[i], inputs[i + 1], opErr);
+		for (int i = _layers.size() - 1; i >= 0; --i)
+		{
+			opErr = _layers[i]->Backprop(threadIdx, inputs[i], inputs[i + 1], opErr);
+		}
+
+		ApplyDeltas(threadIdx);
 	}
 
-	ApplyDeltas();
-
 	return totalErr;
+}
+
+template<typename IdxType, typename Fn>
+void fast_for(IdxType begin, IdxType end, Fn fn)
+{
+	Concurrency::parallel_for(begin, end, fn);
+	//for (; begin != end; ++begin)
+	//	fn(begin);
 }
 
 void NeuralNet::Train(ITrainProvider &provider, size_t maxIters, size_t testFreq,
 					  const std::string &chkRoot)
 {
+	static const int s_NumThreads = 8;
+
+	PrepareThreads(s_NumThreads);
+	maxIters /= s_NumThreads;
+
 	Real bestError = numeric_limits<Real>::max();
 
-	//std::default_random_engine engine(4211);
-	std::random_device engine;
+	std::random_device engines[s_NumThreads];
+	std::uniform_int_distribution<> dists[s_NumThreads];
+	for (auto &dist : dists)
+		dist = uniform_int_distribution<>(0, provider.Size() - 1);
 
-	std::uniform_int_distribution<> dist(0, provider.Size() - 1);
+	// This is WAY not thread safe
+	Real batchErrs[s_NumThreads] = { 0 };
 
-	Vector vals, labels;
-
-	Real batchErr = 0;
-
+	size_t iter = 0;
+	size_t epoch = 0;
 	for (size_t i = 0; i < maxIters; ++i)
 	{
-		provider.Get(max(0, min(dist(engine), (int)provider.Size())), vals, labels);
+		int numThreads = epoch < 2 ? 1 : s_NumThreads;
+		int workPerThread = 128 / numThreads;
 
-		batchErr += Square(Backprop(0, vals, labels));
+		fast_for(0, numThreads,
+			[&, this](int threadIdx)
+			{
+				auto &dist = dists[threadIdx];
+				auto &engine = engines[threadIdx];
+				Real &batchErr = batchErrs[threadIdx];
+				Vector vals, labels;
 
-		if (i != 0)
+				for (int p = 0; p < workPerThread; ++p)
+				{
+					provider.Get(max(0, min(dist(engine), (int) provider.Size())), vals, labels);
+
+					batchErr += Backprop(threadIdx, vals, labels);
+				}
+			});
+
+		Real batchErr = accumulate(batchErrs, batchErrs + s_NumThreads, 0.0);
+
+		cout << "Batch Error: " << batchErr << endl;
+		
+		memset(batchErrs, 0, sizeof(batchErrs));
+
+		iter += 128;
+
+		if (iter >= testFreq)
 		{
-			if ((i % 128) == 0)
-			{
-				cout << "Batch Error: " << batchErr << endl;
-
-				batchErr = 0;
-			}
-
-			if ((i % testFreq) == 0)
-			{
-				Test(provider, chkRoot, bestError);
-			}
+			iter = 0;
+			++epoch;
+			Test(provider, chkRoot, bestError);
 		}
 	}
 }
 
-void NeuralNet::ApplyDeltas()
+void NeuralNet::ApplyDeltas(int threadIdx)
 {
 	for (auto layer : _layers)
 	{
-		layer->ApplyDeltas();
+		layer->ApplyDeltas(threadIdx);
 	}
 }
 
@@ -227,6 +263,12 @@ void NeuralNet::SaveCheckpoint(const std::string &chkRoot)
 	fs::path savePath = fsRoot / fs::path("best.chk");
 
 	CAxonSerializer().SerializeToFile(savePath.string(), chk);
+}
+
+void NeuralNet::PrepareThreads(int numThreads)
+{
+	for (const auto &layer : _layers)
+		layer->PrepareForThreads(numThreads);
 }
 
 void BindStruct(const CStructBinder &binder, NetworkConfig &config)

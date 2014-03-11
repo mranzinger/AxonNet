@@ -10,7 +10,8 @@ Real LogLossCost::Compute(const Vector &preds, const Vector &labels)
 	auto safe = preds.unaryExpr(
 		[](Real val)
 		{
-			return min(max(val, s_epss), 1 - s_epss);
+			//return min(max(val, s_epss), 1 - s_epss);
+			return max(val, s_epss);
 		});
 
 	/*Real ret = -(labels.binaryExpr(safe,

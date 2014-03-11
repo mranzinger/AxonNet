@@ -106,8 +106,8 @@ void LinearLayer::ApplyDeltas(LinParams &prms)
 {
 	if (_momentum)
 	{
-		prms.WeightsIncrement.noalias() = _momentum * prms.WeightsIncrement;
-		prms.BiasIncrement.noalias() = _momentum * prms.BiasIncrement;
+		prms.WeightsIncrement *= _momentum;
+		prms.BiasIncrement *= _momentum;
 	}
 	else
 	{
@@ -117,8 +117,8 @@ void LinearLayer::ApplyDeltas(LinParams &prms)
 
 	if (_weightDecay)
 	{
-		prms.WeightsIncrement -= _weightDecay * _learningRate * prms.Weights;
-		prms.BiasIncrement -= _weightDecay * _learningRate * prms.Biases;
+		prms.WeightsIncrement.noalias() -= (_weightDecay * _learningRate) * prms.Weights;
+		prms.BiasIncrement.noalias() -= (_weightDecay * _learningRate) * prms.Biases;
 	}
 
 	prms.WeightsIncrement.noalias() -= _learningRate * prms.WeightDeltas;

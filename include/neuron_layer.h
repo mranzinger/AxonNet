@@ -39,6 +39,6 @@ template<typename Fn>
 Vector NeuronLayer<Fn>::Backprop(int threadIdx, const Vector &lastInput, const Vector &lastOutput, const Vector &outputErrors)
 {
 	Vector v = ApplyDerivative<Fn>(lastOutput);
-	v = v.binaryExpr(outputErrors, [](Real a, Real b) { return a * b; });
+	v.noalias() = v.cwiseProduct(outputErrors);
 	return v;
 }

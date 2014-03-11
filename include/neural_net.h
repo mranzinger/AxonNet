@@ -1,5 +1,7 @@
 #pragma once
 
+#include <xmmintrin.h>
+
 #include <vector>
 
 #include "i_layer.h"
@@ -30,6 +32,18 @@ public:
 	void AddLayer(ILayer::Ptr layer);
 	void SetCost(ICost::Ptr cost);
 
+	template<typename LayerType, typename ...Args>
+	void Add(Args &&...args)
+	{
+		AddLayer(std::make_shared<LayerType>(std::forward<Args>(args)...));
+	}
+
+	template<typename CostType, typename ...Args>
+	void SetCost(Args &&...args)
+	{
+		SetCost(std::make_shared<CostType>(std::forward<Args>(args)...));
+	}
+
 	void Load(const NetworkConfig::Ptr &config);
 	void Load(const std::string &chkFile);
 
@@ -52,8 +66,9 @@ public:
 	friend void BindStruct(const axon::serialization::CStructBinder &binder, NeuralNet &config);
 
 private:
-	void ApplyDeltas();
+	void ApplyDeltas(int threadIdx);
 	void Test(ITrainProvider &provider, const std::string &chkRoot, Real &bestError);
 	void SaveCheckpoint(const std::string &chkRoot);
+	void PrepareThreads(int numThreads);
 };
  

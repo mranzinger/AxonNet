@@ -10,6 +10,9 @@ struct NEURAL_NET_API LinearFn
 
 	static Real Compute(Real input);
 	static Real Derivative(Real input);
+
+	static Vector VecCompute(const Vector &input);
+	static Vector VecDerivative(const Vector &input);
 };
 
 struct NEURAL_NET_API LogisticFn
@@ -21,6 +24,9 @@ struct NEURAL_NET_API LogisticFn
 
 	static Real Compute(Real input);
 	static Real Derivative(Real input);
+
+	static Vector VecCompute(const Vector &input);
+	static Vector VecDerivative(const Vector &input);
 };
 
 struct NEURAL_NET_API RectifierFn
@@ -32,6 +38,23 @@ struct NEURAL_NET_API RectifierFn
 
 	static Real Compute(Real input);
 	static Real Derivative(Real input);
+
+	static Vector VecCompute(const Vector &input);
+	static Vector VecDerivative(const Vector &input);
+};
+
+struct NEURAL_NET_API SoftPlusFn
+{
+	static std::string Type()
+	{
+		return "SoftPlus";
+	}
+
+	static Real Compute(Real input);
+	static Real Derivative(Real input);
+
+	static Vector VecCompute(const Vector &input);
+	static Vector VecDerivative(const Vector &input);
 };
 
 struct NEURAL_NET_API TanhFn
@@ -50,17 +73,6 @@ struct NEURAL_NET_API RampFn
 	static std::string Type()
 	{
 		return "Ramp";
-	}
-
-	static Real Compute(Real input);
-	static Real Derivative(Real input);
-};
-
-struct NEURAL_NET_API SoftPlusFn
-{
-	static std::string Type()
-	{
-		return "SoftPlus";
 	}
 
 	static Real Compute(Real input);
@@ -118,31 +130,30 @@ namespace
 	template<typename Fn>
 	struct has_vec_compute
 	{
-	private:
-		struct no {
-			char v[2];
-		};
-
-		template<typename C> static char test(char[sizeof(&C::VecCompute)]);
-		template<typename C> static no   test(...);
-
 	public:
-		enum { value = sizeof(test<Fn>(0)) == sizeof(char) };
+		template<typename X>
+		static std::true_type check(X*, decltype(Fn::VecCompute(*(Vector*)nullptr))* = 0);
+
+		static std::false_type check(...);
+
+		typedef decltype(check((Fn*) (0))) _tmp;
+
+		static const bool value = _tmp::value;
+
 	};
 
 	template<typename Fn>
 	struct has_vec_derivative
 	{
-	private:
-		struct no {
-			char v[2];
-		};
-
-		template<typename C> static char test(char[sizeof(&C::VecDerivative)]);
-		template<typename C> static no   test(...);
-
 	public:
-		enum { value = sizeof(test<Fn>(0)) == sizeof(char) };
+		template<typename X>
+		static std::true_type check(X*, decltype(Fn::VecDerivative(*(Vector*)nullptr))* = 0);
+
+		static std::false_type check(...);
+
+		typedef decltype(check((Fn*) (0))) _tmp;
+
+		static const bool value = _tmp::value;
 	};
 }
 

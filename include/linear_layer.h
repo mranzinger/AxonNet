@@ -59,7 +59,7 @@ protected:
 	LinParams _master;
 	LinParamsList _threadParams;
 
-	size_t _updateInterval = 5;
+	size_t _updateInterval = 20;
 
 public:
 	typedef std::shared_ptr<LinearLayer> Ptr;
