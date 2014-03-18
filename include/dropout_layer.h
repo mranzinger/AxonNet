@@ -42,13 +42,13 @@ public:
 		return "Dropout Layer";
 	}
 
-	virtual Vector Compute(int threadIdx, const Vector &input, bool isTraining) override;
-	virtual Vector Backprop(int threadIdx, const Vector &lastInput, const Vector &lastOutput, const Vector &outputErrors) override;
+	virtual Params Compute(int threadIdx, const Params &input, bool isTraining) override;
+	virtual Params Backprop(int threadIdx, const Params &lastInput, const Params &lastOutput, const Params &outputErrors) override;
 
 	virtual void PrepareForThreads(size_t num) override;
 
 	friend void BindStruct(const axon::serialization::CStructBinder &binder, DropoutLayer &layer);
 
 private:
-	void Dropout(int threadIdx, const Vector &input, Vector &output);
+	void Dropout(int threadIdx, const Vector &input, Vector &output, bool generate);
 };

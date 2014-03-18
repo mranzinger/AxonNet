@@ -72,8 +72,9 @@ public:
 		return "Linear Layer";
 	}
 
-	virtual Vector Compute(int threadIdx, const Vector &input, bool isTraining) override;
-	virtual Vector Backprop(int threadIdx, const Vector &lastInput, const Vector &lastOutput, const Vector &outputErrors) override;
+	virtual Params Compute(int threadIdx, const Params &input, bool isTraining) override;
+	virtual Params Backprop(int threadIdx, const Params &lastInput, const Params &lastOutput, const Params &outputErrors) override;
+	MultiParams BackpropMany(int threadIdx, const MultiParams &lastInputs, const MultiParams &outputErrors);
 
 	virtual void InitializeFromConfig(const LayerConfig::Ptr &config) override;
 	virtual LayerConfig::Ptr GetConfig() const override;

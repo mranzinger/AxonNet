@@ -16,8 +16,8 @@ public:
 		return "Softmax Layer";
 	}
 
-	virtual Vector Compute(int threadIdx, const Vector &input, bool isTraining) override;
-	virtual Vector Backprop(int threadIdx, const Vector &lastInput, const Vector &lastOutput, const Vector &outputErrors) override;
+	virtual Params Compute(int threadIdx, const Params &input, bool isTraining) override;
+	virtual Params Backprop(int threadIdx, const Params &lastInput, const Params &lastOutput, const Params &outputErrors) override;
 
 	friend void BindStruct(const axon::serialization::CStructBinder &binder, SoftmaxLayer &layer);
 };

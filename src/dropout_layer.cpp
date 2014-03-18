@@ -10,29 +10,29 @@ DropoutLayer::DropoutLayer(string name, Real dropout)
 	_trainRands.resize(1);
 }
 
-Vector DropoutLayer::Compute(int threadIdx, const Vector &input, bool isTraining)
+Params DropoutLayer::Compute(int threadIdx, const Params &input, bool isTraining)
 {
-	Vector ret(input.size());
+	Params ret(input, Vector(input.Data.size()));
 
 	if (isTraining)
 	{
-		Dropout(threadIdx, input, ret);
+		Dropout(threadIdx, input.Data, ret.Data, true);
 	}
 	else
 	{
-		ret.noalias() = input * _dropout;
+		ret.Data.noalias() = input.Data * _dropout;
 	}
 
 	return move(ret);
 }
 
-Vector DropoutLayer::Backprop(int threadIdx, const Vector &lastInput, const Vector &lastOutput, const Vector &outputErrors)
+Params DropoutLayer::Backprop(int threadIdx, const Params &lastInput, const Params &lastOutput, const Params &outputErrors)
 {
-	Vector inputErrors(outputErrors.size());
+	Params inputErrors(lastInput, Vector(lastInput.Data.size()));
 
-	Dropout(threadIdx, outputErrors, inputErrors);
+	Dropout(threadIdx, outputErrors.Data, inputErrors.Data, false);
 
-	return inputErrors;
+	return move(inputErrors);
 }
 
 void DropoutLayer::PrepareForThreads(size_t num)
@@ -41,16 +41,19 @@ void DropoutLayer::PrepareForThreads(size_t num)
 	_trainGens.resize(max<size_t>(1, num));
 }
 
-void DropoutLayer::Dropout(int threadIdx, const Vector &input, Vector &output)
+void DropoutLayer::Dropout(int threadIdx, const Vector &input, Vector &output, bool generate)
 {
 	RandVec &vec = _trainRands[threadIdx];
 	DropRand &gen = _trainGens[threadIdx];
 
-	vec.resize(input.size() / 64 + 1);
+	if (generate)
+	{
+		vec.resize(input.size() / 64 + 1);
 
-	// Generate a random distribution. 1-bit per input
-	for (uint64_t &val : vec)
-		val = gen.Next();
+		// Generate a random distribution. 1-bit per input
+		for (uint64_t &val : vec)
+			val = gen.Next();
+	}
 
 	Real *pOut = output.data();
 	const Real *pIn = input.data();

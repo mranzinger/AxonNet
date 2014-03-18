@@ -15,14 +15,14 @@ using namespace axon::serialization;
 
 int main(int argc, char *argv [])
 {
-	string root = "D:\\Users\\Mike\\Documents\\Neural Net\\";
+	string root = "C:\\Users\\Mike\\Documents\\Neural Net\\";
 
 	HandwrittenLoader loader(root + "train-images.idx3-ubyte",
 							 root + "train-labels.idx1-ubyte",
 							 root + "t10k-images.idx3-ubyte",
 							 root + "t10k-labels.idx1-ubyte");
 
-	Vector tmpInputs, tmpLabels;
+	Params tmpInputs, tmpLabels;
 	loader.Get(0, tmpInputs, tmpLabels);
 
 	size_t inputSize = tmpInputs.size();
@@ -30,19 +30,21 @@ int main(int argc, char *argv [])
 
 	NeuralNet net;
 
-	net.Add<LinearLayer>("l1", inputSize, 1000);
-	net.Add<LogisticNeuronLayer>("r1");
+	net.Add<LinearLayer>("l1", inputSize, 500);
+	net.Add<HardTanhNeuronLayer>("r1");
+	//net.Add<LogisticNeuronLayer>("r1");
 	net.Add<DropoutLayer>("d1");
 
-	net.Add<LinearLayer>("l2", 1000, 300);
-	net.Add<LogisticNeuronLayer>("r2");
-	net.Add<DropoutLayer>("d2");
+	//net.Add<LinearLayer>("l2", 1000, 300);
+	//net.Add<LogisticNeuronLayer>("r2");
+	//net.Add<DropoutLayer>("d2");
 
-	net.Add<LinearLayer>("l3", 300, 100);
-	net.Add<LogisticNeuronLayer>("r3");
+	net.Add<LinearLayer>("l3", 500, 300);
+	net.Add<HardTanhNeuronLayer>("r2");
+	//net.Add<LogisticNeuronLayer>("r3");
 	net.Add<DropoutLayer>("d3");
 
-	net.Add<LinearLayer>("l4", 100, outputSize);
+	net.Add<LinearLayer>("l4", 300, outputSize);
 
 	//net.Add<LogisticNeuronLayer>("logout");
 
@@ -70,7 +72,7 @@ int main(int argc, char *argv [])
 		net.Load(argv[1]);
 	}
 
-	net.SetLearningRate(0.0001);
+	net.SetLearningRate(0.00001);
 
 	net.Train(loader, 100000000, 50000, "test");
 }

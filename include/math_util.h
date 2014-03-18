@@ -1,11 +1,13 @@
 #pragma once
 
 #include <Eigen/Dense>
+#include <vector>
 
 #include "dll_include.h"
 
 typedef float Real;
 typedef Eigen::Matrix<Real, Eigen::Dynamic, 1> Vector;
+typedef std::vector<Vector> MultiVector;
 typedef Eigen::Matrix<Real, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> Matrix;
 typedef Eigen::Map<Matrix> Map;
 

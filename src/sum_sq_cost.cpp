@@ -2,16 +2,14 @@
 
 using namespace std;
 
-Real SumSqCost::Compute(const Vector &pred, const Vector &labels)
+Real SumSqCost::Compute(const Params &pred, const Params &labels)
 {
-	return (labels - pred).squaredNorm();
+	return (labels.Data - pred.Data).squaredNorm();
 }
 
-Vector SumSqCost::ComputeGrad(const Vector &pred, const Vector &labels)
+Params SumSqCost::ComputeGrad(const Params &pred, const Params &labels)
 {
-	Vector errs = pred - labels;
-
-	return move(errs);
+	return Params(pred, pred.Data - labels.Data);
 }
 
 void BindStruct(const axon::serialization::CStructBinder &, SumSqCost&) { }

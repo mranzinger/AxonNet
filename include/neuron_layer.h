@@ -17,8 +17,8 @@ public:
 		return Fn::Type() + " Neuron Layer";
 	}
 
-	virtual Vector Compute(int threadIdx, const Vector &input, bool isTraining) override;
-	virtual Vector Backprop(int threadIdx, const Vector &lastInput, const Vector &lastOutput, const Vector &outputErrors) override;
+	virtual Params Compute(int threadIdx, const Params &input, bool isTraining) override;
+	virtual Params Backprop(int threadIdx, const Params &lastInput, const Params &lastOutput, const Params &outputErrors) override;
 };
 
 typedef NeuronLayer<LinearFn> LinearNeuronLayer;
@@ -30,17 +30,17 @@ typedef NeuronLayer<SoftPlusFn> SoftPlusNeuronLayer;
 typedef NeuronLayer<HardTanhFn> HardTanhNeuronLayer;
 
 template<typename Fn>
-Vector NeuronLayer<Fn>::Compute(int threadIdx, const Vector &input, bool isTraining)
+Params NeuronLayer<Fn>::Compute(int threadIdx, const Params &input, bool isTraining)
 {
-	return ApplyFunction<Fn>(input);
+	return Params(input, ApplyFunction<Fn>(input.Data));
 }
 
 template<typename Fn>
-Vector NeuronLayer<Fn>::Backprop(int threadIdx, const Vector &lastInput, const Vector &lastOutput, const Vector &outputErrors)
+Params NeuronLayer<Fn>::Backprop(int threadIdx, const Params &lastInput, const Params &lastOutput, const Params &outputErrors)
 {
-	Vector v = ApplyDerivative<Fn>(lastInput, lastOutput);
+	Vector v = ApplyDerivative<Fn>(lastInput.Data, lastOutput.Data);
 
-	v.noalias() = v.cwiseProduct(outputErrors);
+	v.noalias() = v.cwiseProduct(outputErrors.Data);
 
-	return v;
+	return Params(lastInput, std::move(v));
 }

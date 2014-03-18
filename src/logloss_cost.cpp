@@ -4,10 +4,10 @@ using namespace std;
 
 static const Real s_epss = 0.0000001;
 
-Real LogLossCost::Compute(const Vector &preds, const Vector &labels)
+Real LogLossCost::Compute(const Params &preds, const Params &labels)
 {
 	// Pull the prediction away from 0 and 1
-	auto safe = preds.unaryExpr(
+	auto safe = preds.Data.unaryExpr(
 		[](Real val)
 		{
 			//return min(max(val, s_epss), 1 - s_epss);
@@ -21,7 +21,7 @@ Real LogLossCost::Compute(const Vector &preds, const Vector &labels)
 		}))
 			.mean();*/
 
-	Real ret = -labels.binaryExpr(safe,
+	Real ret = -labels.Data.binaryExpr(safe,
 		[](Real label, Real pred)
 		{
 			return label * log(pred);
@@ -30,9 +30,9 @@ Real LogLossCost::Compute(const Vector &preds, const Vector &labels)
 	return ret;
 }
 
-Vector LogLossCost::ComputeGrad(const Vector &pred, const Vector &labels)
+Params LogLossCost::ComputeGrad(const Params &pred, const Params &labels)
 {
-	return pred - labels;
+	return Params(pred, pred.Data - labels.Data);
 
 	//auto safe = pred.unaryExpr(
 	//	[](Real val)

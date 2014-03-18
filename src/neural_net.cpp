@@ -5,11 +5,16 @@
 #include <iostream>
 #include <ppl.h>
 #include <numeric>
+#include <concrt.h>
+#include <thread>
+#include <iomanip>
+#include <chrono>
 
 #include "sum_sq_cost.h"
 
 using namespace std;
 using namespace axon::serialization;
+using namespace std::chrono;
 namespace fs = tr2::sys;
 
 NeuralNet::NeuralNet()
@@ -84,31 +89,31 @@ void NeuralNet::SetLearningRate(Real rate)
 	_learnRate = rate;
 }
 
-Vector NeuralNet::Compute(const Vector &input)
+Params NeuralNet::Compute(const Params &input)
 {
 	return Compute(0, input, false);
 }
 
-Vector NeuralNet::Compute(int threadIdx, const Vector &input, bool isTraining)
+Params NeuralNet::Compute(int threadIdx, const Params &input, bool isTraining)
 {
-	Vector tmp(input);
+	Params tmp(input);
 
 	for (auto layer : _layers)
 	{
 		tmp = layer->Compute(threadIdx, tmp, isTraining);
 	}
 
-	return tmp;
+	return move(tmp);
 }
 
-Real NeuralNet::GetCost(const Vector &pred, const Vector &labels)
+Real NeuralNet::GetCost(const Params &pred, const Params &labels)
 {
 	return _cost->Compute(pred, labels);
 }
 
-Real NeuralNet::Backprop(int threadIdx, const Vector &input, const Vector &labels)
+BPStat NeuralNet::Backprop(int threadIdx, const Params &input, const Params &labels)
 {
-	vector<Vector> inputs(_layers.size() + 1);
+	MultiParams inputs(_layers.size() + 1);
 	inputs[0] = input;
 
 	for (size_t i = 0; i < _layers.size(); ++i)
@@ -119,9 +124,12 @@ Real NeuralNet::Backprop(int threadIdx, const Vector &input, const Vector &label
 	if (inputs.back().size() != labels.size())
 		throw runtime_error("The output result set size doesn't match the label size.");
 
-	Vector opErr = _cost->ComputeGrad(inputs.back(), labels);
+	Params opErr = _cost->ComputeGrad(inputs.back(), labels);
 
 	Real totalErr = GetCost(inputs.back(), labels);
+
+	Params corrCp(inputs.back());
+	MaxBinarize(corrCp.Data);
 
 	if (totalErr != 0)
 	{
@@ -133,65 +141,84 @@ Real NeuralNet::Backprop(int threadIdx, const Vector &input, const Vector &label
 		ApplyDeltas(threadIdx);
 	}
 
-	return totalErr;
+	return { totalErr, (corrCp == labels) };
 }
 
-template<typename IdxType, typename Fn>
-void fast_for(IdxType begin, IdxType end, Fn fn)
+struct ThreadTrainConfig
 {
-	Concurrency::parallel_for(begin, end, fn);
-	//for (; begin != end; ++begin)
-	//	fn(begin);
-}
+	int ThreadIdx = 0;
+	Concurrency::event GoEvent;
+	Concurrency::event DoneEvent;
+	Concurrency::event *KillEvent = nullptr;
+	ITrainProvider *Provider = nullptr;
+	size_t NumIters;
+	Real BatchErr = 0.0f;
+	Real NumCorrect = 0.0f;
+	bool Kill = false;
+};
 
 void NeuralNet::Train(ITrainProvider &provider, size_t maxIters, size_t testFreq,
 					  const std::string &chkRoot)
 {
-	static const int s_NumThreads = 1;
+	static const int s_NumThreads = 4;
+	static const int s_NumIters = 128;
 
 	PrepareThreads(s_NumThreads);
-	maxIters /= s_NumThreads;
 
 	Real bestError = numeric_limits<Real>::max();
 
-	std::random_device engines[s_NumThreads];
-	std::uniform_int_distribution<> dists[s_NumThreads];
-	for (auto &dist : dists)
-		dist = uniform_int_distribution<>(0, provider.Size() - 1);
+	Concurrency::event killEvt;
+	Concurrency::event *waitEvts[s_NumThreads];
 
-	// This is WAY not thread safe
-	Real batchErrs[s_NumThreads] = { 0 };
+	ThreadTrainConfig configs[s_NumThreads];
+	thread threads[s_NumThreads];
 
-	size_t iter = 0;
+	for (size_t i = 0; i < s_NumThreads; ++i)
+	{
+		configs[i].ThreadIdx = i;
+		configs[i].Provider = &provider;
+		configs[i].NumIters = s_NumIters;
+		configs[i].KillEvent = &killEvt;
+
+		waitEvts[i] = &configs[i].DoneEvent;
+
+		threads[i] = thread(&NeuralNet::RunTrainThread, this, ref(configs[i]));
+	}
+
 	size_t epoch = 0;
+	size_t iter = 0;
+
 	for (size_t i = 0; i < maxIters; ++i)
 	{
-		int numThreads = epoch < 2 ? 1 : s_NumThreads;
-		int workPerThread = 128 / numThreads;
+		size_t numThreads = epoch > 2 ? s_NumThreads : 1;
 
-		fast_for(0, numThreads,
-			[&, this](int threadIdx)
-			{
-				auto &dist = dists[threadIdx];
-				auto &engine = engines[threadIdx];
-				Real &batchErr = batchErrs[threadIdx];
-				Vector vals, labels;
+		auto tStart = high_resolution_clock::now();
 
-				for (int p = 0; p < workPerThread; ++p)
-				{
-					provider.Get(max(0, min(dist(engine), (int) provider.Size())), vals, labels);
+		for (size_t j = 0; j < numThreads; ++j)
+			configs[j].GoEvent.set();
 
-					batchErr += Backprop(threadIdx, vals, labels);
-				}
-			});
+		// Wait for all of the threads to finish
+		Concurrency::event::wait_for_multiple(waitEvts, numThreads, true);
 
-		Real batchErr = accumulate(batchErrs, batchErrs + s_NumThreads, 0.0);
+		for (auto evt : waitEvts)
+			evt->reset();
 
-		cout << "Batch Error: " << batchErr << endl;
-		
-		memset(batchErrs, 0, sizeof(batchErrs));
+		auto tEnd = high_resolution_clock::now();
 
-		iter += 128;
+		double timeSec = double(duration_cast<nanoseconds>(tEnd - tStart).count()) / 1000000000.0;
+
+		Real err = accumulate(begin(configs), end(configs), 0.0,
+			[](Real curr, const ThreadTrainConfig &cfg) { return curr + cfg.BatchErr; });
+		Real corr = accumulate(begin(configs), end(configs), 0.0f,
+			[](Real curr, const ThreadTrainConfig &cfg) { return curr + cfg.NumCorrect; });
+
+		cout << setw(7) << i << " "
+			 << setw(10) << (err / (numThreads * s_NumIters)) << " "
+			 << setw(10) << (corr / (numThreads * s_NumIters)) << " "
+			 << setw(10) << timeSec << "s"
+			 << endl;
+
+		iter += numThreads * s_NumIters;
 
 		if (iter >= testFreq)
 		{
@@ -199,6 +226,51 @@ void NeuralNet::Train(ITrainProvider &provider, size_t maxIters, size_t testFreq
 			++epoch;
 			Test(provider, chkRoot, bestError);
 		}
+	}
+
+	for (ThreadTrainConfig &cfg : configs)
+	{
+		cfg.Kill = true;
+	}
+	killEvt.set();
+	for (thread &t : threads)
+	{
+		t.join();
+	}
+}
+
+void NeuralNet::RunTrainThread(ThreadTrainConfig &config)
+{
+	std::random_device engine;
+	std::uniform_int_distribution<> dist(0, config.Provider->Size() - 1);
+
+	while (!config.Kill)
+	{
+		Concurrency::event *waitEvts [] = { config.KillEvent, &config.GoEvent };
+		size_t which = Concurrency::event::wait_for_multiple(waitEvts, 2, false);
+
+		if (which == 0)
+			return;
+
+		config.GoEvent.reset();
+
+		config.BatchErr = 0.0f;
+		config.NumCorrect = 0.0f;
+
+		Params vals, labels;
+
+		for (size_t i = 0; i < config.NumIters; ++i)
+		{
+			config.Provider->Get(dist(engine), vals, labels);
+
+			BPStat stat = Backprop(config.ThreadIdx, vals, labels);
+
+			config.BatchErr += stat.Error;
+			if (stat.Correct)
+				config.NumCorrect++;
+		}
+
+		config.DoneEvent.set();
 	}
 }
 
@@ -218,29 +290,36 @@ void NeuralNet::Test(ITrainProvider &provider, const std::string &chkRoot, Real 
 	if (!fs::exists(fs::path(chkRoot)))
 		fs::create_directories(fs::path(chkRoot));
 
-	cout << "Testing..." << endl;
+	cout << "TEST    " << flush;
 
-	Vector input, labels;
+	auto tStart = high_resolution_clock::now();
+
+	Params input, labels;
 
 	Real testErr = 0;
-	size_t numRight = 0, numWrong = 0;
+	Real numCorr = 0;
 	for (size_t i = 0, end = provider.TestSize(); i < end; ++i)
 	{
 		provider.GetTest(i, input, labels);
 
-		Vector op = Compute(0, input, false);
+		Params op = Compute(0, input, false);
 
 		Real err = _cost->Compute(op, labels);
 
 		testErr += err;
 
-		MaxBinarize(op);
+		MaxBinarize(op.Data);
 
 		if (op == labels)
-			++numRight;
-		else
-			++numWrong;
+			++numCorr;
 	}
+
+	auto tEnd = high_resolution_clock::now();
+
+	double timeSec = double(duration_cast<nanoseconds>(tEnd - tStart).count()) / 1000000000.0;
+
+	testErr /= provider.TestSize();
+	numCorr /= provider.TestSize();
 
 	if (testErr < bestError)
 	{
@@ -248,10 +327,10 @@ void NeuralNet::Test(ITrainProvider &provider, const std::string &chkRoot, Real 
 		SaveCheckpoint(chkRoot);
 	}
 
-	cout << "Finished Testing. Error: " << testErr << endl
-		<< "Best: " << bestError << endl
-		<< "Num Right: " << numRight << endl
-		<< "Num Wrong: " << numWrong << endl;
+	cout << setw(10) << testErr << " "
+		 << setw(10) << numCorr << " "
+		 << setw(10) << timeSec << "s"
+		 << endl;
 }
 
 void NeuralNet::SaveCheckpoint(const std::string &chkRoot)

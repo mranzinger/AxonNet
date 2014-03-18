@@ -12,7 +12,7 @@ public:
 		return "Sum Squared Loss";
 	}
 
-	virtual Real Compute(const Vector &pred, const Vector &labels) override;
-	virtual Vector ComputeGrad(const Vector &pred, const Vector &labels) override;
+	virtual Real Compute(const Params &pred, const Params &labels) override;
+	virtual Params ComputeGrad(const Params &pred, const Params &labels) override;
 };
 

@@ -5,8 +5,7 @@
 
 #include <serialization/master.h>
 
-#include "dll_include.h"
-#include "math_util.h"
+#include "params.h"
 
 struct NEURAL_NET_API LayerConfig
 {
@@ -37,8 +36,8 @@ public:
 	virtual const std::string &GetLayerName() const = 0;
 	virtual std::string GetLayerType() const = 0;
 
-	virtual Vector Compute(int threadIdx, const Vector &input, bool isTraining) = 0;
-	virtual Vector Backprop(int threadIdx, const Vector &lastInput, const Vector &lastOutput, const Vector &outputErrors) = 0;
+	virtual Params Compute(int threadIdx, const Params &input, bool isTraining) = 0;
+	virtual Params Backprop(int threadIdx, const Params &lastInput, const Params &lastOutput, const Params &outputErrors) = 0;
 
 	virtual void SetLearningRate(Real rate) = 0;
 	virtual void SetMomentum(Real rate) = 0;

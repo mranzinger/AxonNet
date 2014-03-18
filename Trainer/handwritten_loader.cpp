@@ -54,7 +54,7 @@ void cvt_cpy(float *dstBuff, unsigned char *srcBuff, size_t buffSize)
 		*dstBuff = ((float) *srcBuff) / 256;
 }
 
-vector<Vector> HandwrittenLoader::LoadImages(const std::string &file) const
+MultiParams HandwrittenLoader::LoadImages(const std::string &file) const
 {
 	static const int MAGIC_NUMBER = 0x00000803; // 2051
 
@@ -77,19 +77,19 @@ vector<Vector> HandwrittenLoader::LoadImages(const std::string &file) const
 	int imgSize = numRows * numCols;
 
 	// Create the return value, initializing each image to the correct size
-	vector<Vector> ret(numImages, Vector(imgSize));
+	MultiParams ret(numImages, Params(numCols, numRows, 1, Vector(imgSize)));
 
 	auto readBuf = make_unique<unsigned char[]>(imgSize);
 
 	for (size_t i = 0; i < numImages; ++i)
 	{
 		fileStream.read((char *)readBuf.get(), imgSize);
-		cvt_cpy(ret[i].data(), readBuf.get(), imgSize);
+		cvt_cpy(ret[i].Data.data(), readBuf.get(), imgSize);
 	}
 
 	return ret;
 }
-std::vector<Vector> HandwrittenLoader::LoadLabels(const std::string &file) const
+MultiParams HandwrittenLoader::LoadLabels(const std::string &file) const
 {
 	static const int MAGIC_NUMBER = 0x00000801; // 2049
 
@@ -108,7 +108,7 @@ std::vector<Vector> HandwrittenLoader::LoadLabels(const std::string &file) const
 	int numLabels = read(fileStream, flipEndian);
 
 	// Output is 10 values, [0, 1] for each character
-	vector<Vector> ret(numLabels, Vector::Zero(10));
+	MultiParams ret(numLabels, Params(Vector::Zero(10)));
 
 	for (size_t i = 0; i < numLabels; ++i)
 	{
@@ -117,7 +117,7 @@ std::vector<Vector> HandwrittenLoader::LoadLabels(const std::string &file) const
 		// set the character using val as index to 1.0
 		assert(val >= 0 && val <= 9);
 
-		ret[i][val] = 1.0;
+		ret[i].Data[val] = 1.0;
 	}
 
 	return ret;

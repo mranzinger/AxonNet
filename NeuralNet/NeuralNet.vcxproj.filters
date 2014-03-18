@@ -57,6 +57,12 @@
     <ClInclude Include="..\include\sse_mathfun.h">
       <Filter>include</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\convo_layer.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\params.h">
+      <Filter>include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\i_layer.cpp">
@@ -93,6 +99,9 @@
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="..\src\dropout_layer.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\convo_layer.cpp">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>

@@ -8,11 +8,11 @@ class HandwrittenLoader
 	: public ITrainProvider
 {
 private:
-	std::vector<Vector> _trainData;
-	std::vector<Vector> _labels;
+	std::vector<Params> _trainData;
+	std::vector<Params> _labels;
 
-	std::vector<Vector> _testData;
-	std::vector<Vector> _testLabels;
+	std::vector<Params> _testData;
+	std::vector<Params> _testLabels;
 
 public: 
 	HandwrittenLoader(const std::string &dataFile, const std::string &labelFile,
@@ -21,7 +21,7 @@ public:
 	virtual size_t Size() const override {
 		return _trainData.size();
 	}
-	virtual void Get(size_t idx, Vector &vals, Vector &labels) const override
+	virtual void Get(size_t idx, Params &vals, Params &labels) const override
 	{
 		vals = _trainData[idx];
 		labels = _labels[idx];
@@ -30,13 +30,13 @@ public:
 	virtual size_t TestSize() const override {
 		return _testData.size();
 	}
-	virtual void GetTest(size_t idx, Vector &vals, Vector &labels) const override
+	virtual void GetTest(size_t idx, Params &vals, Params &labels) const override
 	{
 		vals = _testData[idx];
 		labels = _testLabels[idx];
 	}
 
 private:
-	std::vector<Vector> LoadImages(const std::string &file) const;
-	std::vector<Vector> LoadLabels(const std::string &file) const;
+	MultiParams LoadImages(const std::string &file) const;
+	MultiParams LoadLabels(const std::string &file) const;
 };

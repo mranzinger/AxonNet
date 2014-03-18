@@ -7,6 +7,7 @@
 
 #include "dll_include.h"
 #include "math_util.h"
+#include "params.h"
 
 struct NEURAL_NET_API ICost
 {
@@ -17,8 +18,8 @@ public:
 
 	virtual std::string GetType() const = 0;
 
-	virtual Real Compute(const Vector &pred, const Vector &labels) = 0;
-	virtual Vector ComputeGrad(const Vector &pred, const Vector &labels) = 0;
+	virtual Real Compute(const Params &pred, const Params &labels) = 0;
+	virtual Params ComputeGrad(const Params &pred, const Params &labels) = 0;
 };
 
 // Default for most cost functions

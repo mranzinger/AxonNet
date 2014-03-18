@@ -60,22 +60,45 @@ void LinearLayer::PrepareForThreads(size_t num)
 		_threadParams.clear();
 }
 
-Vector LinearLayer::Compute(int threadIdx, const Vector &input, bool isTraining)
+Params LinearLayer::Compute(int threadIdx, const Params &input, bool isTraining)
 {
 	LinParams &prms = GetParams(threadIdx);
 
-	return prms.Weights * input + prms.Biases;
+	return prms.Weights * input.Data + prms.Biases;
 }
 
-Vector LinearLayer::Backprop(int threadIdx, const Vector &lastInput, const Vector &lastOutput,
-							 const Vector &outputErrors)
+Params LinearLayer::Backprop(int threadIdx, const Params &lastInput, const Params &lastOutput,
+							 const Params &outputErrors)
 {
 	LinParams &prms = GetParams(threadIdx);
 
-	Vector inputErrors = prms.Weights.transpose() * outputErrors;
+	Vector inputErrors = prms.Weights.transpose() * outputErrors.Data;
 
-	prms.WeightDeltas = outputErrors * lastInput.transpose();
-	prms.BiasDeltas = outputErrors;
+	prms.WeightDeltas.noalias() = outputErrors.Data * lastInput.Data.transpose();
+	prms.BiasDeltas = outputErrors.Data;
+
+	return move(inputErrors);
+}
+
+MultiParams LinearLayer::BackpropMany(int threadIdx, const MultiParams &lastInputs, const MultiParams &outputErrors)
+{
+	LinParams &prms = GetParams(threadIdx);
+
+	MultiParams inputErrors(lastInputs.size());
+
+	prms.WeightDeltas.setZero();
+	prms.BiasDeltas.setZero();
+
+	for (size_t i = 0; i < lastInputs.size(); ++i)
+	{
+		const Vector &lastInput = lastInputs[i].Data;
+		const Vector &outputError = outputErrors[i].Data;
+
+		inputErrors[i] = prms.Weights.transpose() * outputError;
+
+		prms.WeightDeltas.noalias() += outputError * lastInput.transpose();
+		prms.BiasDeltas += outputError;
+	}
 
 	return move(inputErrors);
 }

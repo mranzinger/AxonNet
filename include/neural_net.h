@@ -19,6 +19,14 @@ public:
 	friend void BindStruct(const axon::serialization::CStructBinder &binder, NetworkConfig &config);
 };
 
+struct ThreadTrainConfig;
+
+struct BPStat
+{
+	Real Error;
+	bool Correct;
+};
+
 class NEURAL_NET_API NeuralNet
 {
 private:
@@ -53,12 +61,12 @@ public:
 
 	void SetLearningRate(Real rate);
 
-	Real GetCost(const Vector &pred, const Vector &labels);
+	Real GetCost(const Params &pred, const Params &labels);
 
-	Vector Compute(const Vector &input);
-	Vector Compute(int threadIdx, const Vector &input, bool isTraining);
+	Params Compute(const Params &input);
+	Params Compute(int threadIdx, const Params &input, bool isTraining);
 
-	Real Backprop(int threadIdx, const Vector &input, const Vector &labels);
+	BPStat Backprop(int threadIdx, const Params &input, const Params &labels);
 
 	void Train(ITrainProvider &provider, size_t maxIters, size_t testFreq,
 		       const std::string &chkRoot);
@@ -70,5 +78,7 @@ private:
 	void Test(ITrainProvider &provider, const std::string &chkRoot, Real &bestError);
 	void SaveCheckpoint(const std::string &chkRoot);
 	void PrepareThreads(int numThreads);
+
+	void RunTrainThread(ThreadTrainConfig &config);
 };
  

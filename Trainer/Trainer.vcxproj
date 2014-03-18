@@ -85,17 +85,17 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;EIGEN_VECTORIZE_SSE4_1;USE_SSE2;_DEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>D:\Users\Mike\Documents\Visual Studio 2013\Projects\AxonNet\include;D:\Projects\ThirdParty\eigen;D:\Projects\Linux\axon\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Mike\Documents\Visual Studio 2013\Projects\AxonNet\include;E:\Projects\ThirdParty\eigen;E:\Projects\Linux\axon\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>D:\Projects\Linux\axon\windows\$(Platform)\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>E:\Projects\Linux\axon\windows\$(Platform)\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>axon.util.lib;axon.serialize.lib;axon.communicate.lib</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>copy "D:\Projects\Linux\axon\windows\$(Platform)\$(Configuration)\*.dll" "$(TargetDir)"</Command>
+      <Command>copy "E:\Projects\Linux\axon\windows\$(Platform)\$(Configuration)\*.dll" "$(TargetDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -105,18 +105,18 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;EIGEN_VECTORIZE_SSE4_1;USE_SSE2;_DEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>D:\Users\Mike\Documents\Visual Studio 2013\Projects\AxonNet\include;D:\Projects\ThirdParty\eigen;D:\Projects\Linux\axon\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Mike\Documents\Visual Studio 2013\Projects\AxonNet\include;E:\Projects\ThirdParty\eigen;E:\Projects\Linux\axon\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <FloatingPointExceptions>true</FloatingPointExceptions>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>D:\Projects\Linux\axon\windows\$(Platform)\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>E:\Projects\Linux\axon\windows\$(Platform)\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>axon.util.lib;axon.serialize.lib;axon.communicate.lib</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>copy "D:\Projects\Linux\axon\windows\$(Platform)\$(Configuration)\*.dll" "$(TargetDir)"</Command>
+      <Command>copy "E:\Projects\Linux\axon\windows\$(Platform)\$(Configuration)\*.dll" "$(TargetDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -128,7 +128,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;EIGEN_VECTORIZE_SSE4_1;USE_SSE2;NDEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>D:\Users\Mike\Documents\Visual Studio 2013\Projects\AxonNet\include;D:\Projects\ThirdParty\eigen;D:\Projects\Linux\axon\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Mike\Documents\Visual Studio 2013\Projects\AxonNet\include;E:\Projects\ThirdParty\eigen;E:\Projects\Linux\axon\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
     </ClCompile>
     <Link>
@@ -136,11 +136,11 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>D:\Projects\Linux\axon\windows\$(Platform)\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>E:\Projects\Linux\axon\windows\$(Platform)\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>axon.util.lib;axon.serialize.lib;axon.communicate.lib</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>copy "D:\Projects\Linux\axon\windows\$(Platform)\$(Configuration)\*.dll" "$(TargetDir)"</Command>
+      <Command>copy "E:\Projects\Linux\axon\windows\$(Platform)\$(Configuration)\*.dll" "$(TargetDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -152,7 +152,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;EIGEN_VECTORIZE_SSE4_1;USE_SSE2;NDEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>D:\Users\Mike\Documents\Visual Studio 2013\Projects\AxonNet\include;D:\Projects\ThirdParty\eigen;D:\Projects\Linux\axon\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Mike\Documents\Visual Studio 2013\Projects\AxonNet\include;E:\Projects\ThirdParty\eigen;E:\Projects\Linux\axon\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
       <FloatingPointModel>Fast</FloatingPointModel>
@@ -163,11 +163,11 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>D:\Projects\Linux\axon\windows\$(Platform)\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>E:\Projects\Linux\axon\windows\$(Platform)\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>axon.util.lib;axon.serialize.lib;axon.communicate.lib</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>copy "D:\Projects\Linux\axon\windows\$(Platform)\$(Configuration)\*.dll" "$(TargetDir)"</Command>
+      <Command>copy "E:\Projects\Linux\axon\windows\$(Platform)\$(Configuration)\*.dll" "$(TargetDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
