@@ -8,8 +8,11 @@
 typedef float Real;
 typedef Eigen::Matrix<Real, Eigen::Dynamic, 1> Vector;
 typedef std::vector<Vector> MultiVector;
+typedef Eigen::Map<Vector> MapVector;
+typedef Eigen::Map<Vector, 0, Eigen::OuterStride<>> StrideVec;
 typedef Eigen::Matrix<Real, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> Matrix;
 typedef Eigen::Map<Matrix> Map;
+typedef Eigen::Map<Matrix, 0, Eigen::OuterStride<>> StrideMat;
 
 NEURAL_NET_API void InitializeWeights(Vector &vec, Real mean, Real stdDev);
 NEURAL_NET_API void InitializeWeights(Matrix &mat, Real mean, Real stdDev);

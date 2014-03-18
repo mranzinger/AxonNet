@@ -84,6 +84,13 @@ public:
 	virtual void ApplyDeltas() override;
 	virtual void ApplyDeltas(int threadIdx) override;
 
+	size_t InputSize() const {
+		return _master.Weights.innerSize();
+	}
+	size_t OutputSize() const {
+		return _master.Weights.outerSize();
+	}
+
 protected:
 	void BuildConfig(LinearLayerConfig &config) const;
 
