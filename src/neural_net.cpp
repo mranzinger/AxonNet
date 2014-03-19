@@ -45,7 +45,8 @@ void NeuralNet::Load(const NetworkConfig::Ptr &config)
 			layer->InitializeFromConfig(lcfg);
 	}
 
-	//SetCost(config->Cost);
+	SetCost(config->Cost);
+	_bestError = config->BestError;
 }
 
 void NeuralNet::Load(const std::string &chkFile)
@@ -65,6 +66,7 @@ NetworkConfig::Ptr NeuralNet::GetCheckpoint() const
 	}
 
 	ret->Cost = _cost;
+	ret->BestError = _bestError;
 
 	return move(ret);
 }
@@ -160,12 +162,10 @@ struct ThreadTrainConfig
 void NeuralNet::Train(ITrainProvider &provider, size_t maxIters, size_t testFreq,
 					  const std::string &chkRoot)
 {
-	static const int s_NumThreads = 4;
+	static const int s_NumThreads = 1;
 	static const int s_NumIters = 128;
 
 	PrepareThreads(s_NumThreads);
-
-	Real bestError = numeric_limits<Real>::max();
 
 	Concurrency::event killEvt;
 	Concurrency::event *waitEvts[s_NumThreads];
@@ -224,7 +224,7 @@ void NeuralNet::Train(ITrainProvider &provider, size_t maxIters, size_t testFreq
 		{
 			iter = 0;
 			++epoch;
-			Test(provider, chkRoot, bestError);
+			Test(provider, chkRoot);
 		}
 	}
 
@@ -282,7 +282,7 @@ void NeuralNet::ApplyDeltas(int threadIdx)
 	}
 }
 
-void NeuralNet::Test(ITrainProvider &provider, const std::string &chkRoot, Real &bestError)
+void NeuralNet::Test(ITrainProvider &provider, const std::string &chkRoot)
 {
 	if (chkRoot.empty())
 		throw runtime_error("Invalid checkpoint root directory.");
@@ -321,15 +321,16 @@ void NeuralNet::Test(ITrainProvider &provider, const std::string &chkRoot, Real 
 	testErr /= provider.TestSize();
 	numCorr /= provider.TestSize();
 
-	if (testErr < bestError)
+	if (testErr < _bestError)
 	{
-		bestError = testErr;
+		_bestError = testErr;
 		SaveCheckpoint(chkRoot);
 	}
 
 	cout << setw(10) << testErr << " "
 		 << setw(10) << numCorr << " "
 		 << setw(10) << timeSec << "s"
+		 << setw(10) << _bestError << " "
 		 << endl;
 }
 

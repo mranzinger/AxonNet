@@ -31,8 +31,8 @@ Real LogisticFn::Compute(Real input)
 
 Vector LogisticFn::Compute(const Vector &input)
 {
-	static const __m128 s_one = _mm_set1_ps(1);
-	static const __m128 s_zero = _mm_set1_ps(0);
+	const __m128 s_one = _mm_set1_ps(1);
+	const __m128 s_zero = _mm_set1_ps(0);
 
 	Vector ret(input.size());
 
@@ -77,7 +77,7 @@ Vector LogisticFn::Derivative(const Vector &input)
 
 Vector LogisticFn::Derivative(const Vector &input, Vector computeOutput)
 {
-	static const __m128 s_one = _mm_set1_ps(1);
+	const __m128 s_one = _mm_set1_ps(1);
 
 	float *pVals = computeOutput.data();
 	float *pSSEEnd = pVals + (input.size() & ~0x3);
@@ -106,7 +106,7 @@ Real RectifierFn::Compute(Real input)
 
 Vector RectifierFn::Compute(const Vector &input)
 {
-	static const __m128 s_zero = _mm_set1_ps(0);
+	const __m128 s_zero = _mm_set1_ps(0);
 
 	Vector ret(input.size());
 
@@ -137,8 +137,8 @@ Real RectifierFn::Derivative(Real input)
 
 Vector RectifierFn::Derivative(const Vector &input)
 {
-	static const __m128 s_one = _mm_set1_ps(1);
-	static const __m128 s_zero = _mm_set1_ps(0);
+	const __m128 s_one = _mm_set1_ps(1);
+	const __m128 s_zero = _mm_set1_ps(0);
 
 	Vector ret(input.size());
 
@@ -165,6 +165,83 @@ Vector RectifierFn::Derivative(const Vector &input)
 
 	return move(ret);
 }
+
+Real HardTanhFn::Compute(Real input)
+{
+	if (input < -1)
+		return -1;
+	else if (input > 1)
+		return 1;
+	return input;
+}
+
+Vector HardTanhFn::Compute(const Vector &input)
+{
+	const __m128 s_neg1 = _mm_set1_ps(-1);
+	const __m128 s_1 = _mm_set1_ps(1);
+
+	Vector ret(input.size());
+
+	const float *pInput = input.data();
+	float *pOutput = ret.data();
+
+	const float *pAvxEnd = pInput + (input.size() & ~0x3);
+
+	for (; pInput != pAvxEnd; pInput += 4, pOutput += 4)
+	{
+		const auto val = _mm_load_ps(pInput);
+
+		_mm_store_ps(pOutput, _mm_min_ps(s_1, _mm_max_ps(s_neg1, val)));
+	}
+
+	for (const float *pEnd = input.data() + input.size(); pInput != pEnd; ++pInput, ++pOutput)
+	{
+		*pOutput = Compute(*pInput);
+	}
+
+	return move(ret);
+}
+
+Real HardTanhFn::Derivative(Real input)
+{
+	if (input < -1 || input > 1)
+		return 0;
+	return 1;
+}
+
+Vector HardTanhFn::Derivative(const Vector &input)
+{
+	const __m128 s_neg1 = _mm_set1_ps(-1);
+	const __m128 s_1 = _mm_set1_ps(1);
+	const __m128 s_0 = _mm_set1_ps(0);
+
+	Vector ret(input.size());
+
+	const float *pInput = input.data();
+	float *pOutput = ret.data();
+
+	const float *pAvxEnd = pInput + (input.size() & ~0x3);
+
+	for (; pInput != pAvxEnd; pInput += 4, pOutput += 4)
+	{
+		const auto val = _mm_load_ps(pInput);
+
+		const __m128 valid = _mm_and_ps(_mm_cmpgt_ps(val, s_neg1), _mm_cmplt_ps(val, s_1));
+
+		const __m128 rVal = _mm_or_ps(_mm_and_ps(valid, s_1), _mm_andnot_ps(valid, s_0));
+
+		_mm_store_ps(pOutput, rVal);
+	}
+
+	for (const float *pEnd = input.data() + input.size(); pInput != pEnd; ++pInput, ++pOutput)
+	{
+		*pOutput = Derivative(*pInput);
+	}
+
+	return move(ret);
+}
+
+
 
 Real SoftPlusFn::Compute(Real input)
 {
@@ -312,20 +389,4 @@ Real RampFn::Derivative(Real input)
 	if (input < -2 || input > 2)
 		return 0;
 	return .5;
-}
-
-Real HardTanhFn::Compute(Real input)
-{
-	if (input < -1)
-		return -1;
-	else if (input > 1)
-		return 1;
-	return input;
-}
-
-Real HardTanhFn::Derivative(Real input)
-{
-	if (input < -1 || input > 1)
-		return 0;
-	return 1;
 }

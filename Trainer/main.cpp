@@ -26,9 +26,9 @@ int main(int argc, char *argv [])
 	Params tmpInputs, tmpLabels;
 	loader.Get(0, tmpInputs, tmpLabels);
 
-	ConvoLayer tmpConvo("Convo", 1, 3, 3, 3, 1, 1, ConvoLayer::ZeroPad);
+	//ConvoLayer tmpConvo("Convo", 1, 3, 3, 3, 1, 1, ConvoLayer::ZeroPad);
 
-	Params convout = tmpConvo.Compute(0, tmpInputs, false);
+	//Params convout = tmpConvo.Compute(0, tmpInputs, false);
 
 	size_t inputSize = tmpInputs.size();
 	size_t outputSize = tmpLabels.size();

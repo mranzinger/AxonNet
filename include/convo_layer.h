@@ -2,6 +2,17 @@
 
 #include "linear_layer.h"
 
+class NEURAL_NET_API ConvoLayerConfig
+	: public LayerConfig
+{
+public:
+	typedef std::shared_ptr<ConvoLayerConfig> Ptr;
+
+	LayerConfig::Ptr LinearConfig;
+
+	friend void BindStruct(const axon::serialization::CStructBinder &binder, ConvoLayerConfig &config);
+};
+
 class NEURAL_NET_API ConvoLayer
 	: public LayerBase
 {
@@ -17,6 +28,8 @@ private:
 	size_t _windowSizeX, _windowSizeY;
 	size_t _strideX, _strideY;
 	PaddingMode _padMode;
+
+	std::vector<MultiParams> _threadWindows;
 
 public:
 	ConvoLayer() { }
@@ -36,6 +49,17 @@ public:
 	virtual void ApplyDeltas() override;
 	virtual void ApplyDeltas(int threadIdx) override;
 
+	virtual void PrepareForThreads(size_t num) override;
+
+	virtual void InitializeFromConfig(const LayerConfig::Ptr &config) override;
+	virtual LayerConfig::Ptr GetConfig() const override;
+
+	friend void BindStruct(const axon::serialization::CStructBinder &binder, ConvoLayer &layer);
+
+protected:
+	void BuildConfig(ConvoLayerConfig &config) const;
+
 private:
 	Params GetPaddedInput(const Params &input) const;
+	Params GetZeroPaddedInput(const Params &reference) const;
 };

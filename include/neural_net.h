@@ -15,6 +15,7 @@ public:
 
 	std::vector<LayerConfig::Ptr> Configs;
 	ICost::Ptr Cost;
+	Real BestError;
 
 	friend void BindStruct(const axon::serialization::CStructBinder &binder, NetworkConfig &config);
 };
@@ -33,6 +34,7 @@ private:
 	std::vector<ILayer::Ptr> _layers;
 	ICost::Ptr _cost;
 	Real _learnRate = 1.0;
+	Real _bestError = std::numeric_limits<Real>::max();
 
 public:
 	NeuralNet();
@@ -75,7 +77,7 @@ public:
 
 private:
 	void ApplyDeltas(int threadIdx);
-	void Test(ITrainProvider &provider, const std::string &chkRoot, Real &bestError);
+	void Test(ITrainProvider &provider, const std::string &chkRoot);
 	void SaveCheckpoint(const std::string &chkRoot);
 	void PrepareThreads(int numThreads);
 

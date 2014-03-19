@@ -111,11 +111,14 @@ struct NEURAL_NET_API HardTanhFn
 		return "HardTanh";
 	}
 
-	static const bool Vectorized = false;
+	static const bool Vectorized = true;
 	static const bool Binary = false;
 
 	static Real Compute(Real input);
 	static Real Derivative(Real input);
+
+	static Vector Compute(const Vector &input);
+	static Vector Derivative(const Vector &input);
 };
 
 namespace 

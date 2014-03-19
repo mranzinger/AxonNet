@@ -6,6 +6,9 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "NeuralNet", "NeuralNet\NeuralNet.vcxproj", "{90CE3AF5-1468-4830-92C9-62E11C7DAA15}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Trainer", "Trainer\Trainer.vcxproj", "{4343E07F-BE21-43E9-A8BA-2030E5057D4C}"
+	ProjectSection(ProjectDependencies) = postProject
+		{90CE3AF5-1468-4830-92C9-62E11C7DAA15} = {90CE3AF5-1468-4830-92C9-62E11C7DAA15}
+	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{8BB45A9B-77B9-41AF-924E-52ADAC55FF61}"
 	ProjectSection(SolutionItems) = preProject

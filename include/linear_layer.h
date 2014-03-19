@@ -13,6 +13,8 @@ public:
 
 	Matrix WeightsIncrement;
 	Vector BiasesIncrement;
+
+	friend void BindStruct(const axon::serialization::CStructBinder &binder, LinearLayerConfig &config);
 };
 
 struct LinParams
@@ -90,6 +92,8 @@ public:
 	size_t OutputSize() const {
 		return _master.Weights.outerSize();
 	}
+
+	friend void BindStruct(const axon::serialization::CStructBinder &binder, LinearLayer &layer);
 
 protected:
 	void BuildConfig(LinearLayerConfig &config) const;
