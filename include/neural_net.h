@@ -15,7 +15,7 @@ public:
 
 	std::vector<LayerConfig::Ptr> Configs;
 	ICost::Ptr Cost;
-	Real BestError;
+	Real BestCorr;
 
 	friend void BindStruct(const axon::serialization::CStructBinder &binder, NetworkConfig &config);
 };
@@ -34,7 +34,7 @@ private:
 	std::vector<ILayer::Ptr> _layers;
 	ICost::Ptr _cost;
 	Real _learnRate = 1.0;
-	Real _bestError = std::numeric_limits<Real>::max();
+	Real _bestCorr = 0;
 
 public:
 	NeuralNet();

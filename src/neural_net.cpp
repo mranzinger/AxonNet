@@ -46,7 +46,7 @@ void NeuralNet::Load(const NetworkConfig::Ptr &config)
 	}
 
 	SetCost(config->Cost);
-	_bestError = config->BestError;
+	_bestCorr = config->BestCorr;
 }
 
 void NeuralNet::Load(const std::string &chkFile)
@@ -66,7 +66,7 @@ NetworkConfig::Ptr NeuralNet::GetCheckpoint() const
 	}
 
 	ret->Cost = _cost;
-	ret->BestError = _bestError;
+	ret->BestCorr = _bestCorr;
 
 	return move(ret);
 }
@@ -190,7 +190,7 @@ void NeuralNet::Train(ITrainProvider &provider, size_t maxIters, size_t testFreq
 
 	for (size_t i = 0; i < maxIters; ++i)
 	{
-		size_t numThreads = epoch > 2 ? s_NumThreads : 1;
+		size_t numThreads = epoch >= 3 ? s_NumThreads : 1;
 
 		auto tStart = high_resolution_clock::now();
 
@@ -321,16 +321,16 @@ void NeuralNet::Test(ITrainProvider &provider, const std::string &chkRoot)
 	testErr /= provider.TestSize();
 	numCorr /= provider.TestSize();
 
-	if (testErr < _bestError)
+	if (numCorr > _bestCorr)
 	{
-		_bestError = testErr;
+		_bestCorr = numCorr;
 		SaveCheckpoint(chkRoot);
 	}
 
 	cout << setw(10) << testErr << " "
 		 << setw(10) << numCorr << " "
 		 << setw(10) << timeSec << "s"
-		 << setw(10) << _bestError << " "
+		 << setw(10) << _bestCorr << " "
 		 << endl;
 }
 
@@ -354,7 +354,8 @@ void NeuralNet::PrepareThreads(int numThreads)
 void BindStruct(const CStructBinder &binder, NetworkConfig &config)
 {
 	binder("layers", config.Configs)
-		("cost", config.Cost);
+		  ("cost", config.Cost)
+		  ("bestCorr", config.BestCorr);
 }
 
 void BindStruct(const CStructBinder &binder, NeuralNet &net)

@@ -131,50 +131,61 @@ void LinearLayer::ApplyDeltas(int threadIdx)
 
 void LinearLayer::ApplyDeltas(LinParams &prms)
 {
-	if (_momentum)
+	if (_threadParams.empty() && !_momentum && !_weightDecay)
 	{
-		//prms.WeightsIncrement *= _momentum;
-		//prms.BiasIncrement *= _momentum;
-		ScalarMultiply(prms.WeightsIncrement, _momentum);
-		ScalarMultiply(prms.BiasIncrement, _momentum);
+		AddScaled(prms.Weights, prms.WeightDeltas, -_learningRate);
+		AddScaled(prms.Biases, prms.BiasDeltas, -_learningRate);
 	}
 	else
 	{
-		prms.WeightsIncrement.setZero();
-		prms.BiasIncrement.setZero();
-	}
+		if (_momentum)
+		{
+			//prms.WeightsIncrement *= _momentum;
+			//prms.BiasIncrement *= _momentum;
+			ScalarMultiply(prms.WeightsIncrement, _momentum);
+			ScalarMultiply(prms.BiasIncrement, _momentum);
+		}
+		else
+		{
+			//prms.WeightsIncrement.setZero();
+			//prms.BiasIncrement.setZero();
+			SetZero(prms.WeightsIncrement);
+			SetZero(prms.BiasIncrement);
+		}
 
-	if (_weightDecay)
-	{
-		//prms.WeightsIncrement.noalias() -= (_weightDecay * _learningRate) * prms.Weights;
-		//prms.BiasIncrement.noalias() -= (_weightDecay * _learningRate) * prms.Biases;
-		Real scale = -(_weightDecay * _learningRate);
-		AddScaled(prms.WeightsIncrement, prms.Weights, scale);
-		AddScaled(prms.BiasIncrement, prms.Biases, scale);
-	}
+		if (_weightDecay)
+		{
+			//prms.WeightsIncrement.noalias() -= (_weightDecay * _learningRate) * prms.Weights;
+			//prms.BiasIncrement.noalias() -= (_weightDecay * _learningRate) * prms.Biases;
+			Real scale = -(_weightDecay * _learningRate);
+			AddScaled(prms.WeightsIncrement, prms.Weights, scale);
+			AddScaled(prms.BiasIncrement, prms.Biases, scale);
+		}
 
-	//prms.WeightsIncrement.noalias() -= _learningRate * prms.WeightDeltas;
-	//prms.BiasIncrement.noalias() -= _learningRate * prms.BiasDeltas;
-	AddScaled(prms.WeightsIncrement, prms.WeightDeltas, -_learningRate);
-	AddScaled(prms.BiasIncrement, prms.BiasDeltas, -_learningRate);
+		prms.WeightsIncrement.noalias() -= _learningRate * prms.WeightDeltas;
+		prms.BiasIncrement.noalias() -= _learningRate * prms.BiasDeltas;
+	
+		AddScaled(prms.WeightsIncrement, prms.WeightDeltas, -_learningRate);
+		AddScaled(prms.BiasIncrement, prms.BiasDeltas, -_learningRate);
 
-	if (!_threadParams.empty())
-	{
-		//prms.WeightsRunning.noalias() += prms.WeightsIncrement;
-		//prms.BiasRunning.noalias() += prms.BiasIncrement;
-		Add(prms.WeightsRunning, prms.WeightsIncrement);
-		Add(prms.BiasRunning, prms.BiasIncrement);
-	}
+		if (!_threadParams.empty())
+		{
+			//prms.WeightsRunning.noalias() += prms.WeightsIncrement;
+			//prms.BiasRunning.noalias() += prms.BiasIncrement;
+			Add(prms.WeightsRunning, prms.WeightsIncrement);
+			Add(prms.BiasRunning, prms.BiasIncrement);
+		}
 
-	//prms.Weights.noalias() += prms.WeightsIncrement;
-	//prms.Biases.noalias() += prms.BiasIncrement;
-	Add(prms.Weights, prms.WeightsIncrement);
-	Add(prms.Biases, prms.BiasIncrement);
+		//prms.Weights.noalias() += prms.WeightsIncrement;
+		//prms.Biases.noalias() += prms.BiasIncrement;
+		Add(prms.Weights, prms.WeightsIncrement);
+		Add(prms.Biases, prms.BiasIncrement);
 
-	if (++prms.UpdateCt == _updateInterval)
-	{
-		prms.UpdateCt = 0;
-		SyncToMaster(prms);
+		if (++prms.UpdateCt == _updateInterval)
+		{
+			prms.UpdateCt = 0;
+			SyncToMaster(prms);
+		}
 	}
 }
 

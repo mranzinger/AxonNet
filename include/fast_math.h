@@ -296,3 +296,9 @@ __forceinline void Add(MatType &mat, const MatType &other)
 {
 	AddScaledImpl<false>(mat, other, 1.0f);
 }
+
+template<typename MatType>
+__forceinline void SetZero(MatType &mat)
+{
+	memset(mat.data(), 0, sizeof(Real) * mat.size());
+}
