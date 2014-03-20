@@ -63,6 +63,9 @@
     <ClInclude Include="..\include\params.h">
       <Filter>include</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\fast_math.h">
+      <Filter>include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\i_layer.cpp">

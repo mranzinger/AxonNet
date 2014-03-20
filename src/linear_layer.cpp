@@ -1,5 +1,6 @@
 #include "linear_layer.h"
 #include "persist_util.h"
+#include "fast_math.h"
 
 using namespace std;
 using namespace axon::serialization;
@@ -132,8 +133,10 @@ void LinearLayer::ApplyDeltas(LinParams &prms)
 {
 	if (_momentum)
 	{
-		prms.WeightsIncrement *= _momentum;
-		prms.BiasIncrement *= _momentum;
+		//prms.WeightsIncrement *= _momentum;
+		//prms.BiasIncrement *= _momentum;
+		ScalarMultiply(prms.WeightsIncrement, _momentum);
+		ScalarMultiply(prms.BiasIncrement, _momentum);
 	}
 	else
 	{
@@ -143,21 +146,30 @@ void LinearLayer::ApplyDeltas(LinParams &prms)
 
 	if (_weightDecay)
 	{
-		prms.WeightsIncrement.noalias() -= (_weightDecay * _learningRate) * prms.Weights;
-		prms.BiasIncrement.noalias() -= (_weightDecay * _learningRate) * prms.Biases;
+		//prms.WeightsIncrement.noalias() -= (_weightDecay * _learningRate) * prms.Weights;
+		//prms.BiasIncrement.noalias() -= (_weightDecay * _learningRate) * prms.Biases;
+		Real scale = -(_weightDecay * _learningRate);
+		AddScaled(prms.WeightsIncrement, prms.Weights, scale);
+		AddScaled(prms.BiasIncrement, prms.Biases, scale);
 	}
 
-	prms.WeightsIncrement.noalias() -= _learningRate * prms.WeightDeltas;
-	prms.BiasIncrement.noalias() -= _learningRate * prms.BiasDeltas;
+	//prms.WeightsIncrement.noalias() -= _learningRate * prms.WeightDeltas;
+	//prms.BiasIncrement.noalias() -= _learningRate * prms.BiasDeltas;
+	AddScaled(prms.WeightsIncrement, prms.WeightDeltas, -_learningRate);
+	AddScaled(prms.BiasIncrement, prms.BiasDeltas, -_learningRate);
 
 	if (!_threadParams.empty())
 	{
-		prms.WeightsRunning.noalias() += prms.WeightsIncrement;
-		prms.BiasRunning.noalias() += prms.BiasIncrement;
+		//prms.WeightsRunning.noalias() += prms.WeightsIncrement;
+		//prms.BiasRunning.noalias() += prms.BiasIncrement;
+		Add(prms.WeightsRunning, prms.WeightsIncrement);
+		Add(prms.BiasRunning, prms.BiasIncrement);
 	}
 
-	prms.Weights.noalias() += prms.WeightsIncrement;
-	prms.Biases.noalias() += prms.BiasIncrement;
+	//prms.Weights.noalias() += prms.WeightsIncrement;
+	//prms.Biases.noalias() += prms.BiasIncrement;
+	Add(prms.Weights, prms.WeightsIncrement);
+	Add(prms.Biases, prms.BiasIncrement);
 
 	if (++prms.UpdateCt == _updateInterval)
 	{
@@ -171,8 +183,10 @@ void LinearLayer::SyncToMaster(LinParams &prms)
 	if (_threadParams.empty())
 		return;
 
-	_master.Weights.noalias() += prms.WeightsRunning;
-	_master.Biases.noalias() += prms.BiasRunning;
+	//_master.Weights.noalias() += prms.WeightsRunning;
+	//_master.Biases.noalias() += prms.BiasRunning;
+	Add(_master.Weights, prms.WeightsRunning);
+	Add(_master.Biases, prms.BiasRunning);
 
 	prms.Weights = _master.Weights;
 	prms.Biases = _master.Biases;

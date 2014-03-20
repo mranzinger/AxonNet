@@ -48,9 +48,11 @@ Params ConvoLayer::Compute(int threadIdx, const Params &input, bool isTraining)
 	MultiParams &threadPrms = _threadWindows[threadIdx];
 	threadPrms.reserve(opWidth * opHeight);
 
-	for (size_t ipY = 0, opIdx = 0; ipY < ipHeight; ipY += _strideY)
+	for (size_t ipY = 0, opIdx = 0; ipY < ipHeight - _windowSizeY; ipY += _strideY)
 	{
-		for (size_t ipX = 0; ipX < ipWidth; ipX += _strideX, opIdx += opDepth)
+		for (size_t ipX = 0; 
+			ipX < (ipWidth - _windowSizeX) * input.Depth; 
+			ipX += (_strideX * input.Depth), opIdx += opDepth)
 		{
 			wndMat = StrideMat(const_cast<Real*>(
 				input.Data.data() + (ipY * inputStride) + (ipX * input.Depth)), 
@@ -69,6 +71,7 @@ Params ConvoLayer::Compute(int threadIdx, const Params &input, bool isTraining)
 				window.Width = _windowSizeX;
 				window.Height = _windowSizeY;
 				window.Depth = input.Depth;
+				window.Layout = Params::Packed;
 			}
 		}
 	}
@@ -86,9 +89,9 @@ Params ConvoLayer::Backprop(int threadIdx, const Params &lastInput, const Params
 
 	// Get the output errors
 	MultiParams linearOutputErrors(numOut, Params(1, numOut, 1, Vector()));
-	for (size_t i = 0, end = outputErrors.Data.size(); i < end; i += numOut)
+	for (size_t i = 0, end = linearOutputErrors.size(); i < end; ++i)
 	{
-		linearOutputErrors[i].Data = outputErrors.Data.block(i, 0, numOut, 1);
+		linearOutputErrors[i].Data = outputErrors.Data.block(i * opDepth, 0, opDepth, 1);
 	}
 
 	MultiParams linearInputErrors = _linearLayer.BackpropMany(threadIdx, linearInputs, linearOutputErrors);

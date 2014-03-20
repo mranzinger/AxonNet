@@ -21,6 +21,7 @@
   <ItemGroup>
     <ClInclude Include="..\include\convo_layer.h" />
     <ClInclude Include="..\include\dropout_layer.h" />
+    <ClInclude Include="..\include\fast_math.h" />
     <ClInclude Include="..\include\functions.h" />
     <ClInclude Include="..\include\i_cost.h" />
     <ClInclude Include="..\include\i_train_provider.h" />
