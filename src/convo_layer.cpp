@@ -18,15 +18,15 @@ ConvoLayer::ConvoLayer(string name,
 	PrepareForThreads(1);
 }
 
-Params ConvoLayer::Compute(int threadIdx, const Params &input, bool isTraining)
+Params ConvoLayer::Compute(int threadIdx, const Params &unpaddedInput, bool isTraining)
 {
-	if (_linearLayer.InputSize() != input.Depth * _windowSizeX * _windowSizeY)
+	if (_linearLayer.InputSize() != unpaddedInput.Depth * _windowSizeX * _windowSizeY)
 	{
 		assert(false);
 		throw runtime_error("The underlying linear layer doesn't take the correct input dimensions.");
 	}
 
-	Params pInput = GetPaddedInput(input);
+	Params pInput = GetPaddedInput(unpaddedInput);
 
 	size_t ipWidth = pInput.Width;
 	size_t ipHeight = pInput.Height;
@@ -37,42 +37,37 @@ Params ConvoLayer::Compute(int threadIdx, const Params &input, bool isTraining)
 
 	Params output(opWidth, opHeight, opDepth, Vector(opWidth * opHeight * opDepth));
 
-	Params window(_windowSizeX, _windowSizeY, input.Depth, Vector(_windowSizeX * _windowSizeY * input.Depth));
+	Params window(_windowSizeX, _windowSizeY, pInput.Depth, Vector(_windowSizeX * _windowSizeY * pInput.Depth));
 
-	size_t inputStride = input.Width * input.Depth;
+	size_t inputStride = pInput.Width * pInput.Depth;
 	size_t outputStride = opWidth * opDepth;
 	size_t windowSize = window.Height * window.Width * window.Depth;
+	size_t windowStride = window.Width * window.Depth;
 
-	Matrix wndMat(window.Height, window.Width * window.Depth);
+	//Matrix wndMat(window.Height, window.Width * window.Depth);
 
 	MultiParams &threadPrms = _threadWindows[threadIdx];
 	threadPrms.reserve(opWidth * opHeight);
 
-	for (size_t ipY = 0, opIdx = 0; ipY < ipHeight - _windowSizeY; ipY += _strideY)
+	for (size_t ipY = 0, opIdx = 0; ipY < ipHeight - _windowSizeY + 1; ipY += _strideY)
 	{
 		for (size_t ipX = 0; 
-			ipX < (ipWidth - _windowSizeX) * input.Depth; 
-			ipX += (_strideX * input.Depth), opIdx += opDepth)
+			ipX < (ipWidth - _windowSizeX + 1) * pInput.Depth; 
+			ipX += (_strideX * pInput.Depth), opIdx += opDepth)
 		{
-			wndMat = StrideMat(const_cast<Real*>(
-				input.Data.data() + (ipY * inputStride) + (ipX * input.Depth)), 
-				window.Height, window.Width * window.Depth,
-				Eigen::OuterStride<>(inputStride));
-
-			window.Data = MapVector(wndMat.data(), windowSize);
-
-			Params convout = _linearLayer.Compute(threadIdx, window, isTraining);
-
-			output.Data.block(opIdx, 0, opDepth, 1) = convout.Data;
-
-			if (isTraining)
+			const Real *srcPtr = pInput.Data.data() + (ipY * inputStride) + ipX;
+			Real *wndPtr = window.Data.data();
+			for (size_t wndY = 0; wndY < _windowSizeY; ++wndY, srcPtr += inputStride, wndPtr += windowStride)
 			{
-				threadPrms.push_back(move(window));
-				window.Width = _windowSizeX;
-				window.Height = _windowSizeY;
-				window.Depth = input.Depth;
-				window.Layout = Params::Packed;
+				copy(srcPtr, srcPtr + windowStride, wndPtr);
 			}
+
+			// Convolve this window, and write it into the output buffer
+			_linearLayer.Compute(threadIdx, window, output.Data.data() + opIdx);
+
+			// If training, store the inputs
+			if (isTraining)
+				threadPrms.push_back(window);
 		}
 	}
 

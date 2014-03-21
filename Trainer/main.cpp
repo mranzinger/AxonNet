@@ -36,30 +36,30 @@ int main(int argc, char *argv [])
 	NeuralNet net;
 
 	// Convolutional Network
-	//net.Add<ConvoLayer>("c1",
-	//					1, 5, // Input Depth, Output Depth
-	//					7, 7, // Window Size X, Window Size Y
-	//					4, 4, // Stride X, Stride Y
-	//					ConvoLayer::ZeroPad);
-	//net.Add<RectifierNeuronLayer>("r1");
-	//net.Add<DropoutLayer>("d1");
-	////net.Add<ConvoLayer>("c2",
-	////					5, 12,
-	////					7, 7,
-	////					4, 4,
-	////					ConvoLayer::ZeroPad); // Output Size: 28 / 4 = 7
-	////net.Add<RectifierNeuronLayer>("r2");
-	////net.Add<DropoutLayer>("d2");
-	////net.Add<LinearLayer>("l3", 7 * 7 * 12, 100);
-	//net.Add<LinearLayer>("l3", 7 * 7 * 5, 100);
-	//net.Add<HardTanhNeuronLayer>("h3");
-	//net.Add<DropoutLayer>("d3");
-	//net.Add<LinearLayer>("l4", 100, outputSize);
-	//net.Add<SoftmaxLayer>("soft");
-	//net.SetCost<LogLossCost>();
+	net.Add<ConvoLayer>("c1",
+						1, 5, // Input Depth, Output Depth
+						3, 3, // Window Size X, Window Size Y
+						1, 1, // Stride X, Stride Y
+						ConvoLayer::ZeroPad);
+	net.Add<RectifierNeuronLayer>("r1");
+	net.Add<DropoutLayer>("d1");
+	//net.Add<ConvoLayer>("c2",
+	//					5, 12,
+	//					7, 7,
+	//					4, 4,
+	//					ConvoLayer::ZeroPad); // Output Size: 28 / 4 = 7
+	//net.Add<RectifierNeuronLayer>("r2");
+	//net.Add<DropoutLayer>("d2");
+	//net.Add<LinearLayer>("l3", 7 * 7 * 12, 100);
+	net.Add<LinearLayer>("l3", 7 * 7 * 5, 100);
+	net.Add<HardTanhNeuronLayer>("h3");
+	net.Add<DropoutLayer>("d3");
+	net.Add<LinearLayer>("l4", 100, outputSize);
+	net.Add<SoftmaxLayer>("soft");
+	net.SetCost<LogLossCost>();
 
 	// Fully Connected Network
-	net.Add<LinearLayer>("l1", inputSize, 500);
+	/*net.Add<LinearLayer>("l1", inputSize, 500);
 	net.Add<HardTanhNeuronLayer>("r1");
 	net.Add<DropoutLayer>("d1");
 	net.Add<LinearLayer>("l3", 500, 300);
@@ -67,7 +67,7 @@ int main(int argc, char *argv [])
 	net.Add<DropoutLayer>("d3");
 	net.Add<LinearLayer>("l4", 300, outputSize);
 	net.Add<SoftmaxLayer>("soft");
-	net.SetCost<LogLossCost>();
+	net.SetCost<LogLossCost>();*/
 
 	if (argc == 2)
 	{
