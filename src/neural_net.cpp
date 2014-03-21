@@ -162,7 +162,7 @@ struct ThreadTrainConfig
 void NeuralNet::Train(ITrainProvider &provider, size_t maxIters, size_t testFreq,
 					  const std::string &chkRoot)
 {
-	static const int s_NumThreads = 1;
+	static const int s_NumThreads = 4;
 	static const int s_NumIters = 128;
 
 	PrepareThreads(s_NumThreads);
@@ -190,7 +190,7 @@ void NeuralNet::Train(ITrainProvider &provider, size_t maxIters, size_t testFreq
 
 	for (size_t i = 0; i < maxIters; ++i)
 	{
-		size_t numThreads = epoch >= 3 ? s_NumThreads : 1;
+		size_t numThreads = epoch >= 10 ? s_NumThreads : 1;
 
 		auto tStart = high_resolution_clock::now();
 

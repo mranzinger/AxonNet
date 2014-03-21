@@ -12,6 +12,7 @@ typedef Eigen::Map<Vector> MapVector;
 typedef Eigen::Map<Vector, 0, Eigen::OuterStride<>> StrideVec;
 typedef Eigen::Matrix<Real, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> Matrix;
 typedef Eigen::Map<Matrix> Map;
+typedef Eigen::Map<Matrix, Eigen::Unaligned> UMap;
 typedef Eigen::Map<Matrix, 0, Eigen::OuterStride<>> StrideMat;
 
 NEURAL_NET_API void InitializeWeights(Vector &vec, Real mean, Real stdDev);

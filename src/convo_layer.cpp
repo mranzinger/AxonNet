@@ -26,27 +26,26 @@ Params ConvoLayer::Compute(int threadIdx, const Params &unpaddedInput, bool isTr
 		throw runtime_error("The underlying linear layer doesn't take the correct input dimensions.");
 	}
 
-	Params pInput = GetPaddedInput(unpaddedInput);
+	const Params pInput = GetPaddedInput(unpaddedInput);
 
-	size_t ipWidth = pInput.Width;
-	size_t ipHeight = pInput.Height;
+	const size_t ipWidth = pInput.Width;
+	const size_t ipHeight = pInput.Height;
 
-	size_t opWidth = (pInput.Width - _windowSizeX + 1) / _strideX;
-	size_t opHeight = (pInput.Height - _windowSizeY + 1) / _strideY;
-	size_t opDepth = _linearLayer.OutputSize();
+	const size_t opWidth = (pInput.Width - _windowSizeX + 1) / _strideX;
+	const size_t opHeight = (pInput.Height - _windowSizeY + 1) / _strideY;
+	const size_t opDepth = _linearLayer.OutputSize();
 
 	Params output(opWidth, opHeight, opDepth, Vector(opWidth * opHeight * opDepth));
 
 	Params window(_windowSizeX, _windowSizeY, pInput.Depth, Vector(_windowSizeX * _windowSizeY * pInput.Depth));
 
-	size_t inputStride = pInput.Width * pInput.Depth;
-	size_t outputStride = opWidth * opDepth;
-	size_t windowSize = window.Height * window.Width * window.Depth;
-	size_t windowStride = window.Width * window.Depth;
-
-	//Matrix wndMat(window.Height, window.Width * window.Depth);
+	const size_t inputStride = pInput.Width * pInput.Depth;
+	const size_t outputStride = opWidth * opDepth;
+	const size_t windowSize = window.Height * window.Width * window.Depth;
+	const size_t windowStride = window.Width * window.Depth;
 
 	MultiParams &threadPrms = _threadWindows[threadIdx];
+	threadPrms.clear();
 	threadPrms.reserve(opWidth * opHeight);
 
 	for (size_t ipY = 0, opIdx = 0; ipY < ipHeight - _windowSizeY + 1; ipY += _strideY)
@@ -97,14 +96,16 @@ Params ConvoLayer::Backprop(int threadIdx, const Params &lastInput, const Params
 	Map paddedMap(paddedInputErrors.Data.data(), paddedInputErrors.Height, paddedInputErrors.Width * paddedInputErrors.Depth);
 
 	//Matrix wndMat(_windowSizeY, _windowSizeX * opDepth);
-	size_t wndWidth = _windowSizeX * opDepth;
+	size_t wndWidth = _windowSizeX * lastInput.Depth;
 	size_t wndHeight = _windowSizeY;
 
 	size_t windowSize = wndWidth * wndHeight;
 
-	for (size_t ipY = 0, errIdx = 0; ipY < paddedInputErrors.Height; ipY += _strideY)
+	for (size_t ipY = 0, errIdx = 0; ipY < paddedInputErrors.Height - _windowSizeY + 1; ipY += _strideY)
 	{
-		for (size_t ipX = 0; ipX < paddedInputErrors.Width; ipX += _strideX, ++errIdx)
+		for (size_t ipX = 0; 
+				ipX < (paddedInputErrors.Width - _windowSizeX + 1) * lastInput.Depth; 
+				ipX += _strideX * lastInput.Depth, ++errIdx)
 		{
 			Params &linearIpErr = linearInputErrors[errIdx];
 
@@ -116,7 +117,7 @@ Params ConvoLayer::Backprop(int threadIdx, const Params &lastInput, const Params
 	if (_padMode == NoPadding)
 		return move(paddedInputErrors);
 
-	Params unpaddedInputErrors(lastInput, Vector());
+	Params unpaddedInputErrors(lastInput, Vector(lastInput.Height * lastInput.Width * lastInput.Depth));
 
 	Map(unpaddedInputErrors.Data.data(),
 		unpaddedInputErrors.Height,

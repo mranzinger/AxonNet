@@ -103,7 +103,7 @@ MultiParams LinearLayer::BackpropMany(int threadIdx, const MultiParams &lastInpu
 		const Vector &lastInput = lastInputs[i].Data;
 		const Vector &outputError = outputErrors[i].Data;
 
-		inputErrors[i] = prms.Weights.transpose() * outputError;
+		inputErrors[i].Data.noalias() = prms.Weights.transpose() * outputError;
 
 		prms.WeightDeltas.noalias() += outputError * lastInput.transpose();
 		prms.BiasDeltas += outputError;
