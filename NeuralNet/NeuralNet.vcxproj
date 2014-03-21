@@ -120,7 +120,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;EIGEN_VECTORIZE_SSE3;EIGEN_VECTORIZE_SSSE3;EIGEN_VECTORIZE_SSE4_1;USE_SSE2;EIGEN_FAST_MATH;_DEBUG;_WINDOWS;_USRDLL;NEURALNET_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\Users\Mike\Documents\Visual Studio 2013\Projects\AxonNet\include;E:\Projects\ThirdParty\eigen;E:\Projects\Linux\axon\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Mike\Documents\Visual Studio 2013\Projects\AxonNet\include;E:\Projects\ThirdParty\eigen_avx;E:\Projects\Linux\axon\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <MinimalRebuild>false</MinimalRebuild>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions</EnableEnhancedInstructionSet>
     </ClCompile>
@@ -137,7 +137,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;EIGEN_VECTORIZE_SSE3;EIGEN_VECTORIZE_SSSE3;EIGEN_VECTORIZE_SSE4_1;USE_SSE2;EIGEN_FAST_MATH;_DEBUG;_WINDOWS;_USRDLL;NEURALNET_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\Users\Mike\Documents\Visual Studio 2013\Projects\AxonNet\include;E:\Projects\ThirdParty\eigen;E:\Projects\Linux\axon\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Mike\Documents\Visual Studio 2013\Projects\AxonNet\include;E:\Projects\ThirdParty\eigen_avx;E:\Projects\Linux\axon\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <MinimalRebuild>false</MinimalRebuild>
       <FloatingPointExceptions>true</FloatingPointExceptions>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions</EnableEnhancedInstructionSet>
@@ -157,7 +157,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;EIGEN_VECTORIZE_SSE3;EIGEN_VECTORIZE_SSSE3;EIGEN_VECTORIZE_SSE4_1;USE_SSE2;EIGEN_FAST_MATH;NDEBUG;_WINDOWS;_USRDLL;NEURALNET_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\Users\Mike\Documents\Visual Studio 2013\Projects\AxonNet\include;E:\Projects\ThirdParty\eigen;E:\Projects\Linux\axon\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Mike\Documents\Visual Studio 2013\Projects\AxonNet\include;E:\Projects\ThirdParty\eigen_avx;E:\Projects\Linux\axon\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions</EnableEnhancedInstructionSet>
     </ClCompile>
     <Link>
@@ -177,7 +177,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;EIGEN_VECTORIZE_SSE3;EIGEN_VECTORIZE_SSSE3;EIGEN_VECTORIZE_SSE4_1;USE_SSE2;EIGEN_FAST_MATH;NDEBUG;_WINDOWS;_USRDLL;NEURALNET_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\Users\Mike\Documents\Visual Studio 2013\Projects\AxonNet\include;E:\Projects\ThirdParty\eigen;E:\Projects\Linux\axon\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Mike\Documents\Visual Studio 2013\Projects\AxonNet\include;E:\Projects\ThirdParty\eigen_avx;E:\Projects\Linux\axon\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions</EnableEnhancedInstructionSet>
       <FloatingPointModel>Fast</FloatingPointModel>
