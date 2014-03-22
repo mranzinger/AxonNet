@@ -42,18 +42,36 @@ int main(int argc, char *argv [])
 						1, 1, // Stride X, Stride Y
 						ConvoLayer::ZeroPad); // Output 28 * 5
 	net.Add<HardTanhNeuronLayer>("r1");
-	net.Add<DropoutLayer>("d1");
+	//net.Add<DropoutLayer>("d1");
 	net.Add<ConvoLayer>("c2",
 						5, 12,
 						7, 7,
-						4, 4,
-						ConvoLayer::ZeroPad); // Output Size: 28 / 4 = 7
+						2, 2,
+						ConvoLayer::ZeroPad); // Output Size: 28 / 2 = 14
 	net.Add<HardTanhNeuronLayer>("r2");
-	net.Add<DropoutLayer>("d2");
-	net.Add<LinearLayer>("l3", 7 * 7 * 12, 100);
+	//net.Add<DropoutLayer>("d2");
+	net.Add<ConvoLayer>("c3",
+						12, 24,
+						5, 5,
+						2, 2,
+						ConvoLayer::ZeroPad); // Output Size: 14 / 2 = 7
 	net.Add<HardTanhNeuronLayer>("r3");
-	net.Add<DropoutLayer>("d3");
-	net.Add<LinearLayer>("l4", 100, outputSize);
+	//net.Add<DropoutLayer>("d3");
+	net.Add<ConvoLayer>("c4",
+						24, 48,
+						3, 3,
+						1, 1,
+						ConvoLayer::ZeroPad); // Output Size: 7
+	net.Add<HardTanhNeuronLayer>("r4");
+	//net.Add<DropoutLayer>("d4");
+
+	net.Add<LinearLayer>("l5", 7 * 7 * 48, 100);
+	net.Add<HardTanhNeuronLayer>("r5");
+	//net.Add<DropoutLayer>("d5");
+	net.Add<LinearLayer>("l6", 100, 100);
+	net.Add<HardTanhNeuronLayer>("r6");
+	//net.Add<DropoutLayer>("d6");
+	net.Add<LinearLayer>("l7", 100, outputSize);
 	net.Add<SoftmaxLayer>("soft");
 	net.SetCost<LogLossCost>();
 
@@ -73,7 +91,7 @@ int main(int argc, char *argv [])
 		net.Load(argv[1]);
 	}
 
-	net.SetLearningRate(0.0001);
+	net.SetLearningRate(0.001);
 
 	net.Train(loader, 100000000, 50000, "test");
 }

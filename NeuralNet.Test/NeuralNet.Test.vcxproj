@@ -18,46 +18,10 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="..\include\convo_layer.h" />
-    <ClInclude Include="..\include\dropout_layer.h" />
-    <ClInclude Include="..\include\fast_math.h" />
-    <ClInclude Include="..\include\functions.h" />
-    <ClInclude Include="..\include\i_cost.h" />
-    <ClInclude Include="..\include\i_train_provider.h" />
-    <ClInclude Include="..\include\i_layer.h" />
-    <ClInclude Include="..\include\dll_include.h" />
-    <ClInclude Include="..\include\layer_base.h" />
-    <ClInclude Include="..\include\linear_layer.h" />
-    <ClInclude Include="..\include\logloss_cost.h" />
-    <ClInclude Include="..\include\math_util.h" />
-    <ClInclude Include="..\include\neural_net.h" />
-    <ClInclude Include="..\include\neuron_layer.h" />
-    <ClInclude Include="..\include\params.h" />
-    <ClInclude Include="..\include\persist_util.h" />
-    <ClInclude Include="..\include\softmax_layer.h" />
-    <ClInclude Include="..\include\sse_mathfun.h" />
-    <ClInclude Include="..\include\sum_sq_cost.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="..\src\convo_layer.cpp" />
-    <ClCompile Include="..\src\dropout_layer.cpp" />
-    <ClCompile Include="..\src\functions.cpp" />
-    <ClCompile Include="..\src\init_math_util.cpp" />
-    <ClCompile Include="..\src\i_layer.cpp" />
-    <ClCompile Include="..\src\layer_base.cpp" />
-    <ClCompile Include="..\src\linear_layer.cpp" />
-    <ClCompile Include="..\src\logloss_cost.cpp" />
-    <ClCompile Include="..\src\neural_net.cpp" />
-    <ClCompile Include="..\src\neuron_layer.cpp" />
-    <ClCompile Include="..\src\persist_util.cpp" />
-    <ClCompile Include="..\src\softmax_layer.cpp" />
-    <ClCompile Include="..\src\sum_sq_cost.cpp" />
-  </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{90CE3AF5-1468-4830-92C9-62E11C7DAA15}</ProjectGuid>
+    <ProjectGuid>{32E26B06-F3CE-4493-B6F8-097AE43D3403}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>NeuralNet</RootNamespace>
+    <RootNamespace>NeuralNetTest</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -65,12 +29,14 @@
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v120</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
+    <UseOfMfc>false</UseOfMfc>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v120</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
+    <UseOfMfc>false</UseOfMfc>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
@@ -78,6 +44,7 @@
     <PlatformToolset>v120</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
+    <UseOfMfc>false</UseOfMfc>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
@@ -85,6 +52,7 @@
     <PlatformToolset>v120</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
+    <UseOfMfc>false</UseOfMfc>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -109,55 +77,55 @@
     <LinkIncremental>true</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <LinkIncremental>false</LinkIncremental>
+    <LinkIncremental>true</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <LinkIncremental>false</LinkIncremental>
+    <LinkIncremental>true</LinkIncremental>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
-      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeader>Use</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;EIGEN_VECTORIZE_SSE3;EIGEN_VECTORIZE_SSSE3;EIGEN_VECTORIZE_SSE4_1;EIGEN_VECTORIZE_AVX;USE_SSE2;EIGEN_FAST_MATH;EIGEN_NO_DEBUG;_DEBUG;_WINDOWS;_USRDLL;NEURALNET_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\Users\Mike\Documents\Visual Studio 2013\Projects\AxonNet\include;E:\Projects\ThirdParty\eigen;E:\Projects\Linux\axon\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <MinimalRebuild>false</MinimalRebuild>
+      <AdditionalIncludeDirectories>$(VCInstallDir)UnitTest\include;C:\Users\Mike\Documents\Visual Studio 2013\Projects\AxonNet\include;E:\Projects\ThirdParty\eigen;E:\Projects\Linux\axon\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <UseFullPaths>true</UseFullPaths>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions</EnableEnhancedInstructionSet>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>E:\Projects\Linux\axon\windows\$(Platform)\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(VCInstallDir)UnitTest\lib;E:\Projects\Linux\axon\windows\$(Platform)\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>axon.util.lib;axon.serialize.lib;axon.communicate.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeader>Use</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;EIGEN_VECTORIZE_SSE3;EIGEN_VECTORIZE_SSSE3;EIGEN_VECTORIZE_SSE4_1;EIGEN_VECTORIZE_AVX;USE_SSE2;EIGEN_FAST_MATH;EIGEN_NO_DEBUG;_DEBUG;_WINDOWS;_USRDLL;NEURALNET_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\Users\Mike\Documents\Visual Studio 2013\Projects\AxonNet\include;E:\Projects\ThirdParty\eigen;E:\Projects\Linux\axon\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <MinimalRebuild>false</MinimalRebuild>
-      <FloatingPointExceptions>true</FloatingPointExceptions>
+      <AdditionalIncludeDirectories>$(VCInstallDir)UnitTest\include;C:\Users\Mike\Documents\Visual Studio 2013\Projects\AxonNet\include;E:\Projects\ThirdParty\eigen;E:\Projects\Linux\axon\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <UseFullPaths>true</UseFullPaths>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions</EnableEnhancedInstructionSet>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>E:\Projects\Linux\axon\windows\$(Platform)\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(VCInstallDir)UnitTest\lib;E:\Projects\Linux\axon\windows\$(Platform)\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>axon.util.lib;axon.serialize.lib;axon.communicate.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
-      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeader>Use</PrecompiledHeader>
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;EIGEN_VECTORIZE_SSE3;EIGEN_VECTORIZE_SSSE3;EIGEN_VECTORIZE_SSE4_1;EIGEN_VECTORIZE_AVX;USE_SSE2;EIGEN_FAST_MATH;EIGEN_NO_DEBUG;NDEBUG;_WINDOWS;_USRDLL;NEURALNET_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\Users\Mike\Documents\Visual Studio 2013\Projects\AxonNet\include;E:\Projects\ThirdParty\eigen;E:\Projects\Linux\axon\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(VCInstallDir)UnitTest\include;C:\Users\Mike\Documents\Visual Studio 2013\Projects\AxonNet\include;E:\Projects\ThirdParty\eigen;E:\Projects\Linux\axon\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <UseFullPaths>true</UseFullPaths>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions</EnableEnhancedInstructionSet>
     </ClCompile>
     <Link>
@@ -165,33 +133,50 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>E:\Projects\Linux\axon\windows\$(Platform)\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(VCInstallDir)UnitTest\lib;E:\Projects\Linux\axon\windows\$(Platform)\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>axon.util.lib;axon.serialize.lib;axon.communicate.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
-      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeader>Use</PrecompiledHeader>
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;EIGEN_VECTORIZE_SSE3;EIGEN_VECTORIZE_SSSE3;EIGEN_VECTORIZE_SSE4_1;EIGEN_VECTORIZE_AVX;USE_SSE2;EIGEN_FAST_MATH;EIGEN_NO_DEBUG;NDEBUG;_WINDOWS;_USRDLL;NEURALNET_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\Users\Mike\Documents\Visual Studio 2013\Projects\AxonNet\include;E:\Projects\ThirdParty\eigen;E:\Projects\Linux\axon\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <AdditionalIncludeDirectories>$(VCInstallDir)UnitTest\include;C:\Users\Mike\Documents\Visual Studio 2013\Projects\AxonNet\include;E:\Projects\ThirdParty\eigen;E:\Projects\Linux\axon\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <UseFullPaths>true</UseFullPaths>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions</EnableEnhancedInstructionSet>
-      <FloatingPointModel>Fast</FloatingPointModel>
-      <FloatingPointExceptions>false</FloatingPointExceptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>E:\Projects\Linux\axon\windows\$(Platform)\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(VCInstallDir)UnitTest\lib;E:\Projects\Linux\axon\windows\$(Platform)\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>axon.util.lib;axon.serialize.lib;axon.communicate.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="lin_test.h" />
+    <ClInclude Include="stdafx.h" />
+    <ClInclude Include="targetver.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="convo_layer_test.cpp" />
+    <ClCompile Include="stdafx.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\NeuralNet\NeuralNet.vcxproj">
+      <Project>{90ce3af5-1468-4830-92c9-62e11c7daa15}</Project>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

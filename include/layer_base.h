@@ -36,6 +36,7 @@ public:
 
 	friend void BindStruct(const axon::serialization::CStructBinder &binder, LayerBase &layer);
 
+	virtual void SyncWithHost() override { }
 	virtual void PrepareForThreads(size_t num) override { }
 
 	virtual void ApplyDeltas() override { }

@@ -46,6 +46,7 @@ public:
 	virtual LayerConfig::Ptr GetConfig() const = 0;
 
 	virtual void PrepareForThreads(size_t num) = 0;
+	virtual void SyncWithHost() = 0;
 
 	virtual void ApplyDeltas() = 0;
 	virtual void ApplyDeltas(int threadIdx) = 0;

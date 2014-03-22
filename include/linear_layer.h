@@ -84,6 +84,8 @@ public:
 
 	virtual void PrepareForThreads(size_t num) override;
 
+	virtual void SyncWithHost() override;
+
 	virtual void ApplyDeltas() override;
 	virtual void ApplyDeltas(int threadIdx) override;
 

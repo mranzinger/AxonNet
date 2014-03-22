@@ -18,6 +18,19 @@ ConvoLayer::ConvoLayer(string name,
 	PrepareForThreads(1);
 }
 
+ConvoLayer::ConvoLayer(std::string name,
+						Matrix linWeights, Vector linBias,
+						size_t windowSizeX, size_t windowSizeY,
+						size_t strideX, size_t strideY,
+						PaddingMode padMode)
+	: LayerBase(move(name)),
+		_linearLayer("", move(linWeights), move(linBias)),
+		_windowSizeX(windowSizeX), _windowSizeY(windowSizeY),
+		_strideX(strideX), _strideY(strideY), _padMode(padMode)
+{
+	PrepareForThreads(1);
+}
+
 Params ConvoLayer::Compute(int threadIdx, const Params &unpaddedInput, bool isTraining)
 {
 	if (_linearLayer.InputSize() != unpaddedInput.Depth * _windowSizeX * _windowSizeY)
@@ -26,13 +39,26 @@ Params ConvoLayer::Compute(int threadIdx, const Params &unpaddedInput, bool isTr
 		throw runtime_error("The underlying linear layer doesn't take the correct input dimensions.");
 	}
 
+	switch (unpaddedInput.Layout)
+	{
+	case Params::Packed:
+		return ComputePacked(threadIdx, unpaddedInput, isTraining);
+	case Params::Planar:
+		return ComputePlanar(threadIdx, unpaddedInput, isTraining);
+	default:
+		throw runtime_error("Unsupported parameter layout.");
+	}
+}
+
+Params ConvoLayer::ComputePacked(int threadIdx, const Params &unpaddedInput, bool isTraining)
+{
 	const Params pInput = GetPaddedInput(unpaddedInput);
 
 	const size_t ipWidth = pInput.Width;
 	const size_t ipHeight = pInput.Height;
 
-	const size_t opWidth = (pInput.Width - _windowSizeX + 1) / _strideX;
-	const size_t opHeight = (pInput.Height - _windowSizeY + 1) / _strideY;
+	const size_t opWidth = (size_t) ceil((pInput.Width - _windowSizeX + 1) / float(_strideX));
+	const size_t opHeight = (size_t) ceil((pInput.Height - _windowSizeY + 1) / float(_strideY));
 	const size_t opDepth = _linearLayer.OutputSize();
 
 	Params output(opWidth, opHeight, opDepth, Vector(opWidth * opHeight * opDepth));
@@ -50,8 +76,8 @@ Params ConvoLayer::Compute(int threadIdx, const Params &unpaddedInput, bool isTr
 
 	for (size_t ipY = 0, opIdx = 0; ipY < ipHeight - _windowSizeY + 1; ipY += _strideY)
 	{
-		for (size_t ipX = 0; 
-			ipX < (ipWidth - _windowSizeX + 1) * pInput.Depth; 
+		for (size_t ipX = 0;
+			ipX < (ipWidth - _windowSizeX + 1) * pInput.Depth;
 			ipX += (_strideX * pInput.Depth), opIdx += opDepth)
 		{
 			const Real *srcPtr = pInput.Data.data() + (ipY * inputStride) + ipX;
@@ -71,6 +97,11 @@ Params ConvoLayer::Compute(int threadIdx, const Params &unpaddedInput, bool isTr
 	}
 
 	return move(output);
+}
+
+Params ConvoLayer::ComputePlanar(int threadIdx, const Params &unpaddedInput, bool isTraining)
+{
+	throw runtime_error("Planar input data is not currently supported.");
 }
 
 Params ConvoLayer::Backprop(int threadIdx, const Params &lastInput, const Params &lastOutput, const Params &outputErrors)
@@ -176,6 +207,13 @@ void ConvoLayer::ApplyDeltas(int threadIdx)
 void ConvoLayer::PrepareForThreads(size_t num)
 {
 	_threadWindows.resize(num);
+
+	_linearLayer.PrepareForThreads(num);
+}
+
+void ConvoLayer::SyncWithHost()
+{
+	_linearLayer.SyncWithHost();
 }
 
 void ConvoLayer::InitializeFromConfig(const LayerConfig::Ptr &config)

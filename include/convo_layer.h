@@ -38,6 +38,11 @@ public:
 				size_t windowSizeX, size_t windowSizeY, 
 				size_t strideX, size_t strideY, 
 				PaddingMode padMode = NoPadding);
+	ConvoLayer(std::string name,
+				Matrix linWeights, Vector linBias,
+				size_t windowSizeX, size_t windowSizeY,
+				size_t strideX, size_t strideY,
+				PaddingMode padMode = NoPadding);
 
 	virtual std::string GetLayerType() const override {
 		return "Convo Layer";
@@ -51,6 +56,8 @@ public:
 
 	virtual void PrepareForThreads(size_t num) override;
 
+	virtual void SyncWithHost() override;
+
 	virtual void InitializeFromConfig(const LayerConfig::Ptr &config) override;
 	virtual LayerConfig::Ptr GetConfig() const override;
 
@@ -60,6 +67,9 @@ protected:
 	void BuildConfig(ConvoLayerConfig &config) const;
 
 private:
+	Params ComputePacked(int threadidx, const Params &input, bool isTraining);
+	Params ComputePlanar(int threadIdx, const Params &input, bool isTraining);
+
 	Params GetPaddedInput(const Params &input) const;
 	Params GetZeroPaddedInput(const Params &reference) const;
 };

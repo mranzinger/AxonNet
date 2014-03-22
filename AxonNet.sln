@@ -16,6 +16,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		Performance2.psess = Performance2.psess
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "NeuralNet.Test", "NeuralNet.Test\NeuralNet.Test.vcxproj", "{32E26B06-F3CE-4493-B6F8-097AE43D3403}"
+	ProjectSection(ProjectDependencies) = postProject
+		{90CE3AF5-1468-4830-92C9-62E11C7DAA15} = {90CE3AF5-1468-4830-92C9-62E11C7DAA15}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -40,6 +45,14 @@ Global
 		{4343E07F-BE21-43E9-A8BA-2030E5057D4C}.Release|Win32.Build.0 = Release|Win32
 		{4343E07F-BE21-43E9-A8BA-2030E5057D4C}.Release|x64.ActiveCfg = Release|x64
 		{4343E07F-BE21-43E9-A8BA-2030E5057D4C}.Release|x64.Build.0 = Release|x64
+		{32E26B06-F3CE-4493-B6F8-097AE43D3403}.Debug|Win32.ActiveCfg = Debug|Win32
+		{32E26B06-F3CE-4493-B6F8-097AE43D3403}.Debug|Win32.Build.0 = Debug|Win32
+		{32E26B06-F3CE-4493-B6F8-097AE43D3403}.Debug|x64.ActiveCfg = Debug|x64
+		{32E26B06-F3CE-4493-B6F8-097AE43D3403}.Debug|x64.Build.0 = Debug|x64
+		{32E26B06-F3CE-4493-B6F8-097AE43D3403}.Release|Win32.ActiveCfg = Release|Win32
+		{32E26B06-F3CE-4493-B6F8-097AE43D3403}.Release|Win32.Build.0 = Release|Win32
+		{32E26B06-F3CE-4493-B6F8-097AE43D3403}.Release|x64.ActiveCfg = Release|x64
+		{32E26B06-F3CE-4493-B6F8-097AE43D3403}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
