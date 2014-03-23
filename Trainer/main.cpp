@@ -36,47 +36,51 @@ int main(int argc, char *argv [])
 	NeuralNet net;
 
 	// Convolutional Network
-	net.Add<ConvoLayer>("c1",
-						1, 5, // Input Depth, Output Depth
-						7, 7, // Window Size X, Window Size Y
-						1, 1, // Stride X, Stride Y
-						ConvoLayer::ZeroPad); // Output 28 * 5
-	net.Add<HardTanhNeuronLayer>("r1");
-	//net.Add<DropoutLayer>("d1");
-	net.Add<ConvoLayer>("c2",
-						5, 12,
-						7, 7,
-						2, 2,
-						ConvoLayer::ZeroPad); // Output Size: 28 / 2 = 14
-	net.Add<HardTanhNeuronLayer>("r2");
-	//net.Add<DropoutLayer>("d2");
-	net.Add<ConvoLayer>("c3",
-						12, 24,
-						5, 5,
-						2, 2,
-						ConvoLayer::ZeroPad); // Output Size: 14 / 2 = 7
-	net.Add<HardTanhNeuronLayer>("r3");
-	//net.Add<DropoutLayer>("d3");
-	net.Add<ConvoLayer>("c4",
-						24, 48,
-						3, 3,
-						1, 1,
-						ConvoLayer::ZeroPad); // Output Size: 7
-	net.Add<HardTanhNeuronLayer>("r4");
-	//net.Add<DropoutLayer>("d4");
+	//net.Add<ConvoLayer>("c0",
+	//					1, 2,
+	//					7, 7,
+	//					1, 1,
+	//					ConvoLayer::ZeroPad);
+	//net.Add<SoftPlusNeuronLayer>("r0");
 
-	net.Add<LinearLayer>("l5", 7 * 7 * 48, 100);
-	net.Add<HardTanhNeuronLayer>("r5");
-	//net.Add<DropoutLayer>("d5");
-	net.Add<LinearLayer>("l6", 100, 100);
-	net.Add<HardTanhNeuronLayer>("r6");
-	//net.Add<DropoutLayer>("d6");
-	net.Add<LinearLayer>("l7", 100, outputSize);
-	net.Add<SoftmaxLayer>("soft");
-	net.SetCost<LogLossCost>();
+	//net.Add<ConvoLayer>("c1",
+	//					2, 3, // Input Depth, Output Depth
+	//					7, 7, // Window Size X, Window Size Y
+	//					2, 2, // Stride X, Stride Y
+	//					ConvoLayer::ZeroPad); // Output 14x14
+	//net.Add<SoftPlusNeuronLayer>("r1");
+	////net.Add<DropoutLayer>("d1");
+
+	//net.Add<ConvoLayer>("c2",
+	//					3, 5,
+	//					7, 7,
+	//					2, 2,
+	//					ConvoLayer::ZeroPad); // Output Size: 7x7
+	//net.Add<SoftPlusNeuronLayer>("r2");
+	////net.Add<DropoutLayer>("d2");
+
+	//net.Add<ConvoLayer>("c3",
+	//					5, 10,
+	//					5, 5,
+	//					2, 2,
+	//					ConvoLayer::ZeroPad); // Output Size: 4x4
+	//net.Add<SoftPlusNeuronLayer>("r3");
+	////net.Add<DropoutLayer>("d3");
+
+	//net.Add<LinearLayer>("l5", 4 * 4 * 10, 100);
+	//net.Add<SoftPlusNeuronLayer>("r5");
+	////net.Add<DropoutLayer>("d5");
+
+	//net.Add<LinearLayer>("l6", 100, 100);
+	//net.Add<SoftPlusNeuronLayer>("r6");
+	////net.Add<DropoutLayer>("d6");
+
+	//net.Add<LinearLayer>("l7", 100, outputSize);
+	//net.Add<SoftmaxLayer>("soft");
+	//net.SetCost<LogLossCost>();
 
 	// Fully Connected Network
-	/*net.Add<LinearLayer>("l1", inputSize, 500);
+	net.Add<LinearLayer>("l1", inputSize, 500);
 	net.Add<HardTanhNeuronLayer>("r1");
 	net.Add<DropoutLayer>("d1");
 	net.Add<LinearLayer>("l3", 500, 300);
@@ -84,14 +88,14 @@ int main(int argc, char *argv [])
 	net.Add<DropoutLayer>("d3");
 	net.Add<LinearLayer>("l4", 300, outputSize);
 	net.Add<SoftmaxLayer>("soft");
-	net.SetCost<LogLossCost>();*/
+	net.SetCost<LogLossCost>();
 
 	if (argc == 2)
 	{
 		net.Load(argv[1]);
 	}
 
-	net.SetLearningRate(0.001);
+	net.SetLearningRate(0.01);
 
 	net.Train(loader, 100000000, 50000, "test");
 }

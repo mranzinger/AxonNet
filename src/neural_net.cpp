@@ -133,6 +133,22 @@ BPStat NeuralNet::Backprop(int threadIdx, const Params &input, const Params &lab
 	Params corrCp(inputs.back());
 	MaxBinarize(corrCp.Data);
 
+#if _DEBUG
+	MultiParams opErrs;
+	opErrs.push_back(opErr);
+
+	if (totalErr != 0)
+	{
+		for (int i = _layers.size() - 1; i >= 0; --i)
+		{
+			Params err = _layers[i]->Backprop(threadIdx, inputs[i], inputs[i + 1], opErrs.back());
+
+			opErrs.push_back(move(err));
+		}
+
+		ApplyDeltas(threadIdx);
+	}
+#else
 	if (totalErr != 0)
 	{
 		for (int i = _layers.size() - 1; i >= 0; --i)
@@ -142,6 +158,7 @@ BPStat NeuralNet::Backprop(int threadIdx, const Params &input, const Params &lab
 
 		ApplyDeltas(threadIdx);
 	}
+#endif
 
 	return { totalErr, (corrCp == labels) };
 }

@@ -42,6 +42,8 @@ struct LinParams
 	{
 		InitializeWeights(Weights, 0, 1);
 		InitializeWeights(Biases, 0, 1);
+		//FanInitializeWeights(Weights);
+		//FanInitializeWeights(Biases);
 
 		WeightsRunning.setZero();
 		BiasRunning.setZero();

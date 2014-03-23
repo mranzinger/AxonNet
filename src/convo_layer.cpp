@@ -140,8 +140,9 @@ Params ConvoLayer::Backprop(int threadIdx, const Params &lastInput, const Params
 		{
 			Params &linearIpErr = linearInputErrors[errIdx];
 
-			paddedMap.block(ipY, ipX, wndHeight, wndWidth) +=
-				Map(linearIpErr.Data.data(), wndHeight, wndWidth);
+			Map mIpErr(linearIpErr.Data.data(), wndHeight, wndWidth);
+
+			paddedMap.block(ipY, ipX, wndHeight, wndWidth) += mIpErr;
 		}
 	}
 
@@ -150,12 +151,10 @@ Params ConvoLayer::Backprop(int threadIdx, const Params &lastInput, const Params
 
 	Params unpaddedInputErrors(lastInput, Vector(lastInput.Height * lastInput.Width * lastInput.Depth));
 
-	Map(unpaddedInputErrors.Data.data(),
-		unpaddedInputErrors.Height,
-		unpaddedInputErrors.Width * unpaddedInputErrors.Depth)
-		=
-		paddedMap.block(_windowSizeY / 2, (_windowSizeX / 2) * lastInput.Depth,
-						lastInput.Height, lastInput.Width * lastInput.Depth);
+	Map mUpInput(unpaddedInputErrors.Data.data(), lastInput.Height, lastInput.Width * lastInput.Depth);
+
+	mUpInput = paddedMap.block(_windowSizeY / 2, (_windowSizeX / 2) * lastInput.Depth,
+		lastInput.Height, lastInput.Width * lastInput.Depth);
 
 	return move(unpaddedInputErrors);
 }
@@ -187,10 +186,14 @@ Params ConvoLayer::GetZeroPaddedInput(const Params &reference) const
 	}
 	else
 	{
-		return Params(reference, Vector::Zero(
-			(reference.Height + _windowSizeY - 1) *
-			(reference.Width + _windowSizeX - 1) *
-			reference.Depth));
+		size_t rX = reference.Width + _windowSizeX - 1;
+		size_t rY = reference.Height + _windowSizeY - 1;
+		size_t rZ = reference.Depth;
+
+		size_t twoDSize = rX * rY;
+
+		return Params(rX, rY, rZ,
+			Vector::Zero(rX * rY * rZ));
 	}
 }
 
