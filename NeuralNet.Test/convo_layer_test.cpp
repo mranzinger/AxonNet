@@ -20,6 +20,20 @@ namespace NeuralNetTest
 				strideX, strideY, padMode).Compute(0, input, isTraining);
 		}
 
+		Params Backprop(const Matrix &kernel, const Vector &bias, const Params &lastInput,
+						const Params &outputErrors,
+						size_t windowSizeX, size_t windowSizeY,
+						size_t strideX, size_t strideY,
+						ConvoLayer::PaddingMode padMode = ConvoLayer::NoPadding)
+		{
+			ConvoLayer layer("", kernel, bias, windowSizeX, windowSizeY,
+				strideX, strideY, padMode);
+
+			Params lastOutput = layer.Compute(0, lastInput, true);
+
+			return layer.Backprop(0, lastInput, lastOutput, outputErrors);
+		}
+
 	public:
 		
 		TEST_METHOD(SimpleCompute)
@@ -138,5 +152,63 @@ namespace NeuralNetTest
 			AssertVectorEquivalence(correctOutput, comp.Data);
 		}
 
+		TEST_METHOD(ZeroPadCompute)
+		{
+			Matrix kernel(1, 9);
+			kernel << 1, 1, 1, 
+					  1, 1, 1, 
+					  1, 1, 1;
+			Vector bias(1);
+			bias << 1;
+
+			Vector input(4);
+			input << 1, 2, 
+					 3, 4;
+
+			Vector correctOutput(4);
+			correctOutput << 11, 11, 11, 11;
+
+			Params comp = Compute(kernel, bias, Params(2, 2, 1, input),
+								  3, 3,
+								  1, 1,
+								  ConvoLayer::ZeroPad);
+
+			AssertVectorEquivalence(correctOutput, comp.Data);
+		}
+
+		TEST_METHOD(TestBackprop)
+		{
+			// 2-fpp in / 3-fpp out
+			Matrix kernel(3, 18);
+			kernel << -1, -1, 0, -2, 1, -1,
+					  -2, 0, 0, 0, 2, 0,
+					  -1, 1, 0, 2, 1, 1,
+
+					   1, 1, 1, 1, 1, 1,
+					   1, 1, 1, 1, 1, 1,
+					   1, 1, 1, 1, 1, 1,
+
+					   1, 1, 2, 1, 3, 1,
+					   1, 2, 2, 2, 3, 2,
+					   1, 3, 2, 3, 3, 3;
+			Vector bias(3);
+			bias << -10, 0, 10;
+
+			Vector input(50);
+			input << 1, 1, 2, 2, 3, 3, 4, 4, 5, 5,
+				     1, 1, 2, 2, 3, 3, 4, 4, 5, 5,
+				     1, 1, 2, 2, 3, 3, 4, 4, 5, 5,
+				     1, 1, 2, 2, 3, 3, 4, 4, 5, 5,
+				     1, 1, 2, 2, 3, 3, 4, 4, 5, 5;
+
+			Vector outputErrors(12);
+			outputErrors << -1, 1, -2, 2, -3, 3,
+				            -4, 4, -5, 5, -6, 6;
+
+			Params inputErrors = Backprop(kernel, bias, Params(5, 5, 2, input), Params(2, 2, 3, outputErrors),
+										  3, 3, 2, 2);
+
+			AssertVectorEquivalence(inputErrors.Data, inputErrors.Data);
+		}
 	};
 }

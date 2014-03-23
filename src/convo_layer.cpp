@@ -113,7 +113,7 @@ Params ConvoLayer::Backprop(int threadIdx, const Params &lastInput, const Params
 	size_t numOut = outputErrors.Data.size() / opDepth;
 
 	// Get the output errors
-	MultiParams linearOutputErrors(numOut, Params(1, numOut, 1, Vector()));
+	MultiParams linearOutputErrors(numOut, Params(1, 1, opDepth, Vector()));
 	for (size_t i = 0, end = linearOutputErrors.size(); i < end; ++i)
 	{
 		linearOutputErrors[i].Data = outputErrors.Data.block(i * opDepth, 0, opDepth, 1);
