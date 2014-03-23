@@ -99,5 +99,44 @@ namespace NeuralNetTest
 			AssertVectorEquivalence(correctOutput, comp.Data);
 		}
 
+		TEST_METHOD(ComplexCompute)
+		{
+			// 2-fpp in / 3-fpp out
+			Matrix kernel(3, 18);
+			kernel << -1, -1,   0, -2,   1, -1,
+					  -2,  0,   0,  0,   2,  0,
+					  -1,  1,   0,  2,   1,  1,
+					  
+					   1,  1,   1,  1,   1,  1,
+					   1,  1,   1,  1,   1,  1,
+					   1,  1,   1,  1,   1,  1,
+					   
+					   1,  1,   2,  1,   3,  1,
+					   1,  2,   2,  2,   3,  2,
+					   1,  3,   2,  3,   3,  3;
+			Vector bias(3);
+			bias << -10, 0, 10;
+
+			Vector input(50);
+			input << 1, 1,  2, 2,  3, 3,  4, 4,  5, 5,
+				     1, 1,  2, 2,  3, 3,  4, 4,  5, 5,
+					 1, 1,  2, 2,  3, 3,  4, 4,  5, 5,
+					 1, 1,  2, 2,  3, 3,  4, 4,  5, 5,
+					 1, 1,  2, 2,  3, 3,  4, 4,  5, 5;
+			
+			// Output:
+			// (-2 36 88)  (-2 72 160)
+			// (-2 36 88)  (-2 72 160)
+			Vector correctOutput(12);
+			correctOutput << -2, 36, 88, -2, 72, 160,
+				             -2, 36, 88, -2, 72, 160;
+
+			Params comp = Compute(kernel, bias, Params(5, 5, 2, input),
+								  3, 3,
+								  2, 2);
+
+			AssertVectorEquivalence(correctOutput, comp.Data);
+		}
+
 	};
 }
