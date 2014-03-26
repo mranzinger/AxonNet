@@ -252,19 +252,21 @@ void BindStruct(const CStructBinder &binder, ConvoLayerConfig &config)
 	binder("linearConfig", config.LinearConfig);
 }
 
-ENUM_IO_MAP(ConvoLayer::PaddingMode)
+/*ENUM_IO_MAP(ConvoLayer::PaddingMode)
 	ENMAP(ConvoLayer::ZeroPad, "ZeroPad")
-	ENMAP(ConvoLayer::NoPadding, "NoPadding");
+	ENMAP(ConvoLayer::NoPadding, "NoPadding");*/
 
 void BindStruct(const CStructBinder &binder, ConvoLayer &layer)
 {
 	BindStruct(binder, (LayerBase&) layer);
 
+	int padMode = (int)layer._padMode;
 	binder("windowSizeX", layer._windowSizeX)
 		  ("windowSizeY", layer._windowSizeY)
 		  ("strideX", layer._strideX)
 		  ("strideY", layer._strideY)
-		  ("padMode", layer._padMode);
+		  ("padMode", padMode);
+	layer._padMode = (ConvoLayer::PaddingMode)layer._padMode;
 }
 
 AXON_SERIALIZE_DERIVED_TYPE(LayerConfig, ConvoLayerConfig, ConvoLayerConfig);

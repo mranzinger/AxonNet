@@ -1,13 +1,21 @@
 #include "handwritten_loader.h"
 
 #include <fstream>
-#include <filesystem>
-#include <intrin.h>
+
 #include <assert.h>
 
-using namespace std;
+#if _WIN32
+#include <filesystem>
+#include <intrin.h>
 
 namespace fs = tr2::sys;
+#else
+#include <boost/filesystem.hpp>
+
+namespace fs = boost::filesystem;
+#endif
+
+using namespace std;
 
 HandwrittenLoader::HandwrittenLoader(const std::string &dataFile, const std::string &labelFile,
 									 const std::string &testDataFile, const std::string &testLabelFile)
@@ -38,7 +46,13 @@ void read(istream &ip, int &val, bool flipEndian)
 	read(ip, val);
 
 	if (flipEndian)
+	{
+#if _WIN32
 		val = _byteswap_ulong(val);
+#else
+		val = le32toh(val);
+#endif
+	}
 }
 
 int read(istream &ip, bool flipEndian)
@@ -59,27 +73,27 @@ MultiParams HandwrittenLoader::LoadImages(const std::string &file) const
 	static const int MAGIC_NUMBER = 0x00000803; // 2051
 
 	if (!fs::exists(fs::path(file)))
-		throw exception("The specified file is not valid.");
+		throw runtime_error("The specified file is not valid.");
 
 	ifstream fileStream(file, ios_base::binary);
 
 	if (fileStream.bad() || fileStream.eof())
-		throw exception("The specified file could not be opened, or was empty.");
+		throw runtime_error("The specified file could not be opened, or was empty.");
 
 	const auto magic = read<int>(fileStream);
 
 	const bool flipEndian = magic != MAGIC_NUMBER;
 
-	int numImages = read(fileStream, flipEndian);
-	int numRows = read(fileStream, flipEndian);
-	int numCols = read(fileStream, flipEndian);
+	size_t numImages = read(fileStream, flipEndian);
+	size_t numRows = read(fileStream, flipEndian);
+	size_t numCols = read(fileStream, flipEndian);
 
 	int imgSize = numRows * numCols;
 
 	// Create the return value, initializing each image to the correct size
 	MultiParams ret(numImages, Params(numCols, numRows, 1, Vector(imgSize)));
 
-	auto readBuf = make_unique<unsigned char[]>(imgSize);
+	unique_ptr<unsigned char[]> readBuf(new unsigned char[imgSize]);
 
 	for (size_t i = 0; i < numImages; ++i)
 	{
@@ -94,18 +108,18 @@ MultiParams HandwrittenLoader::LoadLabels(const std::string &file) const
 	static const int MAGIC_NUMBER = 0x00000801; // 2049
 
 	if (!fs::exists(fs::path(file)))
-		throw exception("The specified file is not valid.");
+		throw runtime_error("The specified file is not valid.");
 
 	ifstream fileStream(file, ios_base::binary);
 
 	if (fileStream.bad() || fileStream.eof())
-		throw exception("The specified file could not be opened, or was empty.");
+		throw runtime_error("The specified file could not be opened, or was empty.");
 
 	const auto magic = read<int>(fileStream);
 
 	const bool flipEndian = magic != MAGIC_NUMBER;
 
-	int numLabels = read(fileStream, flipEndian);
+	size_t numLabels = read(fileStream, flipEndian);
 
 	// Output is 10 values, [0, 1] for each character
 	MultiParams ret(numLabels, Params(Vector::Zero(10)));

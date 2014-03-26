@@ -1,21 +1,32 @@
 #include "neural_net.h"
 
-#include <filesystem>
+
 #include <random>
 #include <iostream>
-#include <ppl.h>
 #include <numeric>
-#include <concrt.h>
 #include <thread>
 #include <iomanip>
 #include <chrono>
 
 #include "sum_sq_cost.h"
+#include "event.h"
+
+#if _WIN32
+#include <filesystem>
+#include <ppl.h>
+#include <concrt.h>
+
+namespace fs = tr2::sys;
+#else
+#include <boost/filesystem.hpp>
+
+namespace fs = boost::filesystem;
+#endif
 
 using namespace std;
 using namespace axon::serialization;
 using namespace std::chrono;
-namespace fs = tr2::sys;
+
 
 NeuralNet::NeuralNet()
 {
@@ -168,14 +179,16 @@ BPStat NeuralNet::Backprop(int threadIdx, const Params &input, const Params &lab
 struct ThreadTrainConfig
 {
 	int ThreadIdx = 0;
-	Concurrency::event GoEvent;
-	Concurrency::event DoneEvent;
-	Concurrency::event *KillEvent = nullptr;
+	event GoEvent;
+	event DoneEvent;
 	ITrainProvider *Provider = nullptr;
 	size_t NumIters;
 	Real BatchErr = 0.0f;
 	Real NumCorrect = 0.0f;
 	bool Kill = false;
+
+	ThreadTrainConfig()
+		: GoEvent(true), DoneEvent(true) { }
 };
 
 void NeuralNet::Train(ITrainProvider &provider, size_t maxIters, size_t testFreq,
@@ -186,9 +199,6 @@ void NeuralNet::Train(ITrainProvider &provider, size_t maxIters, size_t testFreq
 
 	PrepareThreads(s_NumThreads);
 
-	Concurrency::event killEvt;
-	Concurrency::event *waitEvts[s_NumThreads];
-
 	ThreadTrainConfig configs[s_NumThreads];
 	thread threads[s_NumThreads];
 
@@ -197,9 +207,6 @@ void NeuralNet::Train(ITrainProvider &provider, size_t maxIters, size_t testFreq
 		configs[i].ThreadIdx = i;
 		configs[i].Provider = &provider;
 		configs[i].NumIters = s_NumIters;
-		configs[i].KillEvent = &killEvt;
-
-		waitEvts[i] = &configs[i].DoneEvent;
 
 		threads[i] = thread(&NeuralNet::RunTrainThread, this, ref(configs[i]));
 	}
@@ -223,10 +230,8 @@ void NeuralNet::Train(ITrainProvider &provider, size_t maxIters, size_t testFreq
 			configs[j].GoEvent.set();
 
 		// Wait for all of the threads to finish
-		Concurrency::event::wait_for_multiple(waitEvts, numThreads, true);
-
-		for (auto evt : waitEvts)
-			evt->reset();
+		for (ThreadTrainConfig &config : configs)
+			config.DoneEvent.wait();
 
 		auto tEnd = high_resolution_clock::now();
 
@@ -257,7 +262,7 @@ void NeuralNet::Train(ITrainProvider &provider, size_t maxIters, size_t testFreq
 	{
 		cfg.Kill = true;
 	}
-	killEvt.set();
+
 	for (thread &t : threads)
 	{
 		t.join();
@@ -271,13 +276,7 @@ void NeuralNet::RunTrainThread(ThreadTrainConfig &config)
 
 	while (!config.Kill)
 	{
-		Concurrency::event *waitEvts [] = { config.KillEvent, &config.GoEvent };
-		size_t which = Concurrency::event::wait_for_multiple(waitEvts, 2, false);
-
-		if (which == 0)
-			return;
-
-		config.GoEvent.reset();
+		config.GoEvent.wait();
 
 		config.BatchErr = 0.0f;
 		config.NumCorrect = 0.0f;

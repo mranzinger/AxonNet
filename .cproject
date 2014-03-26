@@ -25,8 +25,12 @@
 									<listOptionValue builtIn="false" value="/media/data/dev/personal/axon/include"/>
 									<listOptionValue builtIn="false" value="/media/data/dev/ThirdParty/eigen"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/AxonNet/include}&quot;"/>
+									<listOptionValue builtIn="false" value="/media/data/dev/ThirdParty/boost_1_55_0/include"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.other.other.177585900" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" value="-c -fmessage-length=0 -std=c++11" valueType="string"/>
+								<option id="gnu.cpp.compiler.option.preprocessor.def.570530337" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" valueType="definedSymbols">
+									<listOptionValue builtIn="false" value="__GXX_EXPERIMENTAL_CXX0X__"/>
+								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.1173615439" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.c.compiler.base.1867505723" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.base">
@@ -34,11 +38,26 @@
 									<listOptionValue builtIn="false" value="/media/data/dev/personal/axon/include"/>
 									<listOptionValue builtIn="false" value="/media/data/dev/ThirdParty/eigen"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/AxonNet/include}&quot;"/>
+									<listOptionValue builtIn="false" value="/media/data/dev/ThirdParty/boost_1_55_0/include"/>
+								</option>
+								<option id="gnu.c.compiler.option.preprocessor.def.symbols.148248139" name="Defined symbols (-D)" superClass="gnu.c.compiler.option.preprocessor.def.symbols" valueType="definedSymbols">
+									<listOptionValue builtIn="false" value="__GXX_EXPERIMENTAL_CXX0X__"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.920913601" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.c.linker.base.201211741" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.base"/>
 							<tool id="cdt.managedbuild.tool.gnu.cpp.linker.base.582739751" name="GCC C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.base">
+								<option id="gnu.cpp.link.option.paths.1754110794" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" valueType="libPaths">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/axon}/lib&quot;"/>
+									<listOptionValue builtIn="false" value="/media/data/dev/ThirdParty/boost_1_55_0/lib"/>
+								</option>
+								<option id="gnu.cpp.link.option.libs.2140621349" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" valueType="libs">
+									<listOptionValue builtIn="false" value="axcomm"/>
+									<listOptionValue builtIn="false" value="boost_system"/>
+									<listOptionValue builtIn="false" value="boost_filesystem"/>
+									<listOptionValue builtIn="false" value="axser"/>
+									<listOptionValue builtIn="false" value="axutil"/>
+								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.427236393" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
 									<additionalInput kind="additionalinput" paths="$(LIBS)"/>
@@ -49,11 +68,15 @@
 									<listOptionValue builtIn="false" value="/media/data/dev/personal/axon/include"/>
 									<listOptionValue builtIn="false" value="/media/data/dev/ThirdParty/eigen"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/AxonNet/include}&quot;"/>
+									<listOptionValue builtIn="false" value="/media/data/dev/ThirdParty/boost_1_55_0/include"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.1078162205" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
 							</tool>
 						</toolChain>
 					</folderInfo>
+					<sourceEntries>
+						<entry excluding="NeuralNet.Test" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+					</sourceEntries>
 				</configuration>
 			</storageModule>
 			<storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>

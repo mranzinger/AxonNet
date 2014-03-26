@@ -4,6 +4,12 @@
 
 #include <Eigen/Dense>
 
+#if _WIN32
+#define __forceinline __forceinline
+#else
+#define __forceinline inline
+#endif
+
 template<size_t Alignment, typename T>
 __forceinline T *GetNextAligned(T *pVal)
 {
@@ -16,7 +22,7 @@ __forceinline bool IsAlignedToBoundary(T *pVal)
 	return (uintptr_t(pVal) & (Alignment - 1)) == 0;
 }
 
-#define FM_AVX
+//#define FM_AVX
 #ifdef FM_AVX
 __forceinline void ScalarMultiplyStragglers(float *&pCurr, float *pEnd, float val)
 {
@@ -251,6 +257,10 @@ __forceinline void AddScaledStragglers(float *&pA, const float *&pB, float *pEnd
 		break;
 	};
 }
+
+#ifndef FMA
+#define _mm_fmadd_ps(a, b, c) _mm_add_ps(_mm_mul_ps(a, b), c)
+#endif
 
 template<bool Scaled = true>
 __forceinline void AddScaled(float *pMat, const float *pOther, float *pEnd, float otherScale)
