@@ -63,13 +63,21 @@ int main(int argc, char *argv [])
 						  2, 2); // Output: 5x5x16
 
 	// Layer 5
-	net.Add<LinearLayer>("L5",
-						 120, // Input Size 
-						 84); // Output Size
+	net.Add<ConvoLayer>("C5",
+						16, 120,
+						5, 5,
+						1, 1,
+						ConvoLayer::NoPadding); // Output: 1x1x120
 	net.Add<HardTanhNeuronLayer>("L5-NL");
 
-	// Layer 6 - Output Layer
+	// Layer 6
 	net.Add<LinearLayer>("L6",
+						 120,
+						 84);
+	net.Add<HardTanhNeuronLayer>("L6-NL");
+
+	// Layer 7 - Output Layer
+	net.Add<LinearLayer>("L7",
 						 84,
 						 outputSize);
 

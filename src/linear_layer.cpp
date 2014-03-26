@@ -111,6 +111,8 @@ MultiParams LinearLayer::BackpropMany(int threadIdx, const MultiParams &lastInpu
 		prms.BiasDeltas += outputError;
 	}
 
+	//prms.LearningRate2 = 1.0f / lastInputs.size();
+
 	return move(inputErrors);
 }
 
@@ -158,8 +160,8 @@ void LinearLayer::ApplyDeltas(LinParams &prms)
 		prms.BiasIncrement.noalias() -= (_weightDecay * _learningRate) * prms.Biases;
 	}
 
-	prms.WeightsIncrement.noalias() -= _learningRate * prms.WeightDeltas;
-	prms.BiasIncrement.noalias() -= _learningRate * prms.BiasDeltas;
+	prms.WeightsIncrement.noalias() -= (_learningRate * prms.LearningRate2) * prms.WeightDeltas;
+	prms.BiasIncrement.noalias() -= (_learningRate * prms.LearningRate2) * prms.BiasDeltas;
 
 	if (!_threadParams.empty())
 	{

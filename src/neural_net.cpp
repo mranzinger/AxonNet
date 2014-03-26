@@ -123,14 +123,16 @@ BPStat NeuralNet::Backprop(int threadIdx, const Params &input, const Params &lab
 		inputs[i+1] = _layers[i]->Compute(threadIdx, inputs[i], true);
 	}
 
-	if (inputs.back().size() != labels.size())
+	const Params &output = inputs.back();
+
+	if (output.size() != labels.size())
 		throw runtime_error("The output result set size doesn't match the label size.");
 
-	Params opErr = _cost->ComputeGrad(inputs.back(), labels);
+	Params opErr = _cost->ComputeGrad(output, labels);
 
-	Real totalErr = GetCost(inputs.back(), labels);
+	Real totalErr = GetCost(output, labels);
 
-	Params corrCp(inputs.back());
+	Params corrCp(output);
 	MaxBinarize(corrCp.Data);
 
 #if _DEBUG

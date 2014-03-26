@@ -52,7 +52,7 @@ Params MaxPoolLayer::Compute(int threadIdx, const Params &input, bool isTraining
 
 					for (size_t d = 0; d < depth; ++d)
 					{
-						const Real ipVal = mInput(wndY, wndX);
+						const Real ipVal = mInput(wndY, wndX + d);
 
 						Real &opMax = mOutput(bucketY, bucketX * depth + d);
 
