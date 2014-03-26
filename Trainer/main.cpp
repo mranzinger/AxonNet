@@ -102,7 +102,7 @@ int main(int argc, char *argv [])
 		net.Load(argv[1]);
 	}
 
-	net.SetLearningRate(0.01);
+	net.SetLearningRate(0.001);
 
 	net.Train(loader, 100000000, 50000, "test");
 }

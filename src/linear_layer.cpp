@@ -65,7 +65,7 @@ Params LinearLayer::Compute(int threadIdx, const Params &input, bool isTraining)
 {
 	LinParams &prms = GetParams(threadIdx);
 
-	return Params(1, prms.Biases.size(), 1, prms.Weights * input.Data + prms.Biases);
+	return Params(prms.Biases.size(), 1, 1, prms.Weights * input.Data + prms.Biases);
 }
 
 void LinearLayer::Compute(int threadIdx, const Params &input, Real *opBuff)
@@ -111,7 +111,7 @@ MultiParams LinearLayer::BackpropMany(int threadIdx, const MultiParams &lastInpu
 		prms.BiasDeltas += outputError;
 	}
 
-	//prms.LearningRate2 = 1.0f / lastInputs.size();
+	prms.LearningRate2 = 1.0f / lastInputs.size();
 
 	return move(inputErrors);
 }
@@ -143,7 +143,7 @@ void LinearLayer::ApplyDeltas(int threadIdx)
 
 void LinearLayer::ApplyDeltas(LinParams &prms)
 {
-	if (_momentum)
+	/*if (_momentum)
 	{
 		prms.WeightsIncrement *= _momentum;
 		prms.BiasIncrement *= _momentum;
@@ -176,7 +176,10 @@ void LinearLayer::ApplyDeltas(LinParams &prms)
 	{
 		prms.UpdateCt = 0;
 		SyncToMaster(prms);
-	}
+	}*/
+
+	prms.Weights.noalias() -= (_learningRate * prms.LearningRate2) * prms.WeightDeltas;
+	prms.Biases.noalias() -= (_learningRate * prms.LearningRate2) * prms.BiasDeltas;
 }
 
 void LinearLayer::SyncWithHost()
