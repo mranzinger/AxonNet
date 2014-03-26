@@ -65,7 +65,7 @@ Params LinearLayer::Compute(int threadIdx, const Params &input, bool isTraining)
 {
 	LinParams &prms = GetParams(threadIdx);
 
-	return Params(input, prms.Weights * input.Data + prms.Biases);
+	return Params(1, prms.Biases.size(), 1, prms.Weights * input.Data + prms.Biases);
 }
 
 void LinearLayer::Compute(int threadIdx, const Params &input, Real *opBuff)

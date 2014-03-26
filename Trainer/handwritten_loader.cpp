@@ -50,7 +50,7 @@ void read(istream &ip, int &val, bool flipEndian)
 #if _WIN32
 		val = _byteswap_ulong(val);
 #else
-		val = le32toh(val);
+		val = be32toh(val);
 #endif
 	}
 }

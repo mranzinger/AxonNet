@@ -17,7 +17,9 @@ using namespace axon::serialization;
 
 int main(int argc, char *argv [])
 {
-	string root = "C:\\Users\\Mike\\Documents\\Neural Net\\";
+	//string root = "C:\\Users\\Mike\\Documents\\Neural Net\\";
+
+	string root = "/home/mike/dev/personal/mnist/";
 
 	HandwrittenLoader loader(root + "train-images.idx3-ubyte",
 							 root + "train-labels.idx1-ubyte",
