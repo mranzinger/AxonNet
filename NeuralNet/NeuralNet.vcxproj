@@ -23,6 +23,7 @@
     <ClInclude Include="..\include\dropout_layer.h" />
     <ClInclude Include="..\include\fast_math.h" />
     <ClInclude Include="..\include\functions.h" />
+    <ClInclude Include="..\include\maxpool_layer.h" />
     <ClInclude Include="..\include\i_cost.h" />
     <ClInclude Include="..\include\i_train_provider.h" />
     <ClInclude Include="..\include\i_layer.h" />
@@ -48,6 +49,7 @@
     <ClCompile Include="..\src\layer_base.cpp" />
     <ClCompile Include="..\src\linear_layer.cpp" />
     <ClCompile Include="..\src\logloss_cost.cpp" />
+    <ClCompile Include="..\src\maxpool_layer.cpp" />
     <ClCompile Include="..\src\neural_net.cpp" />
     <ClCompile Include="..\src\neuron_layer.cpp" />
     <ClCompile Include="..\src\persist_util.cpp" />
