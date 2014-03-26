@@ -51,7 +51,7 @@ int read(istream &ip, bool flipEndian)
 void cvt_cpy(float *dstBuff, unsigned char *srcBuff, size_t buffSize)
 {
 	for (unsigned char *end = srcBuff + buffSize; srcBuff != end; ++dstBuff, ++srcBuff)
-		*dstBuff = ((float) *srcBuff) / 256;
+		*dstBuff = ((float) *srcBuff) / 128 - 1;
 }
 
 MultiParams HandwrittenLoader::LoadImages(const std::string &file) const
