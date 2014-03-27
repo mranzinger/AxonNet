@@ -14,5 +14,7 @@ public:
 
 	virtual Real Compute(const Params &pred, const Params &labels) override;
 	virtual Params ComputeGrad(const Params &pred, const Params &labels) override;
+
+	virtual void SetNet(NeuralNet *net) override { }
 };
 

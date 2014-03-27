@@ -19,12 +19,14 @@ public:
 
 	virtual ~LayerConfig() { }
 
-	LayerConfig() { }
+	LayerConfig() = default;
 	LayerConfig(std::string name)
 		: Name(std::move(name)) { }
 
 	friend void BindStruct(const axon::serialization::CStructBinder &binder, LayerConfig &config);
 };
+
+class NeuralNet;
 
 class NEURAL_NET_API ILayer
 {
@@ -50,6 +52,8 @@ public:
 
 	virtual void ApplyDeltas() = 0;
 	virtual void ApplyDeltas(int threadIdx) = 0;
+
+	virtual void SetNet(NeuralNet *net) = 0;
 };
 
 

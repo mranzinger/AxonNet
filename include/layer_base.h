@@ -11,11 +11,13 @@ protected:
 	Real _momentum;
 	Real _weightDecay;
 
+	NeuralNet *_net;
+
 public:
 	typedef std::shared_ptr<LayerBase> Ptr;
 
-	LayerBase() : _learningRate(1.0), _momentum(0.9), _weightDecay(0.0005) { }
-	LayerBase(std::string name) : _name(std::move(name)), _learningRate(1.0), _momentum(0.9), _weightDecay(0.0005) { }
+	LayerBase() : _learningRate(1.0), _momentum(0.9), _weightDecay(0.0005), _net(nullptr) { }
+	LayerBase(std::string name) : _name(std::move(name)), _learningRate(1.0), _momentum(0.9), _weightDecay(0.0005), _net(nullptr) { }
 
 	virtual const std::string &GetLayerName() const override {
 		return _name;
@@ -41,6 +43,8 @@ public:
 
 	virtual void ApplyDeltas() override { }
 	virtual void ApplyDeltas(int threadIdx) override { }
+
+	virtual void SetNet(NeuralNet *net) override { _net = net; }
 
 protected:
 	void BuildConfig(LayerConfig &config) const;

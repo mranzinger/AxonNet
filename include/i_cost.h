@@ -9,6 +9,8 @@
 #include "math_util.h"
 #include "params.h"
 
+class NeuralNet;
+
 struct NEURAL_NET_API ICost
 {
 public:
@@ -20,6 +22,8 @@ public:
 
 	virtual Real Compute(const Params &pred, const Params &labels) = 0;
 	virtual Params ComputeGrad(const Params &pred, const Params &labels) = 0;
+
+	virtual void SetNet(NeuralNet *net) = 0;
 };
 
 // Default for most cost functions

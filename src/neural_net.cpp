@@ -37,12 +37,17 @@ NeuralNet::NeuralNet()
 
 void NeuralNet::AddLayer(ILayer::Ptr layer)
 {
+	layer->SetNet(this);
+
 	_layers.push_back(move(layer));
 }
 
 void NeuralNet::SetCost(ICost::Ptr cost)
 {
 	assert(cost);
+
+	cost->SetNet(this);
+
 	_cost = move(cost);
 }
 
@@ -243,9 +248,9 @@ void NeuralNet::Train(ITrainProvider &provider, size_t maxIters, size_t testFreq
 			[](Real curr, const ThreadTrainConfig &cfg) { return curr + cfg.NumCorrect; });
 
 		cout << setw(7) << i << " "
-			 << setw(10) << (err / (numThreads * s_NumIters)) << " "
-			 << setw(10) << (corr / (numThreads * s_NumIters)) << " "
-			 << setw(10) << timeSec << "s"
+			 << setw(10) << left << (err / (numThreads * s_NumIters)) << " "
+			 << setw(10) << left << (corr / (numThreads * s_NumIters)) << " "
+			 << setw(10) << left << timeSec << "s"
 			 << endl;
 
 		iter += numThreads * s_NumIters;

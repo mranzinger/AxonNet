@@ -57,7 +57,12 @@ public:
 	void Load(const NetworkConfig::Ptr &config);
 	void Load(const std::string &chkFile);
 
+	ICost::Ptr GetCostFn() const { return _cost; }
+
+	ILayer::Ptr GetLayer(size_t index) const { return _layers[index]; }
 	ILayer::Ptr FindLayer(const std::string &name) const;
+
+	size_t NumLayers() const { return _layers.size(); }
 
 	NetworkConfig::Ptr GetCheckpoint() const;
 

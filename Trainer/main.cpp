@@ -100,12 +100,17 @@ int main(int argc, char *argv [])
 	net.Add<SoftmaxLayer>("soft");
 	net.SetCost<LogLossCost>();*/
 
-	if (argc == 2)
-	{
-		net.Load(argv[1]);
-	}
+	net.SetLearningRate(0.01);
 
-	net.SetLearningRate(0.0001);
+	if (argc >= 2)
+	{
+		Real learnRate = atof(argv[1]);
+		net.SetLearningRate(learnRate);
+	}
+	if (argc >= 3)
+	{
+		net.Load(argv[2]);
+	}
 
 	net.Train(loader, 100000000, 50000, "test");
 }

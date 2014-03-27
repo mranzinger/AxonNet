@@ -1,5 +1,7 @@
 #include "softmax_layer.h"
 #include "functions.h"
+#include "logloss_cost.h"
+#include "neural_net.h"
 
 using namespace std;
 using namespace axon::serialization;
@@ -36,10 +38,46 @@ Params SoftmaxLayer::Compute(int threadIdx, const Params &input, bool isTraining
 Params SoftmaxLayer::Backprop(int threadIdx, const Params &lastInput, const Params &lastOutput,
 	const Params &outputErrors)
 {
-	/*Vector v = ApplyDerivative<LogisticFn>(lastOutput);
-	v = v.binaryExpr(outputErrors, [](Real a, Real b) { return a * b; });
-	return v;*/
-	return Params(lastInput, outputErrors.Data);
+	EstablishContext();
+
+	// If the cost function is negative log loss, then it already computed
+	// the gradient of it times the gradient of this layer, so just pass it
+	// through
+	if (_costIsLogLoss)
+		return Params(lastInput, outputErrors.Data);
+
+	Matrix m(lastOutput.Data.size(), lastOutput.Data.size());
+
+	for (int y = 0; y < m.outerSize(); ++y)
+	{
+		for (int x = 0; x < m.innerSize(); ++x)
+		{
+			m(y, x) = lastOutput.Data(y) * ((x == y) - lastOutput.Data(x));
+		}
+	}
+
+	Params inputErrors(lastInput, m * outputErrors.Data);
+
+	return move(inputErrors);
+}
+
+void SoftmaxLayer::EstablishContext()
+{
+	if (_checked)
+		return;
+	_checked = true;
+
+	if (!_net)
+	{
+		_costIsLogLoss = false;
+		return;
+	}
+
+	ICost::Ptr cost = _net->GetCostFn();
+
+	auto ll = dynamic_cast<LogLossCost*>(cost.get());
+
+	_costIsLogLoss = ll != nullptr;
 }
 
 void BindStruct(const CStructBinder &binder, SoftmaxLayer &layer)
@@ -48,3 +86,5 @@ void BindStruct(const CStructBinder &binder, SoftmaxLayer &layer)
 }
 
 AXON_SERIALIZE_DERIVED_TYPE(ILayer, SoftmaxLayer, SoftmaxLayer);
+
+
