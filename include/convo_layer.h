@@ -20,29 +20,34 @@ public:
 	enum PaddingMode
 	{
 		ZeroPad,
-		NoPadding
+		NoPadding,
+		ConstantPad
 	};
 
 private:
 	LinearLayer _linearLayer;
+	size_t _inputDepth;
 	size_t _windowSizeX, _windowSizeY;
 	size_t _strideX, _strideY;
+	Vector _constPad;
 	PaddingMode _padMode;
 
 	std::vector<MultiParams> _threadWindows;
 
 public:
-	ConvoLayer() { }
+	ConvoLayer() = default;
 	ConvoLayer(std::string name, 
 				size_t inputDepth, size_t outputDepth, 
 				size_t windowSizeX, size_t windowSizeY, 
 				size_t strideX, size_t strideY, 
-				PaddingMode padMode = NoPadding);
+				PaddingMode padMode = NoPadding,
+				Vector constPad = Vector());
 	ConvoLayer(std::string name,
 				Matrix linWeights, Vector linBias,
 				size_t windowSizeX, size_t windowSizeY,
 				size_t strideX, size_t strideY,
-				PaddingMode padMode = NoPadding);
+				PaddingMode padMode = NoPadding,
+				Vector constPad = Vector());
 
 	virtual std::string GetLayerType() const override {
 		return "Convo Layer";
@@ -60,6 +65,8 @@ public:
 
 	virtual void InitializeFromConfig(const LayerConfig::Ptr &config) override;
 	virtual LayerConfig::Ptr GetConfig() const override;
+
+	void SetConstantPad(Vector pad);
 
 	friend void BindStruct(const axon::serialization::CStructBinder &binder, ConvoLayer &layer);
 

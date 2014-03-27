@@ -45,7 +45,8 @@ int main(int argc, char *argv [])
 						1, 6, // Input, Output Depth
 						5, 5, // Window Size X, Y
 						1, 1, // Stride X, Y,
-						ConvoLayer::ZeroPad); // Output: 28x28x6
+						ConvoLayer::ConstantPad,
+						Vector::Constant(1, -1)); // Output: 28x28x6
 	net.Add<HardTanhNeuronLayer>("C1-NL"); // Non-linearity for this layer
 
 	// Layer 2
@@ -71,12 +72,14 @@ int main(int argc, char *argv [])
 						1, 1,
 						ConvoLayer::NoPadding); // Output: 1x1x120
 	net.Add<HardTanhNeuronLayer>("L5-NL");
+	net.Add<DropoutLayer>("L5-D");
 
 	// Layer 6
 	net.Add<LinearLayer>("L6",
 						 120,
 						 84);
 	net.Add<HardTanhNeuronLayer>("L6-NL");
+	net.Add<DropoutLayer>("L6-D");
 
 	// Layer 7 - Output Layer
 	net.Add<LinearLayer>("L7",
@@ -102,7 +105,7 @@ int main(int argc, char *argv [])
 		net.Load(argv[1]);
 	}
 
-	net.SetLearningRate(0.001);
+	net.SetLearningRate(0.0001);
 
 	net.Train(loader, 100000000, 50000, "test");
 }

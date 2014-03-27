@@ -9,6 +9,7 @@ typedef float Real;
 typedef Eigen::Matrix<Real, Eigen::Dynamic, 1> Vector;
 typedef std::vector<Vector> MultiVector;
 typedef Eigen::Map<Vector> MapVector;
+typedef Eigen::Map<Vector, Eigen::Unaligned> UMapVector;
 typedef Eigen::Map<Vector, 0, Eigen::OuterStride<>> StrideVec;
 typedef Eigen::Matrix<Real, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> Matrix;
 typedef Eigen::Map<Matrix> Map;

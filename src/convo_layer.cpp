@@ -1,6 +1,7 @@
 #include "convo_layer.h"
 
 #include "util/enum_to_string.h"
+#include "memset_util.h"
 
 using namespace std;
 using namespace axon::serialization;
@@ -9,11 +10,14 @@ ConvoLayer::ConvoLayer(string name,
 						size_t inputDepth, size_t outputDepth, 
 						size_t windowSizeX, size_t windowSizeY, 
 						size_t strideX, size_t strideY, 
-						PaddingMode padMode)
+						PaddingMode padMode,
+						Vector constPad)
 	: LayerBase(move(name)), 
+	  	_inputDepth(inputDepth),
 		_linearLayer("", inputDepth * windowSizeX * windowSizeY, outputDepth),
 		_windowSizeX(windowSizeX), _windowSizeY(windowSizeY), 
-		_strideX(strideX), _strideY(strideY), _padMode(padMode)
+		_strideX(strideX), _strideY(strideY), _padMode(padMode),
+		_constPad(move(constPad))
 {
 	PrepareForThreads(1);
 }
@@ -22,11 +26,13 @@ ConvoLayer::ConvoLayer(std::string name,
 						Matrix linWeights, Vector linBias,
 						size_t windowSizeX, size_t windowSizeY,
 						size_t strideX, size_t strideY,
-						PaddingMode padMode)
+						PaddingMode padMode,
+						Vector constPad)
 	: LayerBase(move(name)),
 		_linearLayer("", move(linWeights), move(linBias)),
 		_windowSizeX(windowSizeX), _windowSizeY(windowSizeY),
-		_strideX(strideX), _strideY(strideY), _padMode(padMode)
+		_strideX(strideX), _strideY(strideY), _padMode(padMode),
+		_constPad(constPad)
 {
 	PrepareForThreads(1);
 }
@@ -66,8 +72,6 @@ Params ConvoLayer::ComputePacked(int threadIdx, const Params &unpaddedInput, boo
 	Params window(_windowSizeX, _windowSizeY, pInput.Depth, Vector(_windowSizeX * _windowSizeY * pInput.Depth));
 
 	const size_t inputStride = pInput.Width * pInput.Depth;
-	const size_t outputStride = opWidth * opDepth;
-	const size_t windowSize = window.Height * window.Width * window.Depth;
 	const size_t windowStride = window.Width * window.Depth;
 
 	MultiParams &threadPrms = _threadWindows[threadIdx];
@@ -130,8 +134,6 @@ Params ConvoLayer::Backprop(int threadIdx, const Params &lastInput, const Params
 	size_t wndWidth = _windowSizeX * lastInput.Depth;
 	size_t wndHeight = _windowSizeY;
 
-	size_t windowSize = wndWidth * wndHeight;
-
 	for (size_t ipY = 0, errIdx = 0; ipY < paddedInputErrors.Height - _windowSizeY + 1; ipY += _strideY)
 	{
 		for (size_t ipX = 0; 
@@ -149,7 +151,7 @@ Params ConvoLayer::Backprop(int threadIdx, const Params &lastInput, const Params
 	if (_padMode == NoPadding)
 		return move(paddedInputErrors);
 
-	Params unpaddedInputErrors(lastInput, Vector(lastInput.Height * lastInput.Width * lastInput.Depth));
+	Params unpaddedInputErrors(lastInput, Vector(lastInput.size()));
 
 	Map mUpInput(unpaddedInputErrors.Data.data(), lastInput.Height, lastInput.Width * lastInput.Depth);
 
@@ -168,7 +170,18 @@ Params ConvoLayer::GetPaddedInput(const Params &input) const
 		   halfWindowSizeY = _windowSizeY / 2;
 
 	Params ret(input.Width + _windowSizeX - 1, input.Height + _windowSizeY - 1, input.Depth, Vector());
-	ret.Data = Vector::Zero(ret.size());
+	ret.Data.resize(ret.size());
+
+	if (_padMode == ZeroPad)
+	{
+		ret.Data.setZero();
+	}
+	else if (_padMode == ConstantPad)
+	{
+		memsetMany(ret.Data.data(), _constPad.data(), _constPad.size(), ret.size() / _constPad.size());
+	}
+	else
+		throw runtime_error("Unsupported padding mode.");
 
 	Map mapIn(const_cast<Real*>(input.Data.data()), input.Height, input.Width * input.Depth);
 	Map mapOut(ret.Data.data(), ret.Height, ret.Width * ret.Depth);
@@ -190,11 +203,21 @@ Params ConvoLayer::GetZeroPaddedInput(const Params &reference) const
 		size_t rY = reference.Height + _windowSizeY - 1;
 		size_t rZ = reference.Depth;
 
-		size_t twoDSize = rX * rY;
-
 		return Params(rX, rY, rZ,
 			Vector::Zero(rX * rY * rZ));
 	}
+}
+
+void ConvoLayer::SetConstantPad(Vector pad)
+{
+	if (pad.size() == 0)
+		throw runtime_error("Cannot set an empty constant pad.");
+
+	if ((_inputDepth % pad.size()) != 0 || pad.size() > _inputDepth)
+		throw runtime_error("The pad must be a factor of the input depth.");
+
+	_padMode = ConstantPad;
+	_constPad.swap(pad);
 }
 
 void ConvoLayer::ApplyDeltas()
@@ -272,3 +295,5 @@ void BindStruct(const CStructBinder &binder, ConvoLayer &layer)
 AXON_SERIALIZE_DERIVED_TYPE(LayerConfig, ConvoLayerConfig, ConvoLayerConfig);
 
 AXON_SERIALIZE_DERIVED_TYPE(ILayer, ConvoLayer, ConvoLayer);
+
+

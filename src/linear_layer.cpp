@@ -72,8 +72,10 @@ void LinearLayer::Compute(int threadIdx, const Params &input, Real *opBuff)
 {
 	LinParams &prms = GetParams(threadIdx);
 
-	MapVector(opBuff, prms.Biases.size()).noalias()
-		= prms.Weights * input.Data + prms.Biases;
+	UMapVector op(opBuff, prms.Biases.size());
+
+	op.noalias() = prms.Weights * input.Data;
+	op.noalias() += prms.Biases;
 }
 
 Params LinearLayer::Backprop(int threadIdx, const Params &lastInput, const Params &lastOutput,
