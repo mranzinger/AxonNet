@@ -59,6 +59,12 @@ Params SoftmaxLayer::Backprop(int threadIdx, const Params &lastInput, const Para
 	Params inputErrors(lastInput, m * outputErrors.Data);
 
 	return move(inputErrors);
+
+	// Not completely sure which derivation is correct.
+	// This represents the derivative of the softmax
+	/*Params inputErrors(lastInput, LogisticFn::Derivative(lastInput.Data, lastOutput.Data));
+
+	return move(inputErrors);*/
 }
 
 void SoftmaxLayer::EstablishContext()
