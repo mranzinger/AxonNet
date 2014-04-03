@@ -42,10 +42,10 @@ struct LinParams
 		  WeightsIncrement(numOutputs, numInputs), BiasIncrement(numOutputs),
 		  WeightDeltas(numOutputs, numInputs), BiasDeltas(numOutputs)
 	{
-		InitializeWeights(Weights, 0, 1);
-		InitializeWeights(Biases, 0, 1);
-		//FanInitializeWeights(Weights);
-		//FanInitializeWeights(Biases);
+		//InitializeWeights(Weights, 0, 1);
+		//InitializeWeights(Biases, 0, 1);
+		FanInitializeWeights(Weights);
+		FanInitializeWeights(Biases);
 
 		WeightsRunning.setZero();
 		BiasRunning.setZero();

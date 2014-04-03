@@ -1,0 +1,6 @@
+-std=c++11
+-Iinclude
+-I../axon/include 
+-I../ThirdParty/eigen-3-2-1 
+-I../ThirdParty/boost_1_55_0
+

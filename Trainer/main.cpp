@@ -41,7 +41,7 @@ int main(int argc, char *argv [])
 	// Convolutional Network
 	
 	// Layer 1
-	net.Add<ConvoLayer>("C1",
+	/*net.Add<ConvoLayer>("C1",
 						1, 6, // Input, Output Depth
 						5, 5, // Window Size X, Y
 						1, 1, // Stride X, Y,
@@ -87,18 +87,20 @@ int main(int argc, char *argv [])
 						 outputSize);
 
 	net.Add<SoftmaxLayer>("soft");
-	net.SetCost<LogLossCost>();
+	net.SetCost<LogLossCost>();*/
 
 	// Fully Connected Network
-	/*net.Add<LinearLayer>("l1", inputSize, 500);
-	net.Add<HardTanhNeuronLayer>("r1");
-	net.Add<DropoutLayer>("d1");
+	net.Add<LinearLayer>("l1", inputSize, 500);
+	//net.Add<HardTanhNeuronLayer>("r1");
+	net.Add<LogisticNeuronLayer>("r1");
+    //net.Add<DropoutLayer>("d1");
 	net.Add<LinearLayer>("l3", 500, 300);
-	net.Add<HardTanhNeuronLayer>("r2");
-	net.Add<DropoutLayer>("d3");
+	net.Add<LogisticNeuronLayer>("r2");
+    //net.Add<HardTanhNeuronLayer>("r2");
+	//net.Add<DropoutLayer>("d3");
 	net.Add<LinearLayer>("l4", 300, outputSize);
 	net.Add<SoftmaxLayer>("soft");
-	net.SetCost<LogLossCost>();*/
+	net.SetCost<LogLossCost>();
 
 	net.SetLearningRate(0.01);
 

@@ -41,7 +41,7 @@ void FanInitializeWeights(Real *iter, Real *end)
 {
 	std::random_device engine;
 
-	float fanIn = 1.0f / (end - iter);
+	float fanIn = 1.0f / sqrt(end - iter);
 
 	std::uniform_real_distribution<Real> dist(-fanIn, fanIn);
 
