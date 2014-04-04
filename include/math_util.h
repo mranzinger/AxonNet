@@ -22,7 +22,7 @@ NEURAL_NET_API void InitializeWeights(Real *iter, Real *end, Real mean, Real std
 
 NEURAL_NET_API void FanInitializeWeights(Vector &vec);
 NEURAL_NET_API void FanInitializeWeights(Matrix &mat);
-NEURAL_NET_API void FanInitializeWeights(Real *iter, Real *end);
+NEURAL_NET_API void FanInitializeWeights(Real *iter, Real *end, int wtSize = -1);
 
 template<typename T>
 auto Square(const T &val) -> decltype(val * val)

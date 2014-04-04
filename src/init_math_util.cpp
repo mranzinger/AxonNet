@@ -34,14 +34,17 @@ void FanInitializeWeights(Vector &vec)
 
 void FanInitializeWeights(Matrix &mat)
 {
-	FanInitializeWeights(mat.data(), mat.data() + mat.size());
+	FanInitializeWeights(mat.data(), mat.data() + mat.size(), mat.innerSize());
 }
 
-void FanInitializeWeights(Real *iter, Real *end)
+void FanInitializeWeights(Real *iter, Real *end, int wtSize)
 {
 	std::random_device engine;
 
-	float fanIn = 1.0f / sqrt(end - iter);
+    if (wtSize <= 0)
+        wtSize = end - iter;
+
+	float fanIn = 6.0f / sqrt(float(wtSize));
 
 	std::uniform_real_distribution<Real> dist(-fanIn, fanIn);
 

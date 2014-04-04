@@ -15,7 +15,8 @@ private:
 	std::vector<Params> _testLabels;
 
 public: 
-	HandwrittenLoader(const std::string &dataFile, const std::string &labelFile,
+	HandwrittenLoader(const std::string &rootDir);
+    HandwrittenLoader(const std::string &dataFile, const std::string &labelFile,
 		              const std::string &testDataFile, const std::string &testLabelFile);
 
 	virtual size_t Size() const override {

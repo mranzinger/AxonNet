@@ -100,7 +100,8 @@ public:
 		return _master.Weights.outerSize();
 	}
 
-	friend void BindStruct(const axon::serialization::CStructBinder &binder, LinearLayer &layer);
+	friend void ReadStruct(const axon::serialization::CStructReader &reader, LinearLayer &layer);
+	friend void WriteStruct(const axon::serialization::CStructWriter &binder, const LinearLayer &layer);
 
 protected:
 	void BuildConfig(LinearLayerConfig &config) const;

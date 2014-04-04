@@ -29,7 +29,6 @@ void LayerBase::BuildConfig(LayerConfig &config) const
 void BindStruct(const axon::serialization::CStructBinder &binder, LayerBase &layer)
 {
 	binder("name", layer._name)
-		("learnRate", layer._learningRate)
 		("momentum", layer._momentum)
 		("weightDecay", layer._weightDecay);
 }
