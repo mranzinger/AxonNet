@@ -145,7 +145,7 @@ void LinearLayer::ApplyDeltas(int threadIdx)
 
 void LinearLayer::ApplyDeltas(LinParams &prms)
 {
-	/*if (_momentum)
+	if (_momentum)
 	{
 		prms.WeightsIncrement *= _momentum;
 		prms.BiasIncrement *= _momentum;
@@ -178,10 +178,10 @@ void LinearLayer::ApplyDeltas(LinParams &prms)
 	{
 		prms.UpdateCt = 0;
 		SyncToMaster(prms);
-	}*/
+	}
 
-	prms.Weights.noalias() -= (_learningRate * prms.LearningRate2) * prms.WeightDeltas;
-	prms.Biases.noalias() -= (_learningRate * prms.LearningRate2) * prms.BiasDeltas;
+	//prms.Weights.noalias() -= (_learningRate * prms.LearningRate2) * prms.WeightDeltas;
+	//prms.Biases.noalias() -= (_learningRate * prms.LearningRate2) * prms.BiasDeltas;
 }
 
 void LinearLayer::SyncWithHost()
@@ -221,9 +221,29 @@ void BindStruct(const CStructBinder &binder, LinearLayerConfig &config)
 		("biasInc", config.BiasesIncrement);
 }
 
-void BindStruct(const CStructBinder &binder, LinearLayer &layer)
+void WriteStruct(const CStructWriter &writer, const LinearLayer &layer)
 {
-	BindStruct(binder, (LayerBase&) layer);
+	WriteStruct(writer, (const LayerBase &)layer);
+
+	writer
+		("numInputs", layer._master.Weights.innerSize())
+		("numOutputs", layer._master.Weights.outerSize());
+}
+
+void ReadStruct(const CStructReader &reader, LinearLayer &layer)
+{
+	ReadStruct(reader, (LayerBase &)layer);
+
+	size_t numInputs = 0, numOutputs = 0;
+
+	reader
+		("numInputs", numInputs)
+		("numOutputs", numOutputs);
+
+	if (numInputs == 0 || numOutputs == 0)
+		throw runtime_error("The dimensions of the linear layer must be specified.");
+
+	layer._master = LinParams(numInputs, numOutputs);
 }
 
 AXON_SERIALIZE_DERIVED_TYPE(LayerConfig, LinearLayerConfig, LinearLayerConfig);

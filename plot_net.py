@@ -24,7 +24,7 @@ def showCost(fileName):
     numCycles = len(errRates['train'])
     
     testErrors = n.row_stack(errRates['test'])
-    testErrors = n.tile(testErrors, (1, 2000))
+    testErrors = n.tile(testErrors, (1, 390))
     testErrors = list(testErrors.flatten())
     testErrors += [testErrors[-1]] * max(0, len(errRates['train']) - len(errRates['test']))
     testErrors = testErrors[:len(errRates['train'])]

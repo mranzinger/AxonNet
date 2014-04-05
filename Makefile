@@ -21,7 +21,7 @@ TRAINER_EXE_D=d_trainer
 
 INCLUDES=-I$(INC_ROOT) -I../axon/include -I../ThirdParty/eigen-3-2-1 -I../ThirdParty/boost_1_55_0
 
-LIBS_BASE=-L../ThirdParty/boost_1_55_0/lib -L../axon/lib  -lboost_system -lboost_filesystem
+LIBS_BASE=-L../ThirdParty/boost_1_55_0/lib -L../axon/lib  -lboost_system -lboost_filesystem -lboost_program_options
 LIBS=$(LIBS_BASE) -laxcomm -laxser -laxutil
 LIBS_D=$(LIBS_BASE) -laxcommd -laxserd -laxutild
 

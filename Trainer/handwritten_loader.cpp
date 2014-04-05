@@ -17,8 +17,18 @@ namespace fs = boost::filesystem;
 
 using namespace std;
 
-HandwrittenLoader::HandwrittenLoader(const std::string &dataFile, const std::string &labelFile,
-									 const std::string &testDataFile, const std::string &testLabelFile)
+HandwrittenLoader::HandwrittenLoader(const string &root)
+    : HandwrittenLoader(
+       root + "train-images.idx3-ubyte",
+	   root + "train-labels.idx1-ubyte",
+	   root + "t10k-images.idx3-ubyte",
+	   root + "t10k-labels.idx1-ubyte") 
+{
+    
+}
+
+HandwrittenLoader::HandwrittenLoader(const string &dataFile, const string &labelFile,
+									 const string &testDataFile, const string &testLabelFile)
 {
 	_trainData = LoadImages(dataFile);
 	_labels = LoadLabels(labelFile);
@@ -65,7 +75,7 @@ int read(istream &ip, bool flipEndian)
 void cvt_cpy(float *dstBuff, unsigned char *srcBuff, size_t buffSize)
 {
 	for (unsigned char *end = srcBuff + buffSize; srcBuff != end; ++dstBuff, ++srcBuff)
-		*dstBuff = ((float) *srcBuff) / 128 - 1;
+		*dstBuff = (((float) *srcBuff) / 256) - 0.5;
 }
 
 MultiParams HandwrittenLoader::LoadImages(const std::string &file) const

@@ -1,4 +1,8 @@
 #include <iostream>
+#include <fstream>
+
+#include <boost/program_options.hpp>
+#include <boost/filesystem.hpp>
 
 #include <serialization/master.h>
 
@@ -14,105 +18,106 @@
 
 using namespace std;
 using namespace axon::serialization;
+namespace po = boost::program_options;
+namespace fs = boost::filesystem;
 
 int main(int argc, char *argv [])
 {
-	//string root = "C:\\Users\\Mike\\Documents\\Neural Net\\";
+    string datasetRoot;
+    string networkFile;
+    string checkpointFile;
+    float learningRate;
+    int testRate = -1;
+    string configFile;
+    string checkpointRoot;
 
-	string root = "/home/mike/dev/personal/mnist/";
+    po::options_description desc("Allowed Options");
+    desc.add_options()
+            ("help", "produce help message")
+            ;
+        
+    {
+        po::options_description mand("Mandatory Options");
 
-	HandwrittenLoader loader(root + "train-images.idx3-ubyte",
-							 root + "train-labels.idx1-ubyte",
-							 root + "t10k-images.idx3-ubyte",
-							 root + "t10k-labels.idx1-ubyte");
+        mand.add_options()
+           ("dataset,d", po::value(&datasetRoot), "Dataset Directory")
+           ("net,n", po::value(&networkFile), "Network definition File")
+           ("learn-rate,l", po::value(&learningRate), "Learning Rate")
+           ;
+ 
+        desc.add(mand);
+    }
+    {
+        po::options_description opt("Optional");
 
-	Params tmpInputs, tmpLabels;
-	loader.Get(0, tmpInputs, tmpLabels);
+        opt.add_options()
+            ("checkpoint,c", po::value(&checkpointFile), "Checkpoint File")
+            ("save-dir,s", po::value(&checkpointRoot)->default_value("test"), 
+                "Checkpoint Save Directory")
+            ("test-rate,f", po::value(&testRate)->default_value(-1), "Test Frequency.")
+            ("cfg,g", po::value(&configFile), "Config File")
+            ;
+        
+        desc.add(opt);   
+    }
 
-	//ConvoLayer tmpConvo("Convo", 1, 3, 3, 3, 1, 1, ConvoLayer::ZeroPad);
+    po::variables_map varMap;
+    po::store(po::parse_command_line(argc, argv, desc), varMap);
+    po::notify(varMap);
 
-	//Params convout = tmpConvo.Compute(0, tmpInputs, false);
+    if (varMap.count("help"))
+    {
+        cout << desc << endl;
+        return EXIT_SUCCESS;
+    }
 
-	size_t inputSize = tmpInputs.size();
-	size_t outputSize = tmpLabels.size();
+    if (fs::exists(configFile))
+    {
+        ifstream cfg(configFile);
+        po::store(po::parse_config_file(cfg, desc), varMap);
+        po::notify(varMap);
+    }
 
-	NeuralNet net;
+    if (!fs::exists(datasetRoot))
+    {
+        cout << "The specified dataset root directory doesn't exist." << endl;
+        return EXIT_FAILURE;
+    }
 
-	// Convolutional Network
-	
-	// Layer 1
-	/*net.Add<ConvoLayer>("C1",
-						1, 6, // Input, Output Depth
-						5, 5, // Window Size X, Y
-						1, 1, // Stride X, Y,
-						ConvoLayer::ConstantPad,
-						Vector::Constant(1, -1)); // Output: 28x28x6
-	net.Add<HardTanhNeuronLayer>("C1-NL"); // Non-linearity for this layer
+    HandwrittenLoader loader(datasetRoot);
+   
+    if (testRate <= 0)
+        testRate = loader.Size();
+    
+    if (!fs::exists(networkFile))
+    {
+        cout << "The specified network configuration file doesn't exist." << endl;
+        return EXIT_FAILURE;
+    }
 
-	// Layer 2
-	net.Add<MaxPoolLayer>("MP2",
-						  2, 2); // Window Size X, Y
-								 // Output: 14x14x6
-	// Layer 3
-	net.Add<ConvoLayer>("C3",
-						6, 16,
-						5, 5,
-						1, 1,
-						ConvoLayer::NoPadding); // Output: 10x10x16
-	net.Add<HardTanhNeuronLayer>("C3-NL");
+    // Load the network
+    NeuralNet net;
+    CJsonSerializer().DeserializeFromFile(networkFile, net);
 
-	// Layer 4
-	net.Add<MaxPoolLayer>("MP4",
-						  2, 2); // Output: 5x5x16
+    if (fs::exists(checkpointFile))
+    {
+        net.Load(checkpointFile);
+    }
 
-	// Layer 5
-	net.Add<ConvoLayer>("C5",
-						16, 120,
-						5, 5,
-						1, 1,
-						ConvoLayer::NoPadding); // Output: 1x1x120
-	net.Add<HardTanhNeuronLayer>("L5-NL");
-	net.Add<DropoutLayer>("L5-D");
+    if (checkpointRoot.empty())
+    {
+        cout << "The checkpoint save directory cannot be empty." << endl;
+        return EXIT_FAILURE;
+    }
 
-	// Layer 6
-	net.Add<LinearLayer>("L6",
-						 120,
-						 84);
-	net.Add<HardTanhNeuronLayer>("L6-NL");
-	net.Add<DropoutLayer>("L6-D");
+    if (!fs::exists(checkpointRoot))
+    {
+        fs::create_directories(checkpointRoot);
+    }
 
-	// Layer 7 - Output Layer
-	net.Add<LinearLayer>("L7",
-						 84,
-						 outputSize);
+    net.SetLearningRate(learningRate);
 
-	net.Add<SoftmaxLayer>("soft");
-	net.SetCost<LogLossCost>();*/
+	//string root = "/home/mike/dev/personal/mnist/";
 
-	// Fully Connected Network
-	net.Add<LinearLayer>("l1", inputSize, 500);
-	//net.Add<HardTanhNeuronLayer>("r1");
-	net.Add<LogisticNeuronLayer>("r1");
-    //net.Add<DropoutLayer>("d1");
-	net.Add<LinearLayer>("l3", 500, 300);
-	net.Add<LogisticNeuronLayer>("r2");
-    //net.Add<HardTanhNeuronLayer>("r2");
-	//net.Add<DropoutLayer>("d3");
-	net.Add<LinearLayer>("l4", 300, outputSize);
-	net.Add<SoftmaxLayer>("soft");
-	net.SetCost<LogLossCost>();
-
-	net.SetLearningRate(0.01);
-
-	if (argc >= 2)
-	{
-		Real learnRate = atof(argv[1]);
-		net.SetLearningRate(learnRate);
-	}
-	if (argc >= 3)
-	{
-		net.Load(argv[2]);
-	}
-
-	net.Train(loader, 100000000, 50000, "test");
+	net.Train(loader, 100000000, testRate, checkpointRoot);
 }

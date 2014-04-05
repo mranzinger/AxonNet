@@ -1,0 +1,102 @@
+{
+    "layers": [
+        {
+            "_realType": "ConvoLayer",
+            "name": "C1",
+            "learnRate": 0.0001,
+            "momentum": 0.9,
+            "weightDecay": 0.0005,
+            "windowSizeX": 5,
+            "windowSizeY": 5,
+            "strideX": 1,
+            "strideY": 1,
+            "padMode": 2
+        },
+        {
+            "_realType": "HardTanhNeuronLayer",
+            "name": "C1-NL",
+            "learnRate": 0.0001,
+            "momentum": 0.9,
+            "weightDecay": 0.0005
+        },
+        {
+            "_realType": "MaxPoolLayer",
+            "windowSizeX": 2,
+            "windowSizeY": 2
+        },
+        {
+            "_realType": "ConvoLayer",
+            "name": "C3",
+            "learnRate": 0.0001,
+            "momentum": 0.9,
+            "weightDecay": 0.0005,
+            "windowSizeX": 5,
+            "windowSizeY": 5,
+            "strideX": 1,
+            "strideY": 1,
+            "padMode": 1
+        },
+        {
+            "_realType": "HardTanhNeuronLayer",
+            "name": "C3-NL",
+            "learnRate": 0.0001,
+            "momentum": 0.9,
+            "weightDecay": 0.0005
+        },
+        {
+            "_realType": "MaxPoolLayer",
+            "windowSizeX": 2,
+            "windowSizeY": 2
+        },
+        {
+            "_realType": "ConvoLayer",
+            "name": "C5",
+            "learnRate": 0.0001,
+            "momentum": 0.9,
+            "weightDecay": 0.0005,
+            "windowSizeX": 5,
+            "windowSizeY": 5,
+            "strideX": 1,
+            "strideY": 1,
+            "padMode": 1
+        },
+        {
+            "_realType": "TanhNeuronLayer",
+            "name": "L5-NL",
+            "learnRate": 0.0001,
+            "momentum": 0.9,
+            "weightDecay": 0.0005
+        },
+        {
+            "_realType": "LinearLayer",
+            "name": "L6",
+            "learnRate": 0.0001,
+            "momentum": 0.9,
+            "weightDecay": 0.0005
+        },
+        {
+            "_realType": "TanhNeuronLayer",
+            "name": "L6-NL",
+            "learnRate": 0.0001,
+            "momentum": 0.9,
+            "weightDecay": 0.0005
+        },
+        {
+            "_realType": "LinearLayer",
+            "name": "L7",
+            "learnRate": 0.0001,
+            "momentum": 0.9,
+            "weightDecay": 0.0005
+        },
+        {
+            "_realType": "SoftmaxLayer",
+            "name": "soft",
+            "learnRate": 0.0001,
+            "momentum": 0.9,
+            "weightDecay": 0.0005
+        }
+    ],
+    "cost": {
+        "_realType": "LogLossCost"
+    }
+}
