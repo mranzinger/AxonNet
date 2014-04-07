@@ -10,29 +10,39 @@ Params SoftmaxLayer::Compute(int threadIdx, const Params &input, bool isTraining
 {
 	// Getting the max value and shifting the dimension is a neat trick to prevent overflow
 	// NOTE: Undeflow may still occur though, but that is far less dangerous :/
-	Real largest = input.Data.maxCoeff();
 
-	Real sum = input.Data.unaryExpr(
-		[largest](Real coeff)
-		{
-			return exp(coeff - largest);
-		}).sum();
+	Params ret(input, CMatrix(input.Data.rows(), input.Data.cols()));
 
-	Real sumDiv = 1.0 / sum;
+	for (int col = 0, cEnd = input.Data.cols(); col < cEnd; ++col)
+	{
+		auto vColInput = input.Data.col(col);
+		auto vColOutput = ret.Data.col(col);
 
-	Vector ret = input.Data.unaryExpr(
-		[largest, sumDiv](Real coeff)
-		{
-			return exp(coeff - largest) * sumDiv;
-		});
+		Real largest = vColInput.maxCoeff();
+
+		Real sum = vColInput.unaryExpr(
+			[largest](Real coeff)
+			{
+				return exp(coeff - largest);
+			}).sum();
+
+		Real sumDiv = 1.0 / sum;
+
+		vColOutput = vColInput.unaryExpr(
+			[largest, sumDiv](Real coeff)
+			{
+				return exp(coeff - largest) * sumDiv;
+			});
 
 #if _DEBUG
-	// Verify the softmax invariant that the sum of the outputs sums to 1
-	Real sftSum = ret.sum();
-	assert(abs(1 - sftSum) < 0.00001);
+		// Verify the softmax invariant that the sum of the outputs sums to 1
+		Real sftSum = vColOutput.sum();
+		assert(abs(1 - sftSum) < 0.00001);
 #endif
 
-	return Params(input, move(ret));
+	}
+
+	return move(ret);
 }
 
 Params SoftmaxLayer::Backprop(int threadIdx, const Params &lastInput, const Params &lastOutput,
