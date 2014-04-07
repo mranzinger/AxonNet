@@ -201,7 +201,7 @@ void NeuralNet::Train(ITrainProvider &provider, size_t maxIters, size_t testFreq
 					  const std::string &chkRoot)
 {
 	static const int s_NumThreads = 1;
-	static const int s_NumIters = 128;
+	static const int s_NumIters = 128 / _batchSize;
 
 	PrepareThreads(s_NumThreads);
 
@@ -249,12 +249,12 @@ void NeuralNet::Train(ITrainProvider &provider, size_t maxIters, size_t testFreq
 			[](Real curr, const ThreadTrainConfig &cfg) { return curr + cfg.NumCorrect; });
 
 		cout << setw(7) << i << " "
-			 << setw(10) << left << (err / (numThreads * s_NumIters)) << " "
-			 << setw(10) << left << (corr / (numThreads * s_NumIters)) << " "
+			 << setw(10) << left << (err / (numThreads * s_NumIters * _batchSize)) << " "
+			 << setw(10) << left << (corr / (numThreads * s_NumIters * _batchSize)) << " "
 			 << setw(10) << left << timeSec << "s"
 			 << endl;
 
-		iter += numThreads * s_NumIters;
+		iter += numThreads * s_NumIters * _batchSize;
 
 		if (iter >= testFreq)
 		{
@@ -303,8 +303,8 @@ void NeuralNet::RunTrainThread(ThreadTrainConfig &config)
 			BPStat stat = Backprop(config.ThreadIdx, vals, labels);
 
 			config.BatchErr += stat.Error;
-			if (stat.NumCorrect)
-				config.NumCorrect++;
+
+			config.NumCorrect += stat.NumCorrect;
 		}
 
 		config.DoneEvent.set();
