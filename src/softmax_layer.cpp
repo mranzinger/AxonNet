@@ -69,7 +69,7 @@ Params SoftmaxLayer::Backprop(int threadIdx, const Params &lastInput, const Para
 		{
 			for (int x = 0; x < m.innerSize(); ++x)
 			{
-				m(y, x) = vLastOutput.Data(y) * ((x == y) - vLastOutput.Data(x));
+				m(y, x) = vLastOutput(y) * ((x == y) - vLastOutput(x));
 			}
 		}
 
@@ -98,7 +98,10 @@ void SoftmaxLayer::EstablishContext()
 
 	auto ll = dynamic_cast<LogLossCost*>(cost.get());
 
-	_costIsLogLoss = ll != nullptr;
+	// The cost function must be log loss, and this has to be the final layer
+	// in the network to be able to use the shortcut
+	_costIsLogLoss = ll != nullptr &&
+					 _net->GetLayer(_net->NumLayers() - 1).get() == this;
 }
 
 void BindStruct(const CStructBinder &binder, SoftmaxLayer &layer)
