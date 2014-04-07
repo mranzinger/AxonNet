@@ -9,18 +9,31 @@ static const Real s_epss = 0.0000001;
 
 Real LogLossCost::Compute(const Params &preds, const Params &labels)
 {
-	// Pull the prediction away from 0 and 1
-	auto safe = preds.Data.unaryExpr(
-		[](Real val)
-		{
-			return min(max(val, s_epss), 1 - s_epss);
-		});
+	Real ret = 0.0f;
 
-	Real ret = -labels.Data.binaryExpr(safe,
-		[](Real label, Real pred)
-		{
-			return label * log(pred) + (1 - label) * log(1 - pred);
-		}).sum();
+	for (int col = 0, cEnd = preds.Data.cols(); col < cEnd; ++col)
+	{
+		auto vPred = preds.Data.col(col);
+		auto vLabel = labels.Data.col(col);
+
+		// Pull the prediction away from 0 and 1
+		auto safe = vPred.unaryExpr(
+			[](Real val)
+			{
+				return min(max(val, s_epss), 1 - s_epss);
+			});
+
+		Real cVal = -vLabel.binaryExpr(safe,
+			[](Real label, Real pred)
+			{
+				return label * log(pred) + (1 - label) * log(1 - pred);
+			}).sum();
+
+		ret += cVal;
+	}
+
+	// Average the cost
+	ret /= preds.Data.cols();
 
 	return ret;
 }
@@ -33,23 +46,37 @@ Params LogLossCost::ComputeGrad(const Params &pred, const Params &labels)
 	// to y_i - 1*(i == class)
 	// Although this isn't strictly necessary to do explicitly, it
 	// helps with numerical stability and performance. It also allows us to
-	// avoid the epsilon divide by 0 issue
+	// avoid the epsilon divide by 0 issue.
+	//
+	// Also, this works with mini-batch too!
 	if (_outputIsSoftmax)
 		return Params(pred, pred.Data - labels.Data);
 
-	auto safe = pred.Data.unaryExpr(
-		[](Real val)
-		{
-			return min(max(val, s_epss), 1 - s_epss);
-		});
+	Params ret(pred, CMatrix(pred.Data.rows(), pred.Data.cols()));
 
-	Vector ret = labels.Data.binaryExpr(safe,
-			[] (Real label, Real pred)
+	float errFactor = 1.0f / pred.Data.cols();
+
+	for (int col = 0, cEnd = pred.Data.cols(); col < cEnd; ++col)
+	{
+		auto vPredCol = pred.Data.col(col);
+		auto vLabelCol = labels.Data.col(col);
+
+		auto safe = vPredCol.unaryExpr(
+			[](Real val)
 			{
-				return ((1 - label) / (1 - pred)) - (label / pred);
+				return min(max(val, s_epss), 1 - s_epss);
 			});
 
-	return ret;
+		auto vRetCol = ret.Data.col(col);
+
+		vRetCol = vLabelCol.binaryExpr(safe,
+				[errFactor] (Real label, Real pred)
+				{
+					return (((1 - label) / (1 - pred)) - (label / pred)) * errFactor;
+				});
+	}
+
+	return move(ret);
 }
 
 void LogLossCost::EstablishContext()
