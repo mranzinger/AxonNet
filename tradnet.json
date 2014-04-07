@@ -25,6 +25,10 @@
             "name": "r2"
         },
         {
+            "_realType": "DropoutLayer",
+            "name": "d2"
+        },
+        {
             "_realType": "LinearLayer",
             "name": "l3",
             "momentum": 0.9,

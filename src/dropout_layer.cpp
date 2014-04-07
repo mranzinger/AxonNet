@@ -12,7 +12,8 @@ DropoutLayer::DropoutLayer(string name, Real dropout)
 
 Params DropoutLayer::Compute(int threadIdx, const Params &input, bool isTraining)
 {
-	Params ret(input, Vector(input.Data.size()));
+	Params ret(input, CMatrix());
+	ret.Data.resize(input.Data.rows(), input.Data.cols());
 
 	if (isTraining)
 	{
@@ -28,7 +29,8 @@ Params DropoutLayer::Compute(int threadIdx, const Params &input, bool isTraining
 
 Params DropoutLayer::Backprop(int threadIdx, const Params &lastInput, const Params &lastOutput, const Params &outputErrors)
 {
-	Params inputErrors(lastInput, Vector(lastInput.Data.size()));
+	Params inputErrors(lastInput, CMatrix());
+	inputErrors.Data.resize(lastInput.Data.rows(), lastInput.Data.cols());
 
 	Dropout(threadIdx, outputErrors.Data, inputErrors.Data, false);
 
