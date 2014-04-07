@@ -14,7 +14,7 @@
         },
         {
             "_realType": "LinearLayer",
-            "name": "l3",
+            "name": "l2",
             "momentum": 0.9,
             "weightDecay": 0.0005,
             "numInputs": 500,
@@ -26,10 +26,22 @@
         },
         {
             "_realType": "LinearLayer",
-            "name": "l4",
+            "name": "l3",
             "momentum": 0.9,
             "weightDecay": 0.0005,
             "numInputs": 300,
+            "numOutputs": 100
+        },
+        {
+            "_realType": "TanhNeuronLayer",
+            "name": "r3"
+        },
+        {
+            "_realType": "LinearLayer",
+            "name": "l4",
+            "momentum": 0.9,
+            "weightDecay": 0.0005,
+            "numInputs": 100,
             "numOutputs": 10
         },
         {

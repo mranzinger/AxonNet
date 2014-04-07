@@ -14,8 +14,8 @@ struct NEURAL_NET_API LinearFn
 	static Real Compute(Real input);
 	static Real Derivative(Real input);
 
-	static Vector Compute(const Vector &input);
-	static Vector Derivative(const Vector &input);
+	static CMatrix Compute(const CMatrix &input);
+	static CMatrix Derivative(const CMatrix &input);
 };
 
 struct NEURAL_NET_API LogisticFn
@@ -32,9 +32,9 @@ struct NEURAL_NET_API LogisticFn
 	static Real Derivative(Real input);
 	static Real Derivative(Real input, Real computeOutput);
 
-	static Vector Compute(const Vector &input);
-	static Vector Derivative(const Vector &input);
-	static Vector Derivative(const Vector &input, Vector computeOutput);
+	static CMatrix Compute(const CMatrix &input);
+	static CMatrix Derivative(const CMatrix &input);
+	static CMatrix Derivative(const CMatrix &input, CMatrix computeOutput);
 };
 
 struct NEURAL_NET_API RectifierFn
@@ -50,8 +50,8 @@ struct NEURAL_NET_API RectifierFn
 	static Real Compute(Real input);
 	static Real Derivative(Real input);
 
-	static Vector Compute(const Vector &input);
-	static Vector Derivative(const Vector &input);
+	static CMatrix Compute(const CMatrix &input);
+	static CMatrix Derivative(const CMatrix &input);
 };
 
 struct NEURAL_NET_API SoftPlusFn
@@ -67,8 +67,8 @@ struct NEURAL_NET_API SoftPlusFn
 	static Real Compute(Real input);
 	static Real Derivative(Real input);
 
-	static Vector Compute(const Vector &input);
-	static Vector Derivative(const Vector &input);
+	static CMatrix Compute(const CMatrix &input);
+	static CMatrix Derivative(const CMatrix &input);
 };
 
 struct NEURAL_NET_API TanhFn
@@ -85,9 +85,9 @@ struct NEURAL_NET_API TanhFn
 	static Real Derivative(Real input);
 	static Real Derivative(Real input, Real computeOutput);
 
-	static Vector Compute(const Vector &input);
-	static Vector Derivative(const Vector &input);
-	static Vector Derivative(const Vector &input, Vector computeOutput);
+	static CMatrix Compute(const CMatrix &input);
+	static CMatrix Derivative(const CMatrix &input);
+	static CMatrix Derivative(const CMatrix &input, CMatrix computeOutput);
 };
 
 struct NEURAL_NET_API RampFn
@@ -117,8 +117,8 @@ struct NEURAL_NET_API HardTanhFn
 	static Real Compute(Real input);
 	static Real Derivative(Real input);
 
-	static Vector Compute(const Vector &input);
-	static Vector Derivative(const Vector &input);
+	static CMatrix Compute(const CMatrix &input);
+	static CMatrix Derivative(const CMatrix &input);
 };
 
 namespace 
@@ -126,7 +126,7 @@ namespace
 	template<typename Fn, bool IsExplicit>
 	struct FnApplicator
 	{
-		static Vector Apply(const Vector &input)
+		static CMatrix Apply(const Vector &input)
 		{
 			return input.unaryExpr([](Real val) { return Fn::Compute(val); });
 		}
@@ -136,7 +136,7 @@ namespace
 	template<typename Fn>
 	struct FnApplicator<Fn, true>
 	{
-		static Vector Apply(const Vector &input)
+		static CMatrix Apply(const CMatrix &input)
 		{
 			return Fn::Compute(input);
 		}
@@ -146,7 +146,7 @@ namespace
 	template<typename Fn, bool IsExplicit, bool IsBinary>
 	struct FnDvApplicator
 	{
-		static Vector Apply(const Vector &input, const Vector &output)
+		static CMatrix Apply(const CMatrix &input, const CMatrix &output)
 		{
 			return input.unaryExpr([](Real val) { return Fn::Derivative(val); });
 		}
@@ -156,7 +156,7 @@ namespace
 	template<typename Fn>
 	struct FnDvApplicator<Fn, true, false>
 	{
-		static Vector Apply(const Vector &input, const Vector &output)
+		static CMatrix Apply(const CMatrix &input, const CMatrix &output)
 		{
 			return Fn::Derivative(input);
 		}
@@ -166,7 +166,7 @@ namespace
 	template<typename Fn>
 	struct FnDvApplicator<Fn, false, true>
 	{
-		static Vector Apply(const Vector &input, const Vector &output)
+		static CMatrix Apply(const CMatrix &input, const CMatrix &output)
 		{
 			return input.binaryExpr(output,
 						[] (Real in, Real out)
@@ -181,7 +181,7 @@ namespace
 	template<typename Fn>
 	struct FnDvApplicator<Fn, true, true>
 	{
-		static Vector Apply(const Vector &input, const Vector &output)
+		static CMatrix Apply(const CMatrix &input, const CMatrix &output)
 	{
 			return Fn::Derivative(input, output);
 		}
@@ -189,13 +189,13 @@ namespace
 }
 
 template<typename Fn>
-Vector ApplyFunction(const Vector &input)
+CMatrix ApplyFunction(const CMatrix &input)
 {
 	return FnApplicator<Fn, Fn::Vectorized>::Apply(input);
 }
 
 template<typename Fn>
-Vector ApplyDerivative(const Vector &input)
+CMatrix ApplyDerivative(const CMatrix &input)
 {
 	static Vector s_dummy;
 
@@ -203,7 +203,7 @@ Vector ApplyDerivative(const Vector &input)
 }
 
 template<typename Fn>
-Vector ApplyDerivative(const Vector &input, const Vector &computeOutput)
+CMatrix ApplyDerivative(const CMatrix &input, const CMatrix &computeOutput)
 {
 	return FnDvApplicator<Fn, Fn::Vectorized, Fn::Binary>::Apply(input, computeOutput);
 }

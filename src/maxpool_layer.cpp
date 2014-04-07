@@ -3,6 +3,7 @@
 using namespace std;
 using namespace axon::serialization;
 
+/*
 using Eigen::MatrixXi;
 
 MaxPoolLayer::MaxPoolLayer(string name, size_t windowSizeX, size_t windowSizeY)
@@ -21,8 +22,8 @@ Params MaxPoolLayer::Compute(int threadIdx, const Params &input, bool isTraining
 	Vector vOutput(opWidth * opHeight * depth);
 	vOutput.setConstant(numeric_limits<Real>::lowest());
 
-	Map mOutput(vOutput.data(), opHeight, opWidth * depth);
-	Map mInput(const_cast<Real*>(input.Data.data()), input.Height, input.Width * input.Depth);
+	RMap mOutput(vOutput.data(), opHeight, opWidth * depth);
+	RMap mInput(const_cast<Real*>(input.Data.data()), input.Height, input.Width * input.Depth);
 
 	MatrixXi mIndexes(opHeight, opWidth * depth);
 
@@ -117,3 +118,5 @@ void BindStruct(const CStructBinder &binder, MaxPoolLayer &layer)
 }
 
 AXON_SERIALIZE_DERIVED_TYPE(ILayer, MaxPoolLayer, MaxPoolLayer);
+
+*/

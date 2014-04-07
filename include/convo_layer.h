@@ -2,6 +2,7 @@
 
 #include "linear_layer.h"
 
+/*
 class NEURAL_NET_API ConvoLayerConfig
 	: public LayerConfig
 {
@@ -43,7 +44,7 @@ public:
 				PaddingMode padMode = NoPadding,
 				Vector constPad = Vector());
 	ConvoLayer(std::string name,
-				Matrix linWeights, Vector linBias,
+				RMatrix linWeights, Vector linBias,
 				size_t windowSizeX, size_t windowSizeY,
 				size_t strideX, size_t strideY,
 				PaddingMode padMode = NoPadding,
@@ -80,3 +81,4 @@ private:
 	Params GetPaddedInput(const Params &input) const;
 	Params GetZeroPaddedInput(const Params &reference) const;
 };
+*/

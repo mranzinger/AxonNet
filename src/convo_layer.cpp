@@ -3,6 +3,7 @@
 #include "util/enum_to_string.h"
 #include "memset_util.h"
 
+/*
 using namespace std;
 using namespace axon::serialization;
 
@@ -23,7 +24,7 @@ ConvoLayer::ConvoLayer(string name,
 }
 
 ConvoLayer::ConvoLayer(std::string name,
-						Matrix linWeights, Vector linBias,
+						RMatrix linWeights, Vector linBias,
 						size_t windowSizeX, size_t windowSizeY,
 						size_t strideX, size_t strideY,
 						PaddingMode padMode,
@@ -128,7 +129,7 @@ Params ConvoLayer::Backprop(int threadIdx, const Params &lastInput, const Params
 	// The input error is the windowed sum of the linear input errors
 	Params paddedInputErrors = GetZeroPaddedInput(lastInput);
 
-	Map paddedMap(paddedInputErrors.Data.data(), paddedInputErrors.Height, paddedInputErrors.Width * paddedInputErrors.Depth);
+	RMap paddedMap(paddedInputErrors.Data.data(), paddedInputErrors.Height, paddedInputErrors.Width * paddedInputErrors.Depth);
 
 	//Matrix wndMat(_windowSizeY, _windowSizeX * opDepth);
 	size_t wndWidth = _windowSizeX * lastInput.Depth;
@@ -142,7 +143,7 @@ Params ConvoLayer::Backprop(int threadIdx, const Params &lastInput, const Params
 		{
 			Params &linearIpErr = linearInputErrors[errIdx];
 
-			Map mIpErr(linearIpErr.Data.data(), wndHeight, wndWidth);
+			RMap mIpErr(linearIpErr.Data.data(), wndHeight, wndWidth);
 
 			paddedMap.block(ipY, ipX, wndHeight, wndWidth) += mIpErr;
 		}
@@ -153,7 +154,7 @@ Params ConvoLayer::Backprop(int threadIdx, const Params &lastInput, const Params
 
 	Params unpaddedInputErrors(lastInput, Vector(lastInput.size()));
 
-	Map mUpInput(unpaddedInputErrors.Data.data(), lastInput.Height, lastInput.Width * lastInput.Depth);
+	RMap mUpInput(unpaddedInputErrors.Data.data(), lastInput.Height, lastInput.Width * lastInput.Depth);
 
 	mUpInput = paddedMap.block(_windowSizeY / 2, (_windowSizeX / 2) * lastInput.Depth,
 		lastInput.Height, lastInput.Width * lastInput.Depth);
@@ -183,8 +184,8 @@ Params ConvoLayer::GetPaddedInput(const Params &input) const
 	else
 		throw runtime_error("Unsupported padding mode.");
 
-	Map mapIn(const_cast<Real*>(input.Data.data()), input.Height, input.Width * input.Depth);
-	Map mapOut(ret.Data.data(), ret.Height, ret.Width * ret.Depth);
+	RMap mapIn(const_cast<Real*>(input.Data.data()), input.Height, input.Width * input.Depth);
+	RMap mapOut(ret.Data.data(), ret.Height, ret.Width * ret.Depth);
 
 	mapOut.block(halfWindowSizeY, halfWindowSizeX * ret.Depth, mapIn.outerSize(), mapIn.innerSize()) = mapIn;
 
@@ -275,10 +276,6 @@ void BindStruct(const CStructBinder &binder, ConvoLayerConfig &config)
 	binder("linearConfig", config.LinearConfig);
 }
 
-/*ENUM_IO_MAP(ConvoLayer::PaddingMode)
-	ENMAP(ConvoLayer::ZeroPad, "ZeroPad")
-	ENMAP(ConvoLayer::NoPadding, "NoPadding");*/
-
 void BindStruct(const CStructBinder &binder, ConvoLayer &layer)
 {
 	BindStruct(binder, (LayerBase&) layer);
@@ -295,5 +292,5 @@ void BindStruct(const CStructBinder &binder, ConvoLayer &layer)
 AXON_SERIALIZE_DERIVED_TYPE(LayerConfig, ConvoLayerConfig, ConvoLayerConfig);
 
 AXON_SERIALIZE_DERIVED_TYPE(ILayer, ConvoLayer, ConvoLayer);
-
+*/
 

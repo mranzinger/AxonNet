@@ -13,7 +13,12 @@ public:
 
 	LayoutKind Layout;
 
-	Vector Data;
+	/*
+	 * Input data matrix. Supports mini-batch when the number of
+	 * columns > 1. Data is stored column major, so accessing the kth element
+	 * of the ith column is (i * #rows) + k
+	 */
+	CMatrix Data;
 
 	Params() : Width(0), Height(0), Depth(0), Layout(Packed) { }
 	Params(size_t width, size_t height, size_t depth, Vector data, LayoutKind layout = Packed)

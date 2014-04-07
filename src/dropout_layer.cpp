@@ -41,7 +41,7 @@ void DropoutLayer::PrepareForThreads(size_t num)
 	_trainGens.resize(max<size_t>(1, num));
 }
 
-void DropoutLayer::Dropout(int threadIdx, const Vector &input, Vector &output, bool generate)
+void DropoutLayer::Dropout(int threadIdx, const CMatrix &input, CMatrix &output, bool generate)
 {
 	RandVec &vec = _trainRands[threadIdx];
 	DropRand &gen = _trainGens[threadIdx];

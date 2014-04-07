@@ -46,7 +46,7 @@ Params SoftmaxLayer::Backprop(int threadIdx, const Params &lastInput, const Para
 	if (_costIsLogLoss)
 		return Params(lastInput, outputErrors.Data);
 
-	Matrix m(lastOutput.Data.size(), lastOutput.Data.size());
+	RMatrix m(lastOutput.Data.size(), lastOutput.Data.size());
 
 	for (int y = 0; y < m.outerSize(); ++y)
 	{

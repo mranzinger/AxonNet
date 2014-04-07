@@ -8,7 +8,7 @@ void InitializeWeights(Vector &vec, Real mean, Real stdDev)
 {
 	InitializeWeights(vec.data(), vec.data() + vec.size(), mean, stdDev);
 }
-void InitializeWeights(Matrix &mat, Real mean, Real stdDev)
+void InitializeWeights(RMatrix &mat, Real mean, Real stdDev)
 {
 	InitializeWeights(mat.data(), mat.data() + mat.size(), mean, stdDev);
 }
@@ -32,7 +32,7 @@ void FanInitializeWeights(Vector &vec)
 	FanInitializeWeights(vec.data(), vec.data() + vec.size());
 }
 
-void FanInitializeWeights(Matrix &mat)
+void FanInitializeWeights(RMatrix &mat)
 {
 	FanInitializeWeights(mat.data(), mat.data() + mat.size(), mat.innerSize());
 }

@@ -29,6 +29,7 @@ using namespace std::chrono;
 
 
 NeuralNet::NeuralNet()
+	: _batchSize(1)
 {
 	_MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
 
@@ -178,7 +179,7 @@ BPStat NeuralNet::Backprop(int threadIdx, const Params &input, const Params &lab
 	}
 #endif
 
-	return { totalErr, (corrCp == labels) };
+	return { totalErr, EqCount(corrCp.Data, labels.Data) };
 }
 
 struct ThreadTrainConfig
@@ -193,7 +194,7 @@ struct ThreadTrainConfig
 	bool Kill = false;
 
 	ThreadTrainConfig()
-		: GoEvent(true), DoneEvent(true) { }
+		: GoEvent(true), DoneEvent(true), NumIters(1) { }
 };
 
 void NeuralNet::Train(ITrainProvider &provider, size_t maxIters, size_t testFreq,
@@ -276,8 +277,10 @@ void NeuralNet::Train(ITrainProvider &provider, size_t maxIters, size_t testFreq
 
 void NeuralNet::RunTrainThread(ThreadTrainConfig &config)
 {
-	std::random_device engine;
-	std::uniform_int_distribution<> dist(0, config.Provider->Size() - 1);
+	random_device engine;
+	uniform_int_distribution<> dist(0, config.Provider->Size() - 1);
+
+	vector<size_t> idxs;
 
 	while (!config.Kill)
 	{
@@ -286,16 +289,21 @@ void NeuralNet::RunTrainThread(ThreadTrainConfig &config)
 		config.BatchErr = 0.0f;
 		config.NumCorrect = 0.0f;
 
+		idxs.resize(_batchSize);
+
 		Params vals, labels;
 
 		for (size_t i = 0; i < config.NumIters; ++i)
 		{
-			config.Provider->Get(dist(engine), vals, labels);
+			for (size_t &idx : idxs)
+				idx = dist(engine);
+
+			config.Provider->Get(idxs, vals, labels);
 
 			BPStat stat = Backprop(config.ThreadIdx, vals, labels);
 
 			config.BatchErr += stat.Error;
-			if (stat.Correct)
+			if (stat.NumCorrect)
 				config.NumCorrect++;
 		}
 
@@ -327,9 +335,18 @@ void NeuralNet::Test(ITrainProvider &provider, const std::string &chkRoot)
 
 	Real testErr = 0;
 	Real numCorr = 0;
-	for (size_t i = 0, end = provider.TestSize(); i < end; ++i)
+
+	vector<size_t> idxs{ 0, 1, 2, 3 };
+
+	for (size_t i = 0, end = provider.TestSize(); i < end; i += 4)
 	{
-		provider.GetTest(i, input, labels);
+		size_t batchSize = min(idxs.size(), end - i);
+
+		// This is a no-op if batchSize is the size of the indexes,
+		// otherwise it will truncate the indexes that are out of range
+		idxs.resize(batchSize);
+
+		provider.GetTest(idxs, input, labels);
 
 		Params op = Compute(0, input, false);
 
@@ -339,8 +356,10 @@ void NeuralNet::Test(ITrainProvider &provider, const std::string &chkRoot)
 
 		MaxBinarize(op.Data);
 
-		if (op == labels)
-			++numCorr;
+		numCorr += EqCount(op.Data, labels.Data);
+
+		for (size_t &idx : idxs)
+			idx += 4;
 	}
 
 	auto tEnd = high_resolution_clock::now();

@@ -25,7 +25,7 @@ struct ThreadTrainConfig;
 struct BPStat
 {
 	Real Error;
-	bool Correct;
+	size_t NumCorrect;
 };
 
 class NEURAL_NET_API NeuralNet
@@ -35,6 +35,8 @@ private:
 	ICost::Ptr _cost;
 	Real _learnRate = 1.0;
 	Real _bestCorr = 0;
+
+	size_t _batchSize;
 
 public:
 	NeuralNet();

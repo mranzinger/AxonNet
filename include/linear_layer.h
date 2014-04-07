@@ -8,10 +8,10 @@ class NEURAL_NET_API LinearLayerConfig
 public:
 	typedef std::shared_ptr<LinearLayerConfig> Ptr;
 
-	Matrix Weights;
+	RMatrix Weights;
 	Vector Biases;
 
-	Matrix WeightsIncrement;
+	RMatrix WeightsIncrement;
 	Vector BiasesIncrement;
 
 	friend void BindStruct(const axon::serialization::CStructBinder &binder, LinearLayerConfig &config);
@@ -19,16 +19,16 @@ public:
 
 struct LinParams
 {
-	Matrix Weights;
+	RMatrix Weights;
 	Vector Biases;
 
-	Matrix WeightsRunning;
+	RMatrix WeightsRunning;
 	Vector BiasRunning;
 
-	Matrix WeightsIncrement;
+	RMatrix WeightsIncrement;
 	Vector BiasIncrement;
 
-	Matrix WeightDeltas;
+	RMatrix WeightDeltas;
 	Vector BiasDeltas;
 
 	float LearningRate2 = 1;
@@ -72,7 +72,7 @@ public:
 
 	LinearLayer() { }
 	LinearLayer(std::string name, size_t numInputs, size_t numOutputs);
-	LinearLayer(std::string name, Matrix weights, Vector biases);
+	LinearLayer(std::string name, RMatrix weights, Vector biases);
 
 	virtual std::string GetLayerType() const override {
 		return "Linear Layer";

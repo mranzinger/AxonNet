@@ -11,7 +11,7 @@ LinearLayer::LinearLayer(string name, size_t numInputs, size_t numOutputs)
 
 }
 
-LinearLayer::LinearLayer(string name, Matrix weights, Vector biases)
+LinearLayer::LinearLayer(string name, RMatrix weights, Vector biases)
 	: LayerBase(move(name))
 {
 	_master.Weights.swap(weights);
