@@ -56,25 +56,30 @@ Params SoftmaxLayer::Backprop(int threadIdx, const Params &lastInput, const Para
 	if (_costIsLogLoss)
 		return Params(lastInput, outputErrors.Data);
 
-	RMatrix m(lastOutput.Data.size(), lastOutput.Data.size());
+	Params inputErrors(lastInput, CMatrix(lastInput.Data.rows(), lastInput.Data.cols()));
 
-	for (int y = 0; y < m.outerSize(); ++y)
+	// Compute the full Jacobian for each of the output error vectors
+	RMatrix m(lastOutput.Data.rows(), lastOutput.Data.rows());
+
+	for (int col = 0, cEnd = lastOutput.Data.cols(); col < cEnd; ++col)
 	{
-		for (int x = 0; x < m.innerSize(); ++x)
+		auto vLastOutput = lastOutput.Data.col(col);
+
+		for (int y = 0; y < m.outerSize(); ++y)
 		{
-			m(y, x) = lastOutput.Data(y) * ((x == y) - lastOutput.Data(x));
+			for (int x = 0; x < m.innerSize(); ++x)
+			{
+				m(y, x) = vLastOutput.Data(y) * ((x == y) - vLastOutput.Data(x));
+			}
 		}
+
+		auto vOutputError = outputErrors.Data.col(col);
+		auto vInputError = inputErrors.Data.col(col);
+
+		vInputError = m * vOutputError;
 	}
 
-	Params inputErrors(lastInput, m * outputErrors.Data);
-
 	return move(inputErrors);
-
-	// Not completely sure which derivation is correct.
-	// This represents the derivative of the softmax
-	/*Params inputErrors(lastInput, LogisticFn::Derivative(lastInput.Data, lastOutput.Data));
-
-	return move(inputErrors);*/
 }
 
 void SoftmaxLayer::EstablishContext()
