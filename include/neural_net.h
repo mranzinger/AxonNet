@@ -80,7 +80,9 @@ public:
 	void Train(ITrainProvider &provider, size_t maxIters, size_t testFreq,
 		       const std::string &chkRoot);
 
-	friend void BindStruct(const axon::serialization::CStructBinder &binder, NeuralNet &config);
+	//friend void BindStruct(const axon::serialization::CStructBinder &binder, NeuralNet &config);
+	friend void WriteStruct(const axon::serialization::CStructWriter &writer, const NeuralNet &net);
+	friend void ReadStruct(const axon::serialization::CStructReader &reader, NeuralNet &net);
 
 private:
 	void ApplyDeltas(int threadIdx);

@@ -38,9 +38,11 @@ Params NeuronLayer<Fn>::Compute(int threadIdx, const Params &input, bool isTrain
 template<typename Fn>
 Params NeuronLayer<Fn>::Backprop(int threadIdx, const Params &lastInput, const Params &lastOutput, const Params &outputErrors)
 {
-	Vector v = ApplyDerivative<Fn>(lastInput.Data, lastOutput.Data);
+	Params ret(lastInput, CMatrix());
 
-	v.noalias() = v.cwiseProduct(outputErrors.Data);
+	ret.Data = ApplyDerivative<Fn>(lastInput.Data, lastOutput.Data);
 
-	return Params(lastInput, std::move(v));
+	ret.Data.noalias() = ret.Data.cwiseProduct(outputErrors.Data);
+
+	return std::move(ret);
 }

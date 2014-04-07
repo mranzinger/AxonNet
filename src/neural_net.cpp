@@ -29,7 +29,7 @@ using namespace std::chrono;
 
 
 NeuralNet::NeuralNet()
-	: _batchSize(1)
+	: _batchSize(4)
 {
 	_MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
 
@@ -406,8 +406,17 @@ void BindStruct(const CStructBinder &binder, NetworkConfig &config)
 		  ("bestCorr", config.BestCorr);
 }
 
-void BindStruct(const CStructBinder &binder, NeuralNet &net)
+void WriteStruct(const axon::serialization::CStructWriter &writer, const NeuralNet &net)
 {
-	binder("layers", net._layers)
+	writer("layers", net._layers)
 		  ("cost", net._cost);
+}
+void ReadStruct(const axon::serialization::CStructReader &reader, NeuralNet &net)
+{
+	reader("layers", net._layers)
+		  ("cost", net._cost);
+
+	for (auto layer : net._layers)
+		layer->SetNet(&net);
+	net._cost->SetNet(&net);
 }
