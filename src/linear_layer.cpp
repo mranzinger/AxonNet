@@ -29,8 +29,8 @@ void LinearLayer::InitializeFromConfig(const LayerConfig::Ptr &config)
 
 	_master.Weights = lin->Weights;
 	_master.Biases = lin->Biases;
-	_master.WeightsIncrement = lin->WeightsIncrement;
-	_master.BiasIncrement = lin->BiasesIncrement;
+	//_master.WeightsIncrement = lin->WeightsIncrement;
+	//_master.BiasIncrement = lin->BiasesIncrement;
 
 	for (auto &thrd : _threadParams)
 		thrd = _master;
@@ -49,8 +49,8 @@ void LinearLayer::BuildConfig(LinearLayerConfig &config) const
 
 	config.Weights = _master.Weights;
 	config.Biases = _master.Biases;
-	config.WeightsIncrement = _master.WeightsIncrement;
-	config.BiasesIncrement = _master.BiasIncrement;
+	//config.WeightsIncrement = _master.WeightsIncrement;
+	//config.BiasesIncrement = _master.BiasIncrement;
 }
 
 void LinearLayer::PrepareForThreads(size_t num)
@@ -67,16 +67,8 @@ Params LinearLayer::Compute(int threadIdx, const Params &input, bool isTraining)
 
 	Params ret(prms.Biases.size(), 1, 1, prms.Weights * input.Data);
 
+	// The bias needs to be applied to each column
 	ret.Data.colwise() += prms.Biases;
-
-	// The biases need to be applied to each row individually...
-	// Not sure if Eigen has a broadcast like mechanism
-	/*for (int col = 0, cEnd = input.Data.cols(); col < cEnd; ++col)
-	{
-		auto vRetCol = ret.Data.col(col);
-
-		vRetCol += prms.Biases;
-	}*/
 
 	return move(ret);
 }
@@ -98,8 +90,8 @@ Params LinearLayer::Backprop(int threadIdx, const Params &lastInput, const Param
 
 	CMatrix inputErrors = prms.Weights.transpose() * outputErrors.Data;
 
-	prms.WeightDeltas.noalias() = outputErrors.Data * lastInput.Data.transpose();
-	prms.BiasDeltas = outputErrors.Data.rowwise().sum();
+	prms.WeightsGrad.noalias() = outputErrors.Data * lastInput.Data.transpose();
+	prms.BiasGrad = outputErrors.Data.rowwise().sum();
 
 	return move(inputErrors);
 }
@@ -112,8 +104,8 @@ MultiParams LinearLayer::BackpropMany(int threadIdx, const MultiParams &lastInpu
 
 	inputErrors[0].Data.noalias() = prms.Weights.transpose() * outputErrors[0].Data;
 
-	prms.WeightDeltas.noalias() = outputErrors[0].Data * lastInputs[0].Data.transpose();
-	prms.BiasDeltas = outputErrors[0].Data;
+	prms.WeightsGrad.noalias() = outputErrors[0].Data * lastInputs[0].Data.transpose();
+	prms.BiasGrad = outputErrors[0].Data;
 
 	for (size_t i = 1; i < lastInputs.size(); ++i)
 	{
@@ -122,8 +114,8 @@ MultiParams LinearLayer::BackpropMany(int threadIdx, const MultiParams &lastInpu
 
 		inputErrors[i].Data.noalias() = prms.Weights.transpose() * outputError;
 
-		prms.WeightDeltas.noalias() += outputError * lastInput.transpose();
-		prms.BiasDeltas += outputError;
+		prms.WeightsGrad.noalias() += outputError * lastInput.transpose();
+		prms.BiasGrad += outputError;
 	}
 
 	prms.LearningRate2 = 1.0f / lastInputs.size();
@@ -158,7 +150,40 @@ void LinearLayer::ApplyDeltas(int threadIdx)
 
 void LinearLayer::ApplyDeltas(LinParams &prms)
 {
-	if (_momentum)
+	prms.ExpWeightsGrad.noalias() = _decay * prms.ExpWeightsGrad +
+									(1 - _decay) * (prms.WeightsGrad.cwiseProduct(prms.WeightsGrad));
+	prms.ExpBiasGrad.noalias() = _decay * prms.ExpBiasGrad +
+									(1 - _decay) * (prms.BiasGrad.cwiseProduct(prms.BiasGrad));
+
+	RMatrix weightsInc = ((prms.ExpWeightsDelta.array() + _epsilon) /
+						(prms.ExpWeightsGrad.array() + _epsilon))
+							.sqrt().matrix()
+							.cwiseProduct(prms.WeightsGrad);
+	Vector biasInc = ((prms.ExpBiasDelta.array() + _epsilon) /
+						(prms.ExpBiasGrad.array() + _epsilon))
+							.sqrt().matrix()
+							.cwiseProduct(prms.BiasGrad);
+
+	/*auto rmsWeights = ((prms.ExpWeightsDelta + _epsilon) /
+						(prms.ExpWeightsGrad + _epsilon)).cwiseSqrt();*/
+	/*auto rmsBias = ((prms.ExpBiasDelta + _epsilon) /
+						(prms.ExpBiasGrad + _epsilon)).cwiseSqrt();*/
+
+	//RMatrix weightsInc = rmsWeights.cwiseProduct(prms.WeightsGrad);
+	//Vector biasInc = rmsBias.cwiseProduct(prms.BiasGrad);
+
+	prms.Weights.noalias() -= weightsInc;
+	prms.Biases.noalias() -= biasInc;
+
+	prms.ExpWeightsDelta.noalias() = _decay * prms.ExpWeightsDelta +
+										(1 - _decay) * (weightsInc.cwiseProduct(weightsInc));
+	prms.ExpBiasDelta.noalias() = _decay * prms.ExpBiasDelta +
+										(1 - _decay) * (biasInc.cwiseProduct(biasInc));
+
+
+	//prms.ExpWeightsDelta.noalias() = _decay * prms.ExpWeightsDelta +
+
+	/*if (_momentum)
 	{
 		prms.WeightsIncrement *= _momentum;
 		prms.BiasIncrement *= _momentum;
@@ -175,8 +200,8 @@ void LinearLayer::ApplyDeltas(LinParams &prms)
 		prms.BiasIncrement.noalias() -= (_weightDecay * _learningRate) * prms.Biases;
 	}
 
-	prms.WeightsIncrement.noalias() -= (_learningRate * prms.LearningRate2) * prms.WeightDeltas;
-	prms.BiasIncrement.noalias() -= (_learningRate * prms.LearningRate2) * prms.BiasDeltas;
+	prms.WeightsIncrement.noalias() -= (_learningRate * prms.LearningRate2) * prms.WeightsGrad;
+	prms.BiasIncrement.noalias() -= (_learningRate * prms.LearningRate2) * prms.BiasGrad;
 
 	if (!_threadParams.empty())
 	{
@@ -191,22 +216,22 @@ void LinearLayer::ApplyDeltas(LinParams &prms)
 	{
 		prms.UpdateCt = 0;
 		SyncToMaster(prms);
-	}
+	}*/
 
 	//prms.Weights.noalias() -= (_learningRate * prms.LearningRate2) * prms.WeightDeltas;
-	//prms.Biases.noalias() -= (_learningRate * prms.LearningRate2) * prms.BiasDeltas;
+	//prms.Biases.noalias() -= (_learningRate * prms.LearningRate2) * prms.BiasGrad;
 }
 
 void LinearLayer::SyncWithHost()
 {
-	for (auto &prms : _threadParams)
+	/*for (auto &prms : _threadParams)
 	{
 		prms.Weights = _master.Weights;
 		prms.Biases = _master.Biases;
 
 		prms.WeightsIncrement = _master.WeightsIncrement;
 		prms.BiasIncrement = _master.BiasIncrement;
-	}
+	}*/
 }
 
 void LinearLayer::SyncToMaster(LinParams &prms)
@@ -214,14 +239,14 @@ void LinearLayer::SyncToMaster(LinParams &prms)
 	if (_threadParams.empty())
 		return;
 
-	_master.Weights.noalias() += prms.WeightsRunning;
+	/*_master.Weights.noalias() += prms.WeightsRunning;
 	_master.Biases.noalias() += prms.BiasRunning;
 
 	prms.Weights = _master.Weights;
 	prms.Biases = _master.Biases;
 
 	prms.WeightsRunning.setZero();
-	prms.BiasRunning.setZero();
+	prms.BiasRunning.setZero();*/
 }
 
 void BindStruct(const CStructBinder &binder, LinearLayerConfig &config)

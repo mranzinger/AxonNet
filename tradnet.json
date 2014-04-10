@@ -13,6 +13,10 @@
             "name": "r1"
         },
         {
+            "_realType": "DropoutLayer",
+            "name": "d1"
+        },
+        {
             "_realType": "LinearLayer",
             "name": "l2",
             "momentum": 0.9,
@@ -39,6 +43,10 @@
         {
             "_realType": "TanhNeuronLayer",
             "name": "r3"
+        },
+        {
+            "_realType": "DropoutLayer",
+            "name": "d3"
         },
         {
             "_realType": "LinearLayer",

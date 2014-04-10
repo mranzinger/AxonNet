@@ -22,14 +22,20 @@ struct LinParams
 	RMatrix Weights;
 	Vector Biases;
 
-	RMatrix WeightsRunning;
+	/*RMatrix WeightsRunning;
 	Vector BiasRunning;
 
 	RMatrix WeightsIncrement;
-	Vector BiasIncrement;
+	Vector BiasIncrement;*/
 
-	RMatrix WeightDeltas;
-	Vector BiasDeltas;
+	RMatrix WeightsGrad;
+	Vector BiasGrad;
+
+	RMatrix ExpWeightsGrad;
+	Vector ExpBiasGrad;
+
+	RMatrix ExpWeightsDelta;
+	Vector ExpBiasDelta;
 
 	float LearningRate2 = 1;
 
@@ -38,21 +44,28 @@ struct LinParams
 	LinParams() { }
 	LinParams(size_t numInputs, size_t numOutputs)
 		: Weights(numOutputs, numInputs), Biases(numOutputs),
-		  WeightsRunning(numOutputs, numInputs), BiasRunning(numOutputs),
-		  WeightsIncrement(numOutputs, numInputs), BiasIncrement(numOutputs),
-		  WeightDeltas(numOutputs, numInputs), BiasDeltas(numOutputs)
+		  //WeightsRunning(numOutputs, numInputs), BiasRunning(numOutputs),
+		  //WeightsIncrement(numOutputs, numInputs), BiasIncrement(numOutputs),
+		  WeightsGrad(numOutputs, numInputs), BiasGrad(numOutputs),
+		  ExpWeightsGrad(numOutputs, numInputs), ExpBiasGrad(numOutputs),
+		  ExpWeightsDelta(numOutputs, numInputs), ExpBiasDelta(numOutputs)
 	{
 		//InitializeWeights(Weights, 0, 1);
 		//InitializeWeights(Biases, 0, 1);
 		FanInitializeWeights(Weights);
 		FanInitializeWeights(Biases);
 
-		WeightsRunning.setZero();
+		/*WeightsRunning.setZero();
 		BiasRunning.setZero();
 		WeightsIncrement.setZero();
-		BiasIncrement.setZero();
-		WeightDeltas.setZero();
-		BiasDeltas.setZero();
+		BiasIncrement.setZero();*/
+		WeightsGrad.setZero();
+		BiasGrad.setZero();
+
+		ExpWeightsGrad.setZero();
+		ExpBiasGrad.setZero();
+		ExpWeightsDelta.setZero();
+		ExpBiasDelta.setZero();
 	}
 };
 
@@ -66,6 +79,9 @@ protected:
 	LinParamsList _threadParams;
 
 	size_t _updateInterval = 5;
+
+	float _epsilon = 1e-6;
+	float _decay = 0.95;
 
 public:
 	typedef std::shared_ptr<LinearLayer> Ptr;

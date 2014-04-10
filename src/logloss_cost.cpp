@@ -49,8 +49,9 @@ Params LogLossCost::ComputeGrad(const Params &pred, const Params &labels)
 	// avoid the epsilon divide by 0 issue.
 	//
 	// Also, this works with mini-batch too!
+
 	if (_outputIsSoftmax)
-		return Params(pred, pred.Data - labels.Data);
+		return Params(pred, (pred.Data - labels.Data) / pred.Data.cols());
 
 	Params ret(pred, CMatrix(pred.Data.rows(), pred.Data.cols()));
 
