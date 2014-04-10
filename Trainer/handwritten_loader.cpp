@@ -15,6 +15,8 @@ namespace fs = tr2::sys;
 namespace fs = boost::filesystem;
 #endif
 
+#include <Eigen/Dense>
+
 using namespace std;
 
 HandwrittenLoader::HandwrittenLoader(const string &root)
@@ -149,17 +151,18 @@ HandwrittenLoader::MultiDataVec HandwrittenLoader::LoadLabels(const string &file
 
 void HandwrittenLoader::Get(const vector<size_t> &idxs, Params &vals, Params &labels) const
 {
-	Get(idxs, vals, labels, _trainData, _trainLabels);
+	Get(idxs, vals, labels, _trainData, _trainLabels, true);
 }
 
 void HandwrittenLoader::GetTest(const vector<size_t> &idxs, Params &vals, Params &labels) const
 {
-	Get(idxs, vals, labels, _testData, _testLabels);
+	Get(idxs, vals, labels, _testData, _testLabels, false);
 }
 
 void HandwrittenLoader::Get(const std::vector<size_t>& idxs, Params& vals, Params& labels,
 		const MultiDataVec& allImages,
-		const MultiDataVec& allLabels) const
+		const MultiDataVec& allLabels,
+		bool deform) const
 {
 	vals.Width = _numRows;
 	vals.Height = _numCols;
@@ -179,12 +182,34 @@ void HandwrittenLoader::Get(const std::vector<size_t>& idxs, Params& vals, Param
 	Real *pVals = vals.Data.data();
 	Real *pLabels = labels.Data.data();
 
+	std::random_device device;
+	std::uniform_int_distribution<> dist(0, 3);
+
+	RMatrix mat(28, 28);
+
 	for (size_t idx : idxs)
 	{
 		const DataVec &vec = allImages[idx];
 		const DataVec &lab = allLabels[idx];
 
-		copy(vec.begin(), vec.end(), pVals);
+		if (deform)
+		{
+			const RMap vMap(const_cast<Real*>(vec.data()), 28, 28);
+
+			mat.setConstant(-0.5f);
+
+			int wndX = dist(device);
+			int wndY = dist(device);
+
+			mat.block(wndY, wndX, 24, 24) = vMap.block(2, 2, 24, 24);
+
+			copy(mat.data(), mat.data() + mat.size(), pVals);
+		}
+		else
+		{
+			copy(vec.begin(), vec.end(), pVals);
+		}
+
 		copy(lab.begin(), lab.end(), pLabels);
 
 		pVals += _imgSize;

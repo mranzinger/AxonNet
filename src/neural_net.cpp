@@ -29,7 +29,7 @@ using namespace std::chrono;
 
 
 NeuralNet::NeuralNet()
-	: _batchSize(4)
+	: _batchSize(32)
 {
 	_MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
 
@@ -249,7 +249,7 @@ void NeuralNet::Train(ITrainProvider &provider, size_t maxIters, size_t testFreq
 			[](Real curr, const ThreadTrainConfig &cfg) { return curr + cfg.NumCorrect; });
 
 		cout << setw(7) << i << " "
-			 << setw(10) << left << (err / (numThreads * s_NumIters * _batchSize)) << " "
+			 << setw(10) << left << (err / (numThreads * s_NumIters)) << " "
 			 << setw(10) << left << (corr / (numThreads * s_NumIters * _batchSize)) << " "
 			 << setw(10) << left << timeSec << "s"
 			 << endl;

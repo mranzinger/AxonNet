@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <?fileVersion 4.0.0?><cproject storage_type_id="org.eclipse.cdt.core.XmlProjectDescriptionStorage">
 	<storageModule moduleId="org.eclipse.cdt.core.settings">
-		<cconfiguration id="cdt.managedbuild.toolchain.gnu.base.1656375772">
-			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="cdt.managedbuild.toolchain.gnu.base.1656375772" moduleId="org.eclipse.cdt.core.settings" name="Release">
+		<cconfiguration id="cdt.managedbuild.toolchain.gnu.base.1285129932">
+			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="cdt.managedbuild.toolchain.gnu.base.1285129932" moduleId="org.eclipse.cdt.core.settings" name="Default">
 				<externalSettings/>
 				<extensions>
 					<extension id="org.eclipse.cdt.core.GmakeErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
@@ -14,177 +14,81 @@
 				</extensions>
 			</storageModule>
 			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
-				<configuration artifactName="AxonNet" buildProperties="" description="" id="cdt.managedbuild.toolchain.gnu.base.1656375772" name="Release" parent="org.eclipse.cdt.build.core.emptycfg">
-					<folderInfo id="cdt.managedbuild.toolchain.gnu.base.1656375772.669574271" name="/" resourcePath="">
-						<toolChain id="cdt.managedbuild.toolchain.gnu.base.1995437292" name="cdt.managedbuild.toolchain.gnu.base" superClass="cdt.managedbuild.toolchain.gnu.base">
-							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.ELF" id="cdt.managedbuild.target.gnu.platform.base.1186340685" name="Debug Platform" osList="linux,hpux,aix,qnx" superClass="cdt.managedbuild.target.gnu.platform.base"/>
-							<builder buildPath="${workspace_loc:/AxonNet}" id="cdt.managedbuild.target.gnu.builder.base.954177140" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Gnu Make Builder" parallelBuildOn="true" parallelizationNumber="8" superClass="cdt.managedbuild.target.gnu.builder.base"/>
-							<tool id="cdt.managedbuild.tool.gnu.archiver.base.1752518154" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.base"/>
-							<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.base.1056204682" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.base">
-								<option id="gnu.cpp.compiler.option.include.paths.508585302" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" valueType="includePath">
-									<listOptionValue builtIn="false" value="/media/data/dev/personal/axon/include"/>
-									<listOptionValue builtIn="false" value="/media/data/dev/ThirdParty/eigen"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/AxonNet/include}&quot;"/>
-									<listOptionValue builtIn="false" value="/media/data/dev/ThirdParty/boost_1_55_0/include"/>
+				<configuration buildProperties="" description="" id="cdt.managedbuild.toolchain.gnu.base.1285129932" name="Default" parent="org.eclipse.cdt.build.core.emptycfg">
+					<folderInfo id="cdt.managedbuild.toolchain.gnu.base.1285129932.682108905" name="/" resourcePath="">
+						<toolChain id="cdt.managedbuild.toolchain.gnu.base.2097298905" name="cdt.managedbuild.toolchain.gnu.base" superClass="cdt.managedbuild.toolchain.gnu.base">
+							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.ELF" id="cdt.managedbuild.target.gnu.platform.base.998693933" name="Debug Platform" osList="linux,hpux,aix,qnx" superClass="cdt.managedbuild.target.gnu.platform.base"/>
+							<builder id="cdt.managedbuild.target.gnu.builder.base.744234346" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Gnu Make Builder" parallelBuildOn="true" parallelizationNumber="optimal" superClass="cdt.managedbuild.target.gnu.builder.base"/>
+							<tool id="cdt.managedbuild.tool.gnu.archiver.base.888483346" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.base"/>
+							<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.base.1654740311" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.base">
+								<option id="gnu.cpp.compiler.option.include.paths.20078649" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/axon/include}&quot;"/>
+									<listOptionValue builtIn="false" value="/home/mike/dev/ThirdParty/eigen-3-2-1"/>
+									<listOptionValue builtIn="false" value="/home/mike/dev/ThirdParty/boost_1_55_0"/>
 								</option>
-								<option id="gnu.cpp.compiler.option.other.other.177585900" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" value="-c -fmessage-length=0 -std=c++11 -msse4.2" valueType="string"/>
-								<option id="gnu.cpp.compiler.option.preprocessor.def.570530337" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" valueType="definedSymbols">
-									<listOptionValue builtIn="false" value="__GXX_EXPERIMENTAL_CXX0X__"/>
-									<listOptionValue builtIn="false" value="NDEBUG"/>
-								</option>
-								<option id="gnu.cpp.compiler.option.optimization.level.934195611" name="Optimization Level" superClass="gnu.cpp.compiler.option.optimization.level" value="gnu.cpp.compiler.optimization.level.most" valueType="enumerated"/>
-								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.1173615439" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
-							</tool>
-							<tool id="cdt.managedbuild.tool.gnu.c.compiler.base.1867505723" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.base">
-								<option id="gnu.c.compiler.option.include.paths.573318635" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
-									<listOptionValue builtIn="false" value="/media/data/dev/personal/axon/include"/>
-									<listOptionValue builtIn="false" value="/media/data/dev/ThirdParty/eigen"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/AxonNet/include}&quot;"/>
-									<listOptionValue builtIn="false" value="/media/data/dev/ThirdParty/boost_1_55_0/include"/>
-								</option>
-								<option id="gnu.c.compiler.option.preprocessor.def.symbols.148248139" name="Defined symbols (-D)" superClass="gnu.c.compiler.option.preprocessor.def.symbols" valueType="definedSymbols">
+								<option id="gnu.cpp.compiler.option.preprocessor.def.2135624303" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="__GXX_EXPERIMENTAL_CXX0X__"/>
 								</option>
-								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.920913601" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
+								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.1727104995" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>
-							<tool id="cdt.managedbuild.tool.gnu.c.linker.base.201211741" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.base"/>
-							<tool id="cdt.managedbuild.tool.gnu.cpp.linker.base.582739751" name="GCC C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.base">
-								<option id="gnu.cpp.link.option.paths.1754110794" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" valueType="libPaths">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/axon}/lib&quot;"/>
-									<listOptionValue builtIn="false" value="/media/data/dev/ThirdParty/boost_1_55_0/lib"/>
+							<tool id="cdt.managedbuild.tool.gnu.c.compiler.base.1723162938" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.base">
+								<option id="gnu.c.compiler.option.include.paths.1774965297" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/axon/include}&quot;"/>
+									<listOptionValue builtIn="false" value="/home/mike/dev/ThirdParty/eigen-3-2-1"/>
+									<listOptionValue builtIn="false" value="/home/mike/dev/ThirdParty/boost_1_55_0"/>
 								</option>
-								<option id="gnu.cpp.link.option.libs.2140621349" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" valueType="libs">
-									<listOptionValue builtIn="false" value="axcomm"/>
-									<listOptionValue builtIn="false" value="boost_system"/>
-									<listOptionValue builtIn="false" value="boost_filesystem"/>
-									<listOptionValue builtIn="false" value="axser"/>
-									<listOptionValue builtIn="false" value="axutil"/>
+								<option id="gnu.c.compiler.option.preprocessor.def.symbols.858858242" name="Defined symbols (-D)" superClass="gnu.c.compiler.option.preprocessor.def.symbols" valueType="definedSymbols">
+									<listOptionValue builtIn="false" value="__GXX_EXPERIMENTAL_CXX0X__"/>
 								</option>
-								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.427236393" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
+								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1063843891" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
+							</tool>
+							<tool id="cdt.managedbuild.tool.gnu.c.linker.base.1823071243" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.base"/>
+							<tool id="cdt.managedbuild.tool.gnu.cpp.linker.base.2027206006" name="GCC C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.base">
+								<option id="gnu.cpp.link.option.paths.100841725" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" valueType="libPaths">
+									<listOptionValue builtIn="false" value="/home/mike/dev/ThirdParty/boost_1_55_0/lib"/>
+								</option>
+								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.578914809" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
 									<additionalInput kind="additionalinput" paths="$(LIBS)"/>
 								</inputType>
 							</tool>
-							<tool id="cdt.managedbuild.tool.gnu.assembler.base.904798614" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.base">
-								<option id="gnu.both.asm.option.include.paths.1980409895" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths" valueType="includePath">
-									<listOptionValue builtIn="false" value="/media/data/dev/personal/axon/include"/>
-									<listOptionValue builtIn="false" value="/media/data/dev/ThirdParty/eigen"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/AxonNet/include}&quot;"/>
-									<listOptionValue builtIn="false" value="/media/data/dev/ThirdParty/boost_1_55_0/include"/>
+							<tool id="cdt.managedbuild.tool.gnu.assembler.base.1940614490" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.base">
+								<option id="gnu.both.asm.option.include.paths.1899047414" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/axon/include}&quot;"/>
+									<listOptionValue builtIn="false" value="/home/mike/dev/ThirdParty/eigen-3-2-1"/>
+									<listOptionValue builtIn="false" value="/home/mike/dev/ThirdParty/boost_1_55_0"/>
 								</option>
-								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.1078162205" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
+								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.547472313" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
 							</tool>
 						</toolChain>
 					</folderInfo>
-					<sourceEntries>
-						<entry excluding="NeuralNet.Test" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
-					</sourceEntries>
-				</configuration>
-			</storageModule>
-			<storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>
-		</cconfiguration>
-		<cconfiguration id="cdt.managedbuild.toolchain.gnu.base.1656375772.1062222158">
-			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="cdt.managedbuild.toolchain.gnu.base.1656375772.1062222158" moduleId="org.eclipse.cdt.core.settings" name="Debug">
-				<externalSettings/>
-				<extensions>
-					<extension id="org.eclipse.cdt.core.GmakeErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
-					<extension id="org.eclipse.cdt.core.CWDLocator" point="org.eclipse.cdt.core.ErrorParser"/>
-					<extension id="org.eclipse.cdt.core.GCCErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
-					<extension id="org.eclipse.cdt.core.GASErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
-					<extension id="org.eclipse.cdt.core.GLDErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
-					<extension id="org.eclipse.cdt.core.ELF" point="org.eclipse.cdt.core.BinaryParser"/>
-				</extensions>
-			</storageModule>
-			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
-				<configuration artifactName="AxonNet" buildProperties="" description="" id="cdt.managedbuild.toolchain.gnu.base.1656375772.1062222158" name="Debug" parent="org.eclipse.cdt.build.core.emptycfg">
-					<folderInfo id="cdt.managedbuild.toolchain.gnu.base.1656375772.1062222158." name="/" resourcePath="">
-						<toolChain id="cdt.managedbuild.toolchain.gnu.base.1877528088" name="cdt.managedbuild.toolchain.gnu.base" superClass="cdt.managedbuild.toolchain.gnu.base">
-							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.ELF" id="cdt.managedbuild.target.gnu.platform.base.1338557997" name="Debug Platform" osList="linux,hpux,aix,qnx" superClass="cdt.managedbuild.target.gnu.platform.base"/>
-							<builder buildPath="${workspace_loc:/AxonNet}" id="cdt.managedbuild.target.gnu.builder.base.1264693237" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Gnu Make Builder" parallelBuildOn="true" parallelizationNumber="8" superClass="cdt.managedbuild.target.gnu.builder.base"/>
-							<tool id="cdt.managedbuild.tool.gnu.archiver.base.759632548" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.base"/>
-							<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.base.1546542338" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.base">
-								<option id="gnu.cpp.compiler.option.include.paths.740732123" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" valueType="includePath">
-									<listOptionValue builtIn="false" value="/media/data/dev/personal/axon/include"/>
-									<listOptionValue builtIn="false" value="/media/data/dev/ThirdParty/eigen"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/AxonNet/include}&quot;"/>
-									<listOptionValue builtIn="false" value="/media/data/dev/ThirdParty/boost_1_55_0/include"/>
-								</option>
-								<option id="gnu.cpp.compiler.option.other.other.1100828405" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" value="-c -fmessage-length=0 -std=c++11 -msse4.2" valueType="string"/>
-								<option id="gnu.cpp.compiler.option.preprocessor.def.1843698744" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" valueType="definedSymbols">
-									<listOptionValue builtIn="false" value="__GXX_EXPERIMENTAL_CXX0X__"/>
-									<listOptionValue builtIn="false" value="_DEBUG"/>
-								</option>
-								<option id="gnu.cpp.compiler.option.optimization.level.273225503" name="Optimization Level" superClass="gnu.cpp.compiler.option.optimization.level" value="gnu.cpp.compiler.optimization.level.none" valueType="enumerated"/>
-								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.1079366223" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
-							</tool>
-							<tool id="cdt.managedbuild.tool.gnu.c.compiler.base.1949829298" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.base">
-								<option id="gnu.c.compiler.option.include.paths.78008528" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
-									<listOptionValue builtIn="false" value="/media/data/dev/personal/axon/include"/>
-									<listOptionValue builtIn="false" value="/media/data/dev/ThirdParty/eigen"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/AxonNet/include}&quot;"/>
-									<listOptionValue builtIn="false" value="/media/data/dev/ThirdParty/boost_1_55_0/include"/>
-								</option>
-								<option id="gnu.c.compiler.option.preprocessor.def.symbols.1282625035" name="Defined symbols (-D)" superClass="gnu.c.compiler.option.preprocessor.def.symbols" valueType="definedSymbols">
-									<listOptionValue builtIn="false" value="__GXX_EXPERIMENTAL_CXX0X__"/>
-								</option>
-								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.2090746242" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
-							</tool>
-							<tool id="cdt.managedbuild.tool.gnu.c.linker.base.502307881" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.base"/>
-							<tool id="cdt.managedbuild.tool.gnu.cpp.linker.base.823456073" name="GCC C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.base">
-								<option id="gnu.cpp.link.option.paths.1445068511" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" valueType="libPaths">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/axon}/lib&quot;"/>
-									<listOptionValue builtIn="false" value="/media/data/dev/ThirdParty/boost_1_55_0/lib"/>
-								</option>
-								<option id="gnu.cpp.link.option.libs.709125499" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" valueType="libs">
-									<listOptionValue builtIn="false" value="axcomm"/>
-									<listOptionValue builtIn="false" value="boost_system"/>
-									<listOptionValue builtIn="false" value="boost_filesystem"/>
-									<listOptionValue builtIn="false" value="axser"/>
-									<listOptionValue builtIn="false" value="axutil"/>
-								</option>
-								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.535663279" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
-									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
-									<additionalInput kind="additionalinput" paths="$(LIBS)"/>
-								</inputType>
-							</tool>
-							<tool id="cdt.managedbuild.tool.gnu.assembler.base.1796595698" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.base">
-								<option id="gnu.both.asm.option.include.paths.456938201" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths" valueType="includePath">
-									<listOptionValue builtIn="false" value="/media/data/dev/personal/axon/include"/>
-									<listOptionValue builtIn="false" value="/media/data/dev/ThirdParty/eigen"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/AxonNet/include}&quot;"/>
-									<listOptionValue builtIn="false" value="/media/data/dev/ThirdParty/boost_1_55_0/include"/>
-								</option>
-								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.1979969638" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
-							</tool>
-						</toolChain>
-					</folderInfo>
-					<sourceEntries>
-						<entry excluding="NeuralNet.Test" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
-					</sourceEntries>
 				</configuration>
 			</storageModule>
 			<storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>
 		</cconfiguration>
 	</storageModule>
 	<storageModule moduleId="cdtBuildSystem" version="4.0.0">
-		<project id="AxonNet.null.1493470741" name="AxonNet"/>
+		<project id="AxonNet.null.931855316" name="AxonNet"/>
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
+	<storageModule moduleId="refreshScope" versionNumber="2">
+		<configuration configurationName="Default">
+			<resource resourceType="PROJECT" workspacePath="/AxonNet"/>
+		</configuration>
+	</storageModule>
 	<storageModule moduleId="scannerConfiguration">
 		<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.toolchain.gnu.base.1285129932;cdt.managedbuild.toolchain.gnu.base.1285129932.682108905;cdt.managedbuild.tool.gnu.c.compiler.base.1723162938;cdt.managedbuild.tool.gnu.c.compiler.input.1063843891">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="cdt.managedbuild.toolchain.gnu.base.1656375772;cdt.managedbuild.toolchain.gnu.base.1656375772.669574271;cdt.managedbuild.tool.gnu.c.compiler.base.1867505723;cdt.managedbuild.tool.gnu.c.compiler.input.920913601">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.toolchain.gnu.base.1285129932;cdt.managedbuild.toolchain.gnu.base.1285129932.682108905;cdt.managedbuild.tool.gnu.cpp.compiler.base.1654740311;cdt.managedbuild.tool.gnu.cpp.compiler.input.1727104995">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="cdt.managedbuild.toolchain.gnu.base.1656375772;cdt.managedbuild.toolchain.gnu.base.1656375772.669574271;cdt.managedbuild.tool.gnu.cpp.compiler.base.1056204682;cdt.managedbuild.tool.gnu.cpp.compiler.input.1173615439">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
 	</storageModule>
-	<storageModule moduleId="refreshScope" versionNumber="2">
-		<configuration configurationName="Default">
-			<resource resourceType="PROJECT" workspacePath="/AxonNet"/>
-		</configuration>
-		<configuration configurationName="Release"/>
-		<configuration configurationName="Debug"/>
-	</storageModule>
-	<storageModule moduleId="org.eclipse.cdt.internal.ui.text.commentOwnerProjectMappings"/>
 </cproject>
