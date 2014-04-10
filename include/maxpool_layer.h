@@ -2,6 +2,8 @@
 
 #include "layer_base.h"
 
+/*
+
 class NEURAL_NET_API MaxPoolLayer
 	: public LayerBase
 {
@@ -23,3 +25,5 @@ public:
 
 	friend void BindStruct(const axon::serialization::CStructBinder &binder, MaxPoolLayer &layer);
 };
+
+*/

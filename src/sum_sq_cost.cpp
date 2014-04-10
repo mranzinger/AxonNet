@@ -4,12 +4,12 @@ using namespace std;
 
 Real SumSqCost::Compute(const Params &pred, const Params &labels)
 {
-	return (labels.Data - pred.Data).squaredNorm();
+	return (labels.Data - pred.Data).squaredNorm() / pred.Data.cols();
 }
 
 Params SumSqCost::ComputeGrad(const Params &pred, const Params &labels)
 {
-	return Params(pred, pred.Data - labels.Data);
+	return Params(pred, (pred.Data - labels.Data)  / pred.Data.cols());
 }
 
 void BindStruct(const axon::serialization::CStructBinder &, SumSqCost&) { }

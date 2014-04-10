@@ -11,17 +11,25 @@ typedef std::vector<Vector> MultiVector;
 typedef Eigen::Map<Vector> MapVector;
 typedef Eigen::Map<Vector, Eigen::Unaligned> UMapVector;
 typedef Eigen::Map<Vector, 0, Eigen::OuterStride<>> StrideVec;
-typedef Eigen::Matrix<Real, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> Matrix;
-typedef Eigen::Map<Matrix> Map;
-typedef Eigen::Map<Matrix, Eigen::Unaligned> UMap;
-typedef Eigen::Map<Matrix, 0, Eigen::OuterStride<>> StrideMat;
+
+typedef Eigen::Matrix<Real, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor> CMatrix;
+typedef Eigen::Matrix<Real, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> RMatrix;
+
+typedef Eigen::Map<CMatrix> CMap;
+typedef Eigen::Map<RMatrix> RMap;
+
+typedef Eigen::Map<CMatrix, Eigen::Unaligned> CUMap;
+typedef Eigen::Map<RMatrix, Eigen::Unaligned> RUMap;
+
+typedef Eigen::Map<CMatrix, 0, Eigen::OuterStride<>> CStrideMap;
+typedef Eigen::Map<RMatrix, 0, Eigen::OuterStride<>> RStrideMap;
 
 NEURAL_NET_API void InitializeWeights(Vector &vec, Real mean, Real stdDev);
-NEURAL_NET_API void InitializeWeights(Matrix &mat, Real mean, Real stdDev);
+NEURAL_NET_API void InitializeWeights(RMatrix &mat, Real mean, Real stdDev);
 NEURAL_NET_API void InitializeWeights(Real *iter, Real *end, Real mean, Real stdDev);
 
 NEURAL_NET_API void FanInitializeWeights(Vector &vec);
-NEURAL_NET_API void FanInitializeWeights(Matrix &mat);
+NEURAL_NET_API void FanInitializeWeights(RMatrix &mat);
 NEURAL_NET_API void FanInitializeWeights(Real *iter, Real *end, int wtSize = -1);
 
 template<typename T>
@@ -59,7 +67,7 @@ Range<IterType> make_range(IterType begin, IterType end)
 	return Range<IterType>(std::move(begin), std::move(end));
 }
 
-inline void MaxBinarize(Vector &v)
+/*inline void MaxBinarize(Vector &v)
 {
 	Real m = v[0];
 	size_t bestIdx = 0;
@@ -80,6 +88,49 @@ inline void MaxBinarize(Vector &v)
 		else
 			v[i] = 1;
 	}
+}*/
+
+inline void MaxBinarize(CMatrix &mat)
+{
+	// Since the matrix is column major, it is more efficient to
+	// traverse by row and then by column
+	for (int col = 0, cEnd = mat.cols(); col < cEnd; ++col)
+	{
+		Real m = mat(0, col);
+		size_t bestIdx = 0;
+
+		for (int row = 1, rEnd = mat.rows(); row < rEnd; ++row)
+		{
+			Real v = mat(row, col);
+
+			if (v > m)
+			{
+				m = v;
+				bestIdx = row;
+			}
+		}
+
+		for (int row = 0, rEnd = mat.rows(); row < rEnd; ++row)
+		{
+			if (row == bestIdx)
+				mat(row, col) = 1;
+			else
+				mat(row, col) = 0;
+		}
+	}
+}
+
+inline size_t EqCount(const CMatrix &a, const CMatrix &b)
+{
+	size_t ret = 0;
+
+	for (int col = 0, cEnd = a.cols(); col < cEnd; ++col)
+	{
+		if (a.col(col) == b.col(col))
+			++ret;
+	}
+
+	return ret;
 }
 
 

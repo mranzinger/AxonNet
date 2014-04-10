@@ -18,7 +18,7 @@ namespace axon {
 
 			writer.Append("data", move(vals));
 		}
-		void WriteStruct(const CStructWriter &writer, const Matrix &mat)
+		void WriteStruct(const CStructWriter &writer, const RMatrix &mat)
 		{
 			writer("rows", mat.outerSize());
 			writer("cols", mat.innerSize());
@@ -44,7 +44,7 @@ namespace axon {
 
 			copy(data->begin(), data->end(), vec.data());
 		}
-		void ReadStruct(const CStructReader &reader, Matrix &mat)
+		void ReadStruct(const CStructReader &reader, RMatrix &mat)
 		{
 			size_t rows, cols;
 			reader("rows", rows)("cols", cols);

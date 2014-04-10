@@ -13,15 +13,20 @@ public:
 
 	LayoutKind Layout;
 
-	Vector Data;
+	/*
+	 * Input data matrix. Supports mini-batch when the number of
+	 * columns > 1. Data is stored column major, so accessing the kth element
+	 * of the ith column is (i * #rows) + k
+	 */
+	CMatrix Data;
 
 	Params() : Width(0), Height(0), Depth(0), Layout(Packed) { }
-	Params(size_t width, size_t height, size_t depth, Vector data, LayoutKind layout = Packed)
+	Params(size_t width, size_t height, size_t depth, CMatrix data, LayoutKind layout = Packed)
 		: Width(width), Height(height), Depth(depth), Layout(layout)
 	{
 		Data.swap(data);
 	}
-	Params(Vector data)
+	Params(CMatrix data)
 		: Width(data.size()), Height(1), Depth(1), Layout(Packed) 
 	{
 		Data.swap(data);
@@ -31,7 +36,7 @@ public:
 		  Layout(other.Layout), Data(other.Data) 
 	{ 
 	}
-	Params(const Params &other, Vector data)
+	Params(const Params &other, CMatrix data)
 		: Width(other.Width), Height(other.Height), Depth(other.Depth),
 		  Layout(other.Layout)
 	{
@@ -47,7 +52,7 @@ public:
 		swap(*this, other);
 		return *this;
 	}
-	Params &operator=(Vector data)
+	Params &operator=(CMatrix data)
 	{
 		Width = data.size();
 		Height = 1;

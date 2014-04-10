@@ -10,29 +10,39 @@ Params SoftmaxLayer::Compute(int threadIdx, const Params &input, bool isTraining
 {
 	// Getting the max value and shifting the dimension is a neat trick to prevent overflow
 	// NOTE: Undeflow may still occur though, but that is far less dangerous :/
-	Real largest = input.Data.maxCoeff();
 
-	Real sum = input.Data.unaryExpr(
-		[largest](Real coeff)
-		{
-			return exp(coeff - largest);
-		}).sum();
+	Params ret(input, CMatrix(input.Data.rows(), input.Data.cols()));
 
-	Real sumDiv = 1.0 / sum;
+	for (int col = 0, cEnd = input.Data.cols(); col < cEnd; ++col)
+	{
+		auto vColInput = input.Data.col(col);
+		auto vColOutput = ret.Data.col(col);
 
-	Vector ret = input.Data.unaryExpr(
-		[largest, sumDiv](Real coeff)
-		{
-			return exp(coeff - largest) * sumDiv;
-		});
+		Real largest = vColInput.maxCoeff();
+
+		Real sum = vColInput.unaryExpr(
+			[largest](Real coeff)
+			{
+				return exp(coeff - largest);
+			}).sum();
+
+		Real sumDiv = 1.0 / sum;
+
+		vColOutput = vColInput.unaryExpr(
+			[largest, sumDiv](Real coeff)
+			{
+				return exp(coeff - largest) * sumDiv;
+			});
 
 #if _DEBUG
-	// Verify the softmax invariant that the sum of the outputs sums to 1
-	Real sftSum = ret.sum();
-	assert(abs(1 - sftSum) < 0.00001);
+		// Verify the softmax invariant that the sum of the outputs sums to 1
+		Real sftSum = vColOutput.sum();
+		assert(abs(1 - sftSum) < 0.00001);
 #endif
 
-	return Params(input, move(ret));
+	}
+
+	return move(ret);
 }
 
 Params SoftmaxLayer::Backprop(int threadIdx, const Params &lastInput, const Params &lastOutput,
@@ -46,25 +56,30 @@ Params SoftmaxLayer::Backprop(int threadIdx, const Params &lastInput, const Para
 	if (_costIsLogLoss)
 		return Params(lastInput, outputErrors.Data);
 
-	Matrix m(lastOutput.Data.size(), lastOutput.Data.size());
+	Params inputErrors(lastInput, CMatrix(lastInput.Data.rows(), lastInput.Data.cols()));
 
-	for (int y = 0; y < m.outerSize(); ++y)
+	// Compute the full Jacobian for each of the output error vectors
+	RMatrix m(lastOutput.Data.rows(), lastOutput.Data.rows());
+
+	for (int col = 0, cEnd = lastOutput.Data.cols(); col < cEnd; ++col)
 	{
-		for (int x = 0; x < m.innerSize(); ++x)
+		auto vLastOutput = lastOutput.Data.col(col);
+
+		for (int y = 0; y < m.outerSize(); ++y)
 		{
-			m(y, x) = lastOutput.Data(y) * ((x == y) - lastOutput.Data(x));
+			for (int x = 0; x < m.innerSize(); ++x)
+			{
+				m(y, x) = vLastOutput(y) * ((x == y) - vLastOutput(x));
+			}
 		}
+
+		auto vOutputError = outputErrors.Data.col(col);
+		auto vInputError = inputErrors.Data.col(col);
+
+		vInputError = m * vOutputError;
 	}
 
-	Params inputErrors(lastInput, m * outputErrors.Data);
-
 	return move(inputErrors);
-
-	// Not completely sure which derivation is correct.
-	// This represents the derivative of the softmax
-	/*Params inputErrors(lastInput, LogisticFn::Derivative(lastInput.Data, lastOutput.Data));
-
-	return move(inputErrors);*/
 }
 
 void SoftmaxLayer::EstablishContext()
@@ -83,7 +98,10 @@ void SoftmaxLayer::EstablishContext()
 
 	auto ll = dynamic_cast<LogLossCost*>(cost.get());
 
-	_costIsLogLoss = ll != nullptr;
+	// The cost function must be log loss, and this has to be the final layer
+	// in the network to be able to use the shortcut
+	_costIsLogLoss = ll != nullptr &&
+					 _net->GetLayer(_net->NumLayers() - 1).get() == this;
 }
 
 void BindStruct(const CStructBinder &binder, SoftmaxLayer &layer)

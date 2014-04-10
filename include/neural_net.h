@@ -25,7 +25,7 @@ struct ThreadTrainConfig;
 struct BPStat
 {
 	Real Error;
-	bool Correct;
+	size_t NumCorrect;
 };
 
 class NEURAL_NET_API NeuralNet
@@ -35,6 +35,8 @@ private:
 	ICost::Ptr _cost;
 	Real _learnRate = 1.0;
 	Real _bestCorr = 0;
+
+	size_t _batchSize;
 
 public:
 	NeuralNet();
@@ -78,7 +80,9 @@ public:
 	void Train(ITrainProvider &provider, size_t maxIters, size_t testFreq,
 		       const std::string &chkRoot);
 
-	friend void BindStruct(const axon::serialization::CStructBinder &binder, NeuralNet &config);
+	//friend void BindStruct(const axon::serialization::CStructBinder &binder, NeuralNet &config);
+	friend void WriteStruct(const axon::serialization::CStructWriter &writer, const NeuralNet &net);
+	friend void ReadStruct(const axon::serialization::CStructReader &reader, NeuralNet &net);
 
 private:
 	void ApplyDeltas(int threadIdx);

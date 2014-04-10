@@ -8,11 +8,18 @@ class HandwrittenLoader
 	: public ITrainProvider
 {
 private:
-	std::vector<Params> _trainData;
-	std::vector<Params> _labels;
+	typedef std::vector<Real> DataVec;
+	typedef std::vector<DataVec> MultiDataVec;
 
-	std::vector<Params> _testData;
-	std::vector<Params> _testLabels;
+	MultiDataVec _trainData;
+	MultiDataVec _trainLabels;
+
+	MultiDataVec _testData;
+	MultiDataVec _testLabels;
+
+	size_t _numRows;
+	size_t _numCols;
+	size_t _imgSize;
 
 public: 
 	HandwrittenLoader(const std::string &rootDir);
@@ -22,22 +29,17 @@ public:
 	virtual size_t Size() const override {
 		return _trainData.size();
 	}
-	virtual void Get(size_t idx, Params &vals, Params &labels) const override
-	{
-		vals = _trainData[idx];
-		labels = _labels[idx];
-	}
+	virtual void Get(const std::vector<size_t> &idxs, Params &vals, Params &labels) const override;
 
 	virtual size_t TestSize() const override {
 		return _testData.size();
 	}
-	virtual void GetTest(size_t idx, Params &vals, Params &labels) const override
-	{
-		vals = _testData[idx];
-		labels = _testLabels[idx];
-	}
+	virtual void GetTest(const std::vector<size_t> &idxs, Params &vals, Params &labels) const override;
 
 private:
-	MultiParams LoadImages(const std::string &file) const;
-	MultiParams LoadLabels(const std::string &file) const;
+	MultiDataVec LoadImages(const std::string &file);
+	MultiDataVec LoadLabels(const std::string &file);
+
+	void Get(const std::vector<size_t> &idxs, Params &vals, Params &labels,
+			 const MultiDataVec &allImages, const MultiDataVec &allLabels) const;
 };

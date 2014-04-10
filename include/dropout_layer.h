@@ -50,5 +50,5 @@ public:
 	friend void BindStruct(const axon::serialization::CStructBinder &binder, DropoutLayer &layer);
 
 private:
-	void Dropout(int threadIdx, const Vector &input, Vector &output, bool generate);
+	void Dropout(int threadIdx, const CMatrix &input, CMatrix &output, bool generate);
 };

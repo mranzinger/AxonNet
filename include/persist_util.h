@@ -11,10 +11,10 @@ namespace axon {
 	namespace serialization {
 
 		NEURAL_NET_API void WriteStruct(const CStructWriter &writer, const Vector &vec);
-		NEURAL_NET_API void WriteStruct(const CStructWriter &writer, const Matrix &mat);
+		NEURAL_NET_API void WriteStruct(const CStructWriter &writer, const RMatrix &mat);
 
 		NEURAL_NET_API void ReadStruct(const CStructReader &reader, Vector &vec);
-		NEURAL_NET_API void ReadStruct(const CStructReader &reader, Matrix &mat);
+		NEURAL_NET_API void ReadStruct(const CStructReader &reader, RMatrix &mat);
 
 	}
 }

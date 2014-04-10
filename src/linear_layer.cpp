@@ -11,7 +11,7 @@ LinearLayer::LinearLayer(string name, size_t numInputs, size_t numOutputs)
 
 }
 
-LinearLayer::LinearLayer(string name, Matrix weights, Vector biases)
+LinearLayer::LinearLayer(string name, RMatrix weights, Vector biases)
 	: LayerBase(move(name))
 {
 	_master.Weights.swap(weights);
@@ -65,7 +65,20 @@ Params LinearLayer::Compute(int threadIdx, const Params &input, bool isTraining)
 {
 	LinParams &prms = GetParams(threadIdx);
 
-	return Params(prms.Biases.size(), 1, 1, prms.Weights * input.Data + prms.Biases);
+	Params ret(prms.Biases.size(), 1, 1, prms.Weights * input.Data);
+
+	ret.Data.colwise() += prms.Biases;
+
+	// The biases need to be applied to each row individually...
+	// Not sure if Eigen has a broadcast like mechanism
+	/*for (int col = 0, cEnd = input.Data.cols(); col < cEnd; ++col)
+	{
+		auto vRetCol = ret.Data.col(col);
+
+		vRetCol += prms.Biases;
+	}*/
+
+	return move(ret);
 }
 
 void LinearLayer::Compute(int threadIdx, const Params &input, Real *opBuff)
@@ -83,10 +96,10 @@ Params LinearLayer::Backprop(int threadIdx, const Params &lastInput, const Param
 {
 	LinParams &prms = GetParams(threadIdx);
 
-	Vector inputErrors = prms.Weights.transpose() * outputErrors.Data;
+	CMatrix inputErrors = prms.Weights.transpose() * outputErrors.Data;
 
 	prms.WeightDeltas.noalias() = outputErrors.Data * lastInput.Data.transpose();
-	prms.BiasDeltas = outputErrors.Data;
+	prms.BiasDeltas = outputErrors.Data.rowwise().sum();
 
 	return move(inputErrors);
 }

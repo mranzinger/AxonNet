@@ -9,7 +9,7 @@ Real LinearFn::Compute(Real input)
 	return input;
 }
 
-Vector LinearFn::Compute(const Vector &input)
+CMatrix LinearFn::Compute(const CMatrix &input)
 {
 	return input;
 }
@@ -19,9 +19,9 @@ Real LinearFn::Derivative(Real input)
 	return 1;
 }
 
-Vector LinearFn::Derivative(const Vector &input)
+CMatrix LinearFn::Derivative(const CMatrix &input)
 {
-	return Vector(input.size()).setOnes();
+	return CMatrix(input.rows(), input.cols()).setOnes();
 }
 
 Real LogisticFn::Compute(Real input)
@@ -29,12 +29,12 @@ Real LogisticFn::Compute(Real input)
 	return 1.0f / (1.0f + exp(-input));
 }
 
-Vector LogisticFn::Compute(const Vector &input)
+CMatrix LogisticFn::Compute(const CMatrix &input)
 {
 	const __m128 s_one = _mm_set1_ps(1);
 	const __m128 s_zero = _mm_set1_ps(0);
 
-	Vector ret(input.size());
+	CMatrix ret(input.rows(), input.cols());
 
 	const float *pInput = input.data();
 	float *pOutput = ret.data();
@@ -70,12 +70,12 @@ Real LogisticFn::Derivative(Real input, Real computeOutput)
 	return computeOutput * (1.0f - computeOutput);
 }
 
-Vector LogisticFn::Derivative(const Vector &input)
+CMatrix LogisticFn::Derivative(const CMatrix &input)
 {
 	return Derivative(input, Compute(input));
 }
 
-Vector LogisticFn::Derivative(const Vector &input, Vector computeOutput)
+CMatrix LogisticFn::Derivative(const CMatrix &input, CMatrix computeOutput)
 {
 	const __m128 s_one = _mm_set1_ps(1);
 
@@ -104,11 +104,11 @@ Real RectifierFn::Compute(Real input)
 	return input > 0 ? input : 0;
 }
 
-Vector RectifierFn::Compute(const Vector &input)
+CMatrix RectifierFn::Compute(const CMatrix &input)
 {
 	const __m128 s_zero = _mm_set1_ps(0);
 
-	Vector ret(input.size());
+	CMatrix ret(input.rows(), input.cols());
 
 	const float *pInput = input.data();
 	float *pOutput = ret.data();
@@ -135,12 +135,12 @@ Real RectifierFn::Derivative(Real input)
 	return input > 0 ? 1 : 0;
 }
 
-Vector RectifierFn::Derivative(const Vector &input)
+CMatrix RectifierFn::Derivative(const CMatrix &input)
 {
 	const __m128 s_one = _mm_set1_ps(1);
 	const __m128 s_zero = _mm_set1_ps(0);
 
-	Vector ret(input.size());
+	CMatrix ret(input.rows(), input.cols());
 
 	const float *pInput = input.data();
 	float *pOutput = ret.data();
@@ -175,12 +175,12 @@ Real HardTanhFn::Compute(Real input)
 	return input;
 }
 
-Vector HardTanhFn::Compute(const Vector &input)
+CMatrix HardTanhFn::Compute(const CMatrix &input)
 {
 	const __m128 s_neg1 = _mm_set1_ps(-1);
 	const __m128 s_1 = _mm_set1_ps(1);
 
-	Vector ret(input.size());
+	CMatrix ret(input.rows(), input.cols());
 
 	const float *pInput = input.data();
 	float *pOutput = ret.data();
@@ -209,13 +209,13 @@ Real HardTanhFn::Derivative(Real input)
 	return 1;
 }
 
-Vector HardTanhFn::Derivative(const Vector &input)
+CMatrix HardTanhFn::Derivative(const CMatrix &input)
 {
 	const __m128 s_neg1 = _mm_set1_ps(-1);
 	const __m128 s_1 = _mm_set1_ps(1);
 	const __m128 s_0 = _mm_set1_ps(0);
 
-	Vector ret(input.size());
+	CMatrix ret(input.rows(), input.cols());
 
 	const float *pInput = input.data();
 	float *pOutput = ret.data();
@@ -251,12 +251,12 @@ Real SoftPlusFn::Compute(Real input)
 	return log(1 + exp(input));
 }
 
-Vector SoftPlusFn::Compute(const Vector &input)
+CMatrix SoftPlusFn::Compute(const CMatrix &input)
 {
 	static const __m128 s_1 = _mm_set1_ps(1);
 	static const __m128 s_20 = _mm_set1_ps(20);
 
-	Vector ret(input.size());
+	CMatrix ret(input.rows(), input.cols());
 
 	const float *pInput = input.data();
 	float *pOutput = ret.data();
@@ -289,7 +289,7 @@ Real SoftPlusFn::Derivative(Real input)
 	return LogisticFn::Compute(input);
 }
 
-Vector SoftPlusFn::Derivative(const Vector &input)
+CMatrix SoftPlusFn::Derivative(const CMatrix &input)
 {
 	return LogisticFn::Compute(input);
 }
@@ -301,12 +301,12 @@ Real TanhFn::Compute(Real input)
 	return (1.0f - e) / (1.0 + e);
 }
 
-Vector TanhFn::Compute(const Vector &input)
+CMatrix TanhFn::Compute(const CMatrix &input)
 {
 	static const __m128 s_0 = _mm_set1_ps(0);
 	static const __m128 s_1 = _mm_set1_ps(1);
 
-	Vector ret(input.size());
+	CMatrix ret(input.rows(), input.cols());
 
 	const float *pInput = input.data();
 	float *pOutput = ret.data();
@@ -345,12 +345,12 @@ Real TanhFn::Derivative(Real input, Real computeOutput)
 	return 1.0 - Square(computeOutput);
 }
 
-Vector TanhFn::Derivative(const Vector &input)
+CMatrix TanhFn::Derivative(const CMatrix &input)
 {
 	return Derivative(input, Compute(input));
 }
 
-Vector TanhFn::Derivative(const Vector &input, Vector computeOutput)
+CMatrix TanhFn::Derivative(const CMatrix &input, CMatrix computeOutput)
 {
 	static const __m128 s_one = _mm_set1_ps(1);
 
