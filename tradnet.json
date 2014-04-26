@@ -6,7 +6,7 @@
             "momentum": 0.9,
             "weightDecay": 0.0005,
             "numInputs": 784,
-            "numOutputs": 500
+            "numOutputs": 300
         },
         {
             "_realType": "TanhNeuronLayer",
@@ -17,24 +17,24 @@
             "name": "l2",
             "momentum": 0.9,
             "weightDecay": 0.0005,
-            "numInputs": 500,
-            "numOutputs": 300
+            "numInputs": 300,
+            "numOutputs": 500
         },
         {
             "_realType": "TanhNeuronLayer",
             "name": "r2"
         },
         {
-            "_realType": "DropoutLayer",
-            "name": "d2"
-        },
-        {
             "_realType": "LinearLayer",
             "name": "l3",
             "momentum": 0.9,
             "weightDecay": 0.0005,
-            "numInputs": 300,
-            "numOutputs": 100
+            "numInputs": 500,
+            "numOutputs": 200
+        },
+        {
+            "_realType": "DropoutLayer",
+            "name": "d"
         },
         {
             "_realType": "TanhNeuronLayer",
@@ -42,10 +42,22 @@
         },
         {
             "_realType": "LinearLayer",
+            "name": "lt",
+            "momentum": 0.9,
+            "weightDecay": 0.0005,
+            "numInputs": 200,
+            "numOutputs": 50
+        },
+        {
+            "_realType": "TanhNeuronLayer",
+            "name": "rt"
+        },
+        {
+            "_realType": "LinearLayer",
             "name": "l4",
             "momentum": 0.9,
             "weightDecay": 0.0005,
-            "numInputs": 100,
+            "numInputs": 50,
             "numOutputs": 10
         },
         {
