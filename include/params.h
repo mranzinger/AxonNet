@@ -77,6 +77,8 @@ public:
 		return Width * Height * Depth;
 	}
 
+	size_t BatchSize() const { return Data.innerSize(); }
+
 	friend void swap(Params &a, Params &b)
 	{
 		using std::swap;

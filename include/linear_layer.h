@@ -61,6 +61,8 @@ typedef std::vector<LinParams> LinParamsList;
 class NEURAL_NET_API LinearLayer
 	: public LayerBase
 {
+	friend class ConvoLayer;
+
 protected:
 	LinParams _master;
 	LinParamsList _threadParams;
