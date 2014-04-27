@@ -57,4 +57,56 @@ TEST(ConvoLayerTest, SimpleConvo)
 	AssertMatrixEquivalence(correctOutput, comp.Data);
 }
 
+TEST(ConvoLayerTest, ConvoMultiFilter)
+{
+	RMatrix kernel(2, 4); // 2 Filters, 4 inputs
+	kernel << 1, 1, 1, 1,
+			  1, 2, 3, 4;
+	Vector bias(2);
+	bias << -4, 1;
+
+	CMatrix input(9, 2); // 9 pixels per image, 2 images
+	input << 1, 3,
+			 2, 2,
+			 3, 1,
+			 1, 3,
+			 2, 2,
+			 3, 1,
+			 1, 3,
+			 2, 2,
+			 3, 1;
+
+	CMatrix correctOutput(8, 2);
+	correctOutput <<  2,  6,     17, 25,
+			          6,  2,     27, 15,
+
+					  2,  6,     17, 25,
+					  6,  2,     27, 15;
+
+	Params comp = Compute(kernel, bias, Params(3, 3, 1, input),
+						  2, 2,
+						  1, 1,
+						  0, 0);
+
+	AssertMatrixEquivalence(correctOutput, comp.Data);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
