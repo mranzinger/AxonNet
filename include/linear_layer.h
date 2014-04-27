@@ -96,10 +96,10 @@ public:
 	virtual void ApplyDeltas(int threadIdx) override;
 
 	size_t InputSize() const {
-		return _master.Weights.innerSize();
+		return _master.Weights.cols();
 	}
 	size_t OutputSize() const {
-		return _master.Weights.outerSize();
+		return _master.Weights.rows();
 	}
 
 	friend void ReadStruct(const axon::serialization::CStructReader &reader, LinearLayer &layer);

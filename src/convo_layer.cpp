@@ -63,7 +63,10 @@ Params ConvoLayer::ComputePacked(int threadIdx, const Params &input, bool isTrai
 
 	const int ipWidth = input.Width;
 	const int ipHeight = input.Height;
+	const int ipDepth = input.Depth;
 	const int batchSize = input.BatchSize();
+
+	const int ipStride = ipWidth * ipDepth;
 
 	const int ipEffectiveWidth = ipWidth + _padWidth * 2,
 		      ipEffectiveHeight = ipHeight + _padHeight * 2;
@@ -71,6 +74,7 @@ Params ConvoLayer::ComputePacked(int threadIdx, const Params &input, bool isTrai
 	const int opWidth = (size_t) floor((ipEffectiveWidth - _windowSizeX + 1) / float(_strideX));
 	const int opHeight = (size_t) floor((ipEffectiveHeight - _windowSizeY + 1) / float(_strideY));
 	const int opDepth = _linearLayer.OutputSize();
+	const int opStride = opWidth * opDepth;
 
 	const auto Right = [this] (int val) { return val + _windowSizeX; };
 	const auto Bottom = [this] (int val) { return val + _windowSizeY; };
@@ -83,66 +87,65 @@ Params ConvoLayer::ComputePacked(int threadIdx, const Params &input, bool isTrai
 	int xMax = ipWidth + _padWidth,
 		yMax = ipHeight + _padHeight;
 
-	int yConvoCurr = -_padHeight,
-		xConvoCurr = -_padWidth;
-	int xOpCurr = 0, yOpCurr = 0;
-
 	// This object will store the partial convolution product of the current filter
 	// application
-	Vector convoPartialSum(batchSize);
+	Vector convoPartialSum(opDepth);
 
-	while (Bottom(yConvoCurr) <= yMax)
+	for (int imageIdx = 0; imageIdx < batchSize; ++imageIdx)
 	{
-		// Reset the x position
-		xConvoCurr = -_padWidth;
-		xOpCurr = 0;
+		int yOpCurr = 0;
+		int yConvoCurr = -_padHeight;
 
-		int yKernelStart = max(0, yConvoCurr);
-		int yKernelEnd = min(Bottom(yConvoCurr), ipHeight);
+		// Lambda that returns a block of image data
+		auto GetImageBlock = [this, &input, ipStride, ipDepth, imageIdx]
+		                (int row, int col, int size) { return input.Data.block(row * ipStride + col * ipDepth, imageIdx, size * ipDepth, 1); };
 
-		while (Right(xConvoCurr) <= xMax)
+		while (Bottom(yConvoCurr) <= yMax)
 		{
-			int xKernelStart = max(0, xConvoCurr);
-			int xKernelEnd = min(Right(xConvoCurr), ipWidth);
-			int xKernelSize = xKernelEnd - xKernelStart;
+			// Reset the x position
+			int xConvoCurr = -_padWidth;
+			int xOpCurr = 0;
 
-			// Iterate over all of the filters
-			for (size_t filterIdx = 0; filterIdx < opDepth; ++filterIdx)
+			int yKernelStart = max(0, yConvoCurr);
+			int yKernelEnd = min(Bottom(yConvoCurr), ipHeight);
+
+			while (Right(xConvoCurr) <= xMax)
 			{
-				// Reset the partial sum
-				convoPartialSum.setZero();
+				int xKernelStart = max(0, xConvoCurr);
+				int xKernelEnd = min(Right(xConvoCurr), ipWidth);
+				int xKernelSize = xKernelEnd - xKernelStart;
 
-				for (int yKernel = yKernelStart; yKernel < yKernelEnd; ++yKernel)
+				int skipLeft = max(0, -xConvoCurr); // This will be greater than 0 when xConvoCurr is < 0
+
+				// Always start the partial sum as the biases
+				convoPartialSum = biases;
+
+				for (int filterRow = 0; (filterRow + yKernelStart) < yKernelEnd; ++filterRow)
 				{
-					// Get the parameters for the part of the current filter, based on the vertical part we are at
-					auto filterBlock = weights.block(filterIdx, yKernel * _windowSizeX + xKernelStart, 1, xKernelSize);
+					int kernelColStart = filterRow * _windowSizeX * ipDepth;
+					kernelColStart += skipLeft * ipDepth; // Also, use skip left to index into the current row
 
-					// Get the row index of the current row in the matrix
-					int ipRowStart = IpRow(yKernel) + xKernelStart;
+					// Construct a block from the kernel filters of the given row
+					auto filterBlock = weights.block(0, kernelColStart, opDepth, xKernelSize * ipDepth);
 
-					auto inputBlock = input.Data.block(ipRowStart, 0, xKernelSize, batchSize);
+					auto imgBlock = GetImageBlock(filterRow + yKernelStart, xKernelStart, xKernelSize);
 
-					// The partial sum increases by the multiplication of the current row of the kernel
-					// Being on the fringes is handled using the x and y kernel variables
-					convoPartialSum.noalias() += filterBlock * inputBlock;
+					convoPartialSum += filterBlock * imgBlock;
 				}
 
-				// Ok, now that we have fully applied the kernel, we can
-				// write out the partial sum to the correct part of the output buffer
-				// Sadly, all of this work only produces a single output pixel per batch image
-				auto opBlock = output.Data.block(yOpCurr * opWidth * opDepth
-													+ xOpCurr * opDepth
-													+ filterIdx, 0, 1, batchSize);
-				// Assign the block
+				// Get the assignment block
+				auto opBlock = output.Data.block(yOpCurr * opStride + xOpCurr * opDepth, imageIdx, opDepth, 1);
+
+				// Assign the now complete sum to the output block
 				opBlock = convoPartialSum;
+
+				xConvoCurr += _strideX;
+				xOpCurr++;
 			}
 
-			xConvoCurr += _strideX;
-			xOpCurr++;
+			yConvoCurr += _strideY;
+			yOpCurr++;
 		}
-
-		yConvoCurr += _strideY;
-		yOpCurr++;
 	}
 
 	return move(output);

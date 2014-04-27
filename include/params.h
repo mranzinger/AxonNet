@@ -77,7 +77,7 @@ public:
 		return Width * Height * Depth;
 	}
 
-	size_t BatchSize() const { return Data.innerSize(); }
+	size_t BatchSize() const { return Data.cols(); }
 
 	friend void swap(Params &a, Params &b)
 	{
