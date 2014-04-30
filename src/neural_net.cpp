@@ -277,7 +277,8 @@ void NeuralNet::Train(ITrainProvider &provider, size_t maxIters, size_t testFreq
 
 void NeuralNet::RunTrainThread(ThreadTrainConfig &config)
 {
-	random_device engine;
+    random_device rd;
+	mt19937_64 engine(rd());
 	uniform_int_distribution<> dist(0, config.Provider->Size() - 1);
 
 	vector<size_t> idxs;

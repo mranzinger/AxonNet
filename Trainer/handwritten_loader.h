@@ -21,7 +21,12 @@ private:
 	size_t _numCols;
 	size_t _imgSize;
 
+	std::string _rootDir,
+				_dataFile, _labelFile,
+				_testDataFile, _testLabelFile;
+
 public: 
+	HandwrittenLoader() = default;
 	HandwrittenLoader(const std::string &rootDir);
     HandwrittenLoader(const std::string &dataFile, const std::string &labelFile,
 		              const std::string &testDataFile, const std::string &testLabelFile);
@@ -36,7 +41,12 @@ public:
 	}
 	virtual void GetTest(const std::vector<size_t> &idxs, Params &vals, Params &labels) const override;
 
+	friend void WriteStruct(const axon::serialization::CStructWriter &writer, const HandwrittenLoader &loader);
+	friend void ReadStruct(const axon::serialization::CStructReader &reader, HandwrittenLoader &loader);
+
 private:
+	void Load();
+
 	MultiDataVec LoadImages(const std::string &file);
 	MultiDataVec LoadLabels(const std::string &file);
 

@@ -7,12 +7,16 @@
 class DropRand
 {
 private:
-	std::default_random_engine _engine;
+	std::mt19937_64 _engine;
 	std::uniform_int_distribution<uint64_t> _dist;
 
 public:
 	DropRand()
-		: _dist(0, std::numeric_limits<uint64_t>::max()) { }
+		: _dist(0, std::numeric_limits<uint64_t>::max())
+    {
+        std::random_device rd;
+        _engine.seed(rd());
+    }
 
 	uint64_t Next() {
 		return _dist(_engine);

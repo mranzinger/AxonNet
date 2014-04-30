@@ -18,6 +18,7 @@ namespace fs = boost::filesystem;
 #include <Eigen/Dense>
 
 using namespace std;
+using namespace axon::serialization;
 
 HandwrittenLoader::HandwrittenLoader(const string &root)
     : HandwrittenLoader(
@@ -26,17 +27,15 @@ HandwrittenLoader::HandwrittenLoader(const string &root)
 	   root + "t10k-images.idx3-ubyte",
 	   root + "t10k-labels.idx1-ubyte") 
 {
-    
+    _rootDir = root;
 }
 
 HandwrittenLoader::HandwrittenLoader(const string &dataFile, const string &labelFile,
 									 const string &testDataFile, const string &testLabelFile)
+	: _dataFile(dataFile), _labelFile(labelFile), _testDataFile(testDataFile),
+	  _testLabelFile(testLabelFile)
 {
-	_trainData = LoadImages(dataFile);
-	_trainLabels = LoadLabels(labelFile);
-
-	_testData = LoadImages(testDataFile);
-	_testLabels = LoadLabels(testLabelFile);
+	Load();
 }
 
 template<typename T>
@@ -78,6 +77,15 @@ void cvt_cpy(float *dstBuff, unsigned char *srcBuff, size_t buffSize)
 {
 	for (unsigned char *end = srcBuff + buffSize; srcBuff != end; ++dstBuff, ++srcBuff)
 		*dstBuff = (((float) *srcBuff) / 256) - 0.5;
+}
+
+void HandwrittenLoader::Load()
+{
+	_trainData = LoadImages(_dataFile);
+	_trainLabels = LoadLabels(_labelFile);
+
+	_testData = LoadImages(_testDataFile);
+	_testLabels = LoadLabels(_testLabelFile);
 }
 
 HandwrittenLoader::MultiDataVec HandwrittenLoader::LoadImages(const std::string &file)
@@ -215,4 +223,37 @@ void HandwrittenLoader::Get(const std::vector<size_t>& idxs, Params& vals, Param
 		pVals += _imgSize;
 		pLabels += 10;
 	}
+}
+
+void WriteStruct(const CStructWriter &writer, const HandwrittenLoader &loader)
+{
+	if (!loader._rootDir.empty())
+	{
+		writer("rootDir", loader._rootDir);
+	}
+	else
+	{
+		writer("dataFile", loader._dataFile)
+			  ("labelFile", loader._labelFile)
+			  ("testDataFile", loader._testDataFile)
+			  ("testLabelFile", loader._testLabelFile);
+	}
+}
+
+void ReadStruct(const CStructReader &reader, HandwrittenLoader &loader)
+{
+	if (reader.GetData("rootDir"))
+	{
+
+	}
+	else
+	{
+
+		reader("dataFile", loader._dataFile)
+			  ("labelFile", loader._labelFile)
+			  ("testDataFile", loader._testDataFile)
+			  ("testLabelFile", loader._testLabelFile);
+	}
+
+	loader.Load();
 }
