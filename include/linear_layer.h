@@ -74,6 +74,8 @@ typedef std::vector<LinParams> LinParamsList;
 class NEURAL_NET_API LinearLayer
 	: public LayerBase
 {
+	friend class ConvoLayer;
+
 protected:
 	LinParams _master;
 	LinParamsList _threadParams;
@@ -110,10 +112,10 @@ public:
 	virtual void ApplyDeltas(int threadIdx) override;
 
 	size_t InputSize() const {
-		return _master.Weights.innerSize();
+		return _master.Weights.cols();
 	}
 	size_t OutputSize() const {
-		return _master.Weights.outerSize();
+		return _master.Weights.rows();
 	}
 
 	friend void ReadStruct(const axon::serialization::CStructReader &reader, LinearLayer &layer);

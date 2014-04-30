@@ -24,7 +24,9 @@
 								<option id="gnu.cpp.compiler.option.include.paths.20078649" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/axon/include}&quot;"/>
 									<listOptionValue builtIn="false" value="/home/mike/dev/ThirdParty/eigen-3-2-1"/>
-									<listOptionValue builtIn="false" value="/home/mike/dev/ThirdParty/boost_1_55_0"/>
+									<listOptionValue builtIn="false" value="/home/mike/dev/ThirdParty/boost_1_55_0/include"/>
+									<listOptionValue builtIn="false" value="/home/mike/dev/ThirdParty/gtest/include"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/AxonNet/include}&quot;"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.preprocessor.def.2135624303" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="__GXX_EXPERIMENTAL_CXX0X__"/>
@@ -35,7 +37,9 @@
 								<option id="gnu.c.compiler.option.include.paths.1774965297" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/axon/include}&quot;"/>
 									<listOptionValue builtIn="false" value="/home/mike/dev/ThirdParty/eigen-3-2-1"/>
-									<listOptionValue builtIn="false" value="/home/mike/dev/ThirdParty/boost_1_55_0"/>
+									<listOptionValue builtIn="false" value="/home/mike/dev/ThirdParty/gtest/include"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/AxonNet/include}&quot;"/>
+									<listOptionValue builtIn="false" value="/home/mike/dev/ThirdParty/boost_1_55_0/include"/>
 								</option>
 								<option id="gnu.c.compiler.option.preprocessor.def.symbols.858858242" name="Defined symbols (-D)" superClass="gnu.c.compiler.option.preprocessor.def.symbols" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="__GXX_EXPERIMENTAL_CXX0X__"/>
@@ -56,7 +60,8 @@
 								<option id="gnu.both.asm.option.include.paths.1899047414" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/axon/include}&quot;"/>
 									<listOptionValue builtIn="false" value="/home/mike/dev/ThirdParty/eigen-3-2-1"/>
-									<listOptionValue builtIn="false" value="/home/mike/dev/ThirdParty/boost_1_55_0"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/AxonNet/include}&quot;"/>
+									<listOptionValue builtIn="false" value="/home/mike/dev/ThirdParty/gtest/include"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.547472313" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
 							</tool>
