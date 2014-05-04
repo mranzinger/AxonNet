@@ -91,6 +91,29 @@ TEST(ConvoLayerTest, ConvoMultiFilter)
 	AssertMatrixEquivalence(correctOutput, comp.Data);
 }
 
+TEST(ConvoLayerTest, ConvoPaddedSimple)
+{
+	RMatrix kernel(1, 9);
+	kernel << 1, 1, 1,
+			  1, 1, 1,
+			  1, 1, 1;
+	Vector bias(1);
+	bias << -1;
+
+	CMatrix input(1, 2);
+	input << 1, 2;
+
+	CMatrix correctOutput(1, 2);
+	correctOutput << 0, 1;
+
+	Params comp = Compute(kernel, bias, Params(1, 1, 1, input),
+						  3, 3,
+						  1, 1,
+						  1, 1);
+
+	AssertMatrixEquivalence(correctOutput, comp.Data);
+}
+
 
 
 
