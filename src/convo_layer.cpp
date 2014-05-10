@@ -71,8 +71,8 @@ Params ConvoLayer::ComputePacked(int threadIdx, const Params &input, bool isTrai
 	const int ipEffectiveWidth = ipWidth + _padWidth * 2,
 		      ipEffectiveHeight = ipHeight + _padHeight * 2;
 
-	const int opWidth = (size_t) floor((ipEffectiveWidth - _windowSizeX + 1) / float(_strideX));
-	const int opHeight = (size_t) floor((ipEffectiveHeight - _windowSizeY + 1) / float(_strideY));
+	const int opWidth = (size_t) floor((ipEffectiveWidth - _windowSizeX) / float(_strideX)) + 1;
+	const int opHeight = (size_t) floor((ipEffectiveHeight - _windowSizeY) / float(_strideY)) + 1;
 	const int opDepth = _linearLayer.OutputSize();
 	const int opStride = opWidth * opDepth;
 

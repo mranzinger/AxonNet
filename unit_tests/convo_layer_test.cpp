@@ -114,6 +114,32 @@ TEST(ConvoLayerTest, ConvoPaddedSimple)
 	AssertMatrixEquivalence(correctOutput, comp.Data);
 }
 
+TEST(ConvoLayerTest, ConvoPaddedHarder)
+{
+	RMatrix kernel(1, 9);
+	kernel << 1, 1, 1,
+			  1, 1, 1,
+			  1, 1, 1;
+	Vector bias(1);
+	bias << 0;
+
+	CMatrix input(9, 1);
+	input << 1, 2, 3,
+			 4, 5, 6,
+			 7, 8, 9;
+
+	CMatrix correctOutput(4, 1);
+	correctOutput << (1 + 2 + 4 + 5), (2 + 3 + 5 + 6),
+					 (4 + 5 + 7 + 8), (5 + 6 + 8 + 9);
+
+	Params comp = Compute(kernel, bias, Params(3, 3, 1, input),
+						  3, 3,
+						  2, 2,
+						  1, 1);
+
+	AssertMatrixEquivalence(correctOutput, comp.Data);
+}
+
 
 
 
