@@ -389,6 +389,72 @@ TEST(ConvoLayerTest, PaddedBackprop)
 							biasGrad);
 }
 
+TEST(ConvoLayerTest, PaddedBackpropHarder)
+{
+	RMatrix kernel(1, 9);
+	kernel << 1, 1, 1,
+			  1, -1, 1,
+			  1, 1, 1;
+	Vector bias(1);
+	bias << 3;
+
+	CMatrix input(9, 1);
+	input << 1, 1, 1,
+			 1, 2, 1,
+			 1, 1, 1;
+
+	CMatrix outputErrors(4, 1);
+	outputErrors << 1, -1,
+			       -1,  1;
+
+	RMatrix weightsGrad;
+	Vector biasGrad;
+
+	Params inputErrors = Backprop(kernel, bias,
+								  Params(3, 3, 1, input),
+								  Params(2, 2, 1, outputErrors),
+								  3, 3,
+								  2, 2,
+								  1, 1,
+								  weightsGrad, biasGrad);
+
+	RMatrix linput(5, 5);
+	linput << 0, 0, 0, 0, 0,
+			  0, 1, 1, 1, 0,
+			  0, 1, 2, 1, 0,
+			  0, 1, 1, 1, 0,
+			  0, 0, 0, 0, 0;
+
+	LinearLayer validator("", kernel, bias);
+
+	RMatrix cInputErrors = RMatrix::Zero(5, 5);
+
+	for (int y = 0; y < 3; y += 2)
+	{
+		for (int x = 0; x < 3; x += 2)
+		{
+			RMatrix bInWindow = linput.block(y, x, 3, 3);
+
+			CMatrix inWindow = RMap(bInWindow.data(), 9, 1);
+
+			CMatrix opErrWindow = outputErrors.block((y/2) * 2 + (x/2), 0, 1, 1);
+
+			Params linInputErrors = validator.UTBackprop(0,
+													   inWindow,
+													   opErrWindow);
+
+			CMatrix linErrWindow = RMap(linInputErrors.Data.data(), 3, 3);
+
+			cInputErrors.block(y, x, 3, 3) += linErrWindow;
+		}
+	}
+
+	RMatrix cInputErrWnd = cInputErrors.block(1, 1, 3, 3);
+
+	AssertMatrixEquivalence(inputErrors.Data,
+							RMap(cInputErrWnd.data(), 9, 1) );
+}
+
 
 
 
