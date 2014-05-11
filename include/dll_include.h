@@ -14,3 +14,13 @@
 #else
 #define NEURAL_NET_API 
 #endif
+
+#ifdef _UNIT_TESTS_
+#define scope_private public
+#define scope_protected public
+#define scope_public public
+#else
+#define scope_private private
+#define scope_protected protected
+#define scope_public public
+#endif

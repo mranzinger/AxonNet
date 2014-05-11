@@ -5,7 +5,7 @@
 class NEURAL_NET_API LayerBase
 	: public ILayer
 {
-protected:
+scope_protected:
 	std::string _name;
 	Real _learningRate;
 	Real _momentum;
@@ -13,7 +13,7 @@ protected:
 
 	NeuralNet *_net;
 
-public:
+scope_public:
 	typedef std::shared_ptr<LayerBase> Ptr;
 
 	LayerBase() : _learningRate(1.0), _momentum(0.9), _weightDecay(0.0005), _net(nullptr) { }
@@ -46,6 +46,6 @@ public:
 
 	virtual void SetNet(NeuralNet *net) override { _net = net; }
 
-protected:
+scope_protected:
 	void BuildConfig(LayerConfig &config) const;
 };

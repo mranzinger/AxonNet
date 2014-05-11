@@ -16,7 +16,7 @@ public:
 class NEURAL_NET_API ConvoLayer
 	: public LayerBase
 {
-private:
+scope_private:
 	LinearLayer _linearLayer;
 	size_t _inputDepth;
 	int _windowSizeX, _windowSizeY;
@@ -25,7 +25,7 @@ private:
 
 	std::vector<MultiParams> _threadWindows;
 
-public:
+scope_public:
 	ConvoLayer() = default;
 	ConvoLayer(std::string name, 
 				size_t inputDepth, size_t outputDepth, 
@@ -57,10 +57,10 @@ public:
 
 	friend void BindStruct(const axon::serialization::CStructBinder &binder, ConvoLayer &layer);
 
-protected:
+scope_protected:
 	void BuildConfig(ConvoLayerConfig &config) const;
 
-private:
+scope_private:
 	Params ComputePacked(int threadidx, const Params &input, bool isTraining);
 	Params ComputePlanar(int threadIdx, const Params &input, bool isTraining);
 };

@@ -64,10 +64,10 @@ $(TRAINER_EXE): $(TRAINER_SRC) $(OBJS)
 	$(CC) $(RFLAGS) $(TRAINER_SRC) -o $@ $(INCLUDES) $(OBJS) $(LIBS)
 
 $(UNIT_EXE_D): $(UNIT_SRC) $(OBJS_D)
-	$(CC) $(DFLAGS) $(UNIT_SRC) -o $@ $(INCLUDES) $(OBJS_D) $(LIBS_D) -lgtest_main -lpthread
+	$(CC) $(DFLAGS) -D_UNIT_TESTS_ $(UNIT_SRC) -o $@ $(INCLUDES) $(OBJS_D) $(LIBS_D) -lgtest_main -lpthread
 	
 $(UNIT_EXE): $(UNIT_SRC) $(OBJS)
-	$(CC) $(RFLAGS) $(UNIT_SRC) -o $@ $(INCLUDES) $(OBJS_D) $(LIBS) -lgtest_main -lpthread
+	$(CC) $(RFLAGS) -D_UNIT_TESTS_ $(UNIT_SRC) -o $@ $(INCLUDES) $(OBJS_D) $(LIBS) -lgtest_main -lpthread
 
 setup:
 	mkdir -p obj

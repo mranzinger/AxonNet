@@ -195,6 +195,13 @@ Params ConvoLayer::Backprop(int threadIdx, const Params &lastInput, const Params
 	const CMatrix &outputErrors = pOutputErrors.Data;
 	CMatrix &inputErrors = pInputErrors.Data;
 
+	// Initialize the gradient matrices
+	prms.BiasGrad.resize(prms.Biases.size());
+	prms.BiasGrad.setZero();
+
+	prms.WeightsGrad.resize(prms.Weights.rows(), prms.Weights.cols());
+	prms.WeightsGrad.setZero();
+
 	for (int imageIdx = 0; imageIdx < batchSize; ++imageIdx)
 	{
 		int yOpCurr = 0;

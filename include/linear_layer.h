@@ -76,7 +76,7 @@ class NEURAL_NET_API LinearLayer
 {
 	friend class ConvoLayer;
 
-protected:
+scope_protected:
 	LinParams _master;
 	LinParamsList _threadParams;
 
@@ -85,7 +85,7 @@ protected:
 	float _epsilon = 1e-6;
 	float _decay = 0.95;
 
-public:
+scope_public:
 	typedef std::shared_ptr<LinearLayer> Ptr;
 
 	LinearLayer() { }
@@ -121,12 +121,12 @@ public:
 	friend void ReadStruct(const axon::serialization::CStructReader &reader, LinearLayer &layer);
 	friend void WriteStruct(const axon::serialization::CStructWriter &binder, const LinearLayer &layer);
 
-protected:
+scope_protected:
 	void BuildConfig(LinearLayerConfig &config) const;
 
 	LinParams &GetParams(int threadIdx);
 
-private:
+scope_private:
 	void ApplyDeltas(LinParams &prms);
 	void SyncToMaster(LinParams &prms);
 
