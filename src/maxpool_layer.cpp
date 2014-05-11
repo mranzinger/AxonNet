@@ -3,9 +3,6 @@
 using namespace std;
 using namespace axon::serialization;
 
-/*
-using Eigen::MatrixXi;
-
 MaxPoolLayer::MaxPoolLayer(string name, size_t windowSizeX, size_t windowSizeY)
 	: LayerBase(move(name)), _windowSizeX(windowSizeX), _windowSizeY(windowSizeY)
 {
@@ -14,80 +11,54 @@ MaxPoolLayer::MaxPoolLayer(string name, size_t windowSizeX, size_t windowSizeY)
 
 Params MaxPoolLayer::Compute(int threadIdx, const Params &input, bool isTraining)
 {
-	const size_t opWidth = (size_t)ceil(float(input.Width) / _windowSizeX);
-	const size_t opHeight = (size_t)ceil(float(input.Height) / _windowSizeY);
+	const int ipWidth = input.Width;
+	const int ipHeight = input.Height;
+	const int depth = input.Depth;
+	const int batchSize = input.BatchSize();
 
-	const size_t depth = input.Depth;
+	const int ipStride = ipWidth * depth;
 
-	Vector vOutput(opWidth * opHeight * depth);
-	vOutput.setConstant(numeric_limits<Real>::lowest());
+	const int opWidth = (int) ceil(ipWidth / float(_windowSizeX));
+	const int opHeight = (int) ceil(ipHeight / float(_windowSizeY));
 
-	RMap mOutput(vOutput.data(), opHeight, opWidth * depth);
-	RMap mInput(const_cast<Real*>(input.Data.data()), input.Height, input.Width * input.Depth);
+	Params output(opWidth, opHeight, depth,
+			CMatrix(opWidth * opHeight * depth, batchSize),
+			Params::Packed);
+	output.Data.setConstant(numeric_limits<Real>::lowest());
 
-	MatrixXi mIndexes(opHeight, opWidth * depth);
+	const int opStride = opWidth * depth;
 
-	const size_t inputStride = input.Width * input.Depth;
-
-	for (size_t bucketY = 0; bucketY < opHeight; ++bucketY)
+	for (int imgIdx = 0; imgIdx < batchSize; ++imgIdx)
 	{
-		size_t startY = bucketY * _windowSizeY;
-
-		for (size_t bucketX = 0; bucketX < opWidth; ++bucketX)
+		for (int y = 0; y < ipHeight; ++y)
 		{
-			size_t startX = bucketX * _windowSizeX * depth;
+			int opY = y / _windowSizeY;
 
-			for (size_t y = 0; 
-					y < _windowSizeY &&
-					y < (input.Height - startY);
-					++y)
+			for (int x = 0; x < ipWidth; ++x)
 			{
-				size_t wndY = startY + y;
+				int opX = x / _windowSizeX;
 
-				for (size_t x = 0;
-					 x < _windowSizeX &&
-					 x < (inputStride - startX);
-					 x += depth)
+				for (int c = 0; c < depth; ++c)
 				{
-					size_t wndX = startX + x;
+					int inputIdx = y * ipStride + x * depth + c;
+					int opIdx = opY * opStride + opX * depth + c;
 
-					for (size_t d = 0; d < depth; ++d)
-					{
-						const Real ipVal = mInput(wndY, wndX + d);
+					const Real ipVal = input.Data(inputIdx, imgIdx);
+					Real &opVal = output.Data(opIdx, imgIdx);
 
-						Real &opMax = mOutput(bucketY, bucketX * depth + d);
-
-						if (ipVal > opMax)
-						{
-							opMax = ipVal;
-							
-							if (isTraining)
-							{
-								size_t idx = wndY * inputStride + wndX + d;
-
-								mIndexes(bucketY, bucketX * depth + d) = idx;
-							}
-						}
-					}
+					if (ipVal > opVal)
+						opVal = ipVal;
 				}
 			}
 		}
 	}
 
-	if (isTraining)
-	{
-		_threadIndexes[threadIdx].swap(mIndexes);
-	}
-
-	Params ret(opWidth, opHeight, depth, Vector());
-	ret.Data.swap(vOutput);
-
-	return move(ret);
+	return move(output);
 }
 
 Params MaxPoolLayer::Backprop(int threadIdx, const Params &lastInput, const Params &lastOutput, const Params &outputErrors)
 {
-	Params ret(lastInput, Vector::Zero(lastInput.Width * lastInput.Height * lastInput.Depth));
+	/*Params ret(lastInput, Vector::Zero(lastInput.Width * lastInput.Height * lastInput.Depth));
 
 	const MatrixXi &mIndexes = _threadIndexes[threadIdx];
 
@@ -103,12 +74,8 @@ Params MaxPoolLayer::Backprop(int threadIdx, const Params &lastInput, const Para
 		pIpErrs[*pIdx] = *pOpErrs;
 	}
 
-	return move(ret);
-}
-
-void MaxPoolLayer::PrepareForThreads(size_t num)
-{
-	_threadIndexes.resize(num);
+	return move(ret);*/
+	throw runtime_error("Not implemented");
 }
 
 void BindStruct(const CStructBinder &binder, MaxPoolLayer &layer)
@@ -119,4 +86,3 @@ void BindStruct(const CStructBinder &binder, MaxPoolLayer &layer)
 
 AXON_SERIALIZE_DERIVED_TYPE(ILayer, MaxPoolLayer, MaxPoolLayer);
 
-*/
