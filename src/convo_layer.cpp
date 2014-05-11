@@ -158,11 +158,14 @@ Params ConvoLayer::ComputePlanar(int threadIdx, const Params &unpaddedInput, boo
 	throw runtime_error("Planar input data is not currently supported.");
 }
 
-Params ConvoLayer::Backprop(int threadIdx, const Params &lastInput, const Params &lastOutput, const Params &outputErrors)
+Params ConvoLayer::Backprop(int threadIdx, const Params &lastInput, const Params &lastOutput, const Params &pOutputErrors)
 {
-	LinParams &threadPrms = _linearLayer.GetParams(threadIdx);
-	const RMatrix &weights = threadPrms.Weights;
-	const Vector &biases = threadPrms.Biases;
+	LinParams &prms = _linearLayer.GetParams(threadIdx);
+	const RMatrix &weights = prms.Weights;
+	const Vector &biases = prms.Biases;
+
+	RMatrix transWeights = weights.transpose();
+	CMatrix transLastInput = lastInput.Data.transpose();
 
 	const int ipWidth = lastInput.Width;
 	const int ipHeight = lastInput.Height;
@@ -189,6 +192,7 @@ Params ConvoLayer::Backprop(int threadIdx, const Params &lastInput, const Params
 	Params pInputErrors(lastInput,
 				CMatrix::Zero(lastInput.Data.rows(), lastInput.Data.cols()));
 
+	const CMatrix &outputErrors = pOutputErrors.Data;
 	CMatrix &inputErrors = pInputErrors.Data;
 
 	for (int imageIdx = 0; imageIdx < batchSize; ++imageIdx)
@@ -204,6 +208,8 @@ Params ConvoLayer::Backprop(int threadIdx, const Params &lastInput, const Params
 			int yKernelStart = max(0, yConvoCurr);
 			int yKernelEnd = min(Bottom(yConvoCurr), ipHeight);
 
+			int skipTop = max(0, -yConvoCurr);
+
 			while (Right(xConvoCurr) <= xMax)
 			{
 				int xKernelStart = max(0, xConvoCurr);
@@ -212,63 +218,64 @@ Params ConvoLayer::Backprop(int threadIdx, const Params &lastInput, const Params
 
 				int skipLeft = max(0, -xConvoCurr);
 
-				//for (int filterRow = 0;
+				// Get the output error for the current application of the kernel
+				auto opErrBlock = outputErrors.block(
+									yOpCurr * opStride + xOpCurr * opDepth,
+									imageIdx,
+									opDepth,
+									1);
+
+				// Update the bias gradient
+				prms.BiasGrad.noalias() += opErrBlock;
+
+				for (int filterRow = 0; (filterRow + yKernelStart) < yKernelEnd; ++filterRow)
+				{
+					int kernelColStart = (filterRow + skipTop) * _windowSizeX * ipDepth;
+					kernelColStart += skipLeft * ipDepth;
+
+					// In transpose space, each filter occupies a column, so
+					// kernelColStart maps to the rows
+					auto kernelBlock = transWeights.block(kernelColStart,
+														  0,
+														  xKernelSize * ipDepth,
+														  opDepth);
+
+					int inBuffStart = (filterRow + yKernelStart) * ipStride
+											+ xKernelStart * ipDepth;
+					int inBuffSize = xKernelSize * ipDepth;
+
+					// Indexing a 4D object using 2 dimensions is... ugly.
+					auto ipErrBlock = inputErrors.block(
+										inBuffStart,
+										imageIdx,
+										inBuffSize,
+										1);
+
+					ipErrBlock.noalias() += kernelBlock * opErrBlock;
+
+					// In transpose space, each input image occupies a row
+					auto ipBlock = transLastInput.block(
+										imageIdx,
+										inBuffStart,
+										1,
+										inBuffSize
+									);
+					auto gradWeightsBlock = prms.WeightsGrad.block(
+												0, kernelColStart, opDepth, inBuffSize);
+
+					gradWeightsBlock.noalias() += opErrBlock * ipBlock;
+				}
+
+				xConvoCurr += _strideX;
+				++xOpCurr;
 			}
 
+			yConvoCurr += _strideY;
 			++yOpCurr;
 		}
 	}
 
 	return move(inputErrors);
-	/*MultiParams &linearInputs = _threadWindows[threadIdx];
-
-	size_t opDepth = _linearLayer.OutputSize();
-
-	size_t numOut = outputErrors.Data.size() / opDepth;
-
-	// Get the output errors
-	MultiParams linearOutputErrors(numOut, Params(1, 1, opDepth, Vector()));
-	for (size_t i = 0, end = linearOutputErrors.size(); i < end; ++i)
-	{
-		linearOutputErrors[i].Data = outputErrors.Data.block(i * opDepth, 0, opDepth, 1);
-	}
-
-	MultiParams linearInputErrors = _linearLayer.BackpropMany(threadIdx, linearInputs, linearOutputErrors);
-
-	// The input error is the windowed sum of the linear input errors
-	Params paddedInputErrors = GetZeroPaddedInput(lastInput);
-
-	RMap paddedMap(paddedInputErrors.Data.data(), paddedInputErrors.Height, paddedInputErrors.Width * paddedInputErrors.Depth);
-
-	//Matrix wndMat(_windowSizeY, _windowSizeX * opDepth);
-	size_t wndWidth = _windowSizeX * lastInput.Depth;
-	size_t wndHeight = _windowSizeY;
-
-	for (size_t ipY = 0, errIdx = 0; ipY < paddedInputErrors.Height - _windowSizeY + 1; ipY += _strideY)
-	{
-		for (size_t ipX = 0; 
-				ipX < (paddedInputErrors.Width - _windowSizeX + 1) * lastInput.Depth; 
-				ipX += _strideX * lastInput.Depth, ++errIdx)
-		{
-			Params &linearIpErr = linearInputErrors[errIdx];
-
-			RMap mIpErr(linearIpErr.Data.data(), wndHeight, wndWidth);
-
-			paddedMap.block(ipY, ipX, wndHeight, wndWidth) += mIpErr;
-		}
-	}
-
-	if (_padMode == NoPadding)
-		return move(paddedInputErrors);
-
-	Params unpaddedInputErrors(lastInput, Vector(lastInput.size()));
-
-	RMap mUpInput(unpaddedInputErrors.Data.data(), lastInput.Height, lastInput.Width * lastInput.Depth);
-
-	mUpInput = paddedMap.block(_windowSizeY / 2, (_windowSizeX / 2) * lastInput.Depth,
-		lastInput.Height, lastInput.Width * lastInput.Depth);
-
-	return move(unpaddedInputErrors);*/
 }
 
 void ConvoLayer::ApplyDeltas()
