@@ -27,7 +27,7 @@ public:
 		Data.swap(data);
 	}
 	Params(CMatrix data)
-		: Width(data.size()), Height(1), Depth(1), Layout(Packed) 
+		: Width(data.rows()), Height(1), Depth(1), Layout(Packed)
 	{
 		Data.swap(data);
 	}

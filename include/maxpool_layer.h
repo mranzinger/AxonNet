@@ -5,10 +5,10 @@
 class NEURAL_NET_API MaxPoolLayer
 	: public LayerBase
 {
-private:
+scope_private:
 	size_t _windowSizeX, _windowSizeY;
 
-public:
+scope_public:
 	MaxPoolLayer() = default;
 	MaxPoolLayer(std::string name, size_t windowSizeX, size_t windowSizeY);
 
