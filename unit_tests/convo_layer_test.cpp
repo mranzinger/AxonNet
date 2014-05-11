@@ -281,6 +281,70 @@ TEST(ConvoLayerTest, HarderBackprop)
 	AssertMatrixEquivalence(inputErrors.Data, cInputErrors);
 }
 
+TEST(ConvoLayerTest, HarderBackpropStride)
+{
+	RMatrix kernel(1, 9);
+	kernel << 1, 1, 1,
+			  1, 1, 1,
+			  1, 1, 1;
+	Vector bias(1);
+	bias << 0;
+
+	CMatrix input(25, 1);
+	input << 1, 1, 1, 1, 1,
+			 1, 2, 2, 2, 1,
+			 1, 2, 3, 2, 1,
+			 1, 2, 2, 2, 1,
+			 1, 1, 1, 1, 1;
+
+	CMatrix outputErrors(9, 1);
+	outputErrors << 1, 1, 1,
+					1, -3, 1,
+					1, 1, 1;
+
+	RMatrix weightsGrad;
+	Vector biasGrad;
+
+	Params inputErrors = Backprop(kernel, bias,
+								  Params(5, 5, 1, input),
+								  Params(3, 3, 1, outputErrors),
+								  3, 3,
+								  2, 2,
+								  0, 0,
+								  weightsGrad, biasGrad);
+
+	// Bit harder here to use the linear layer, but it is still less error prone
+	// than manual computation
+	LinearLayer validator("", kernel, bias);
+
+	CMatrix cInputErrors = CMatrix::Zero(25, 1);
+	CMap cMapInputErrors(cInputErrors.data(), 5, 5);
+	CMap mapInput(input.data(), 5, 5);
+
+	for (int y = 0; y < 3; y += 2)
+	{
+		for (int x = 0; x < 3; x += 2)
+		{
+			RMatrix bInWindow = mapInput.block(y, x, 3, 3);
+
+			CMatrix inWindow = RMap(bInWindow.data(), 9, 1);
+
+			CMatrix opErrWindow = outputErrors.block(y * 3 + x, 0, 1, 1);
+
+			Params linInputErrors = validator.Backprop(0,
+													   inWindow,
+													   validator.Compute(0, inWindow, true),
+													   opErrWindow);
+
+			CMatrix linErrWindow = RMap(linInputErrors.Data.data(), 3, 3);
+
+			cMapInputErrors.block(y, x, 3, 3) += linErrWindow;
+		}
+	}
+
+	AssertMatrixEquivalence(inputErrors.Data, cInputErrors);
+}
+
 
 
 
