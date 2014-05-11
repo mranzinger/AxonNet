@@ -109,6 +109,8 @@ Params ConvoLayer::ComputePacked(int threadIdx, const Params &input, bool isTrai
 			int yKernelStart = max(0, yConvoCurr);
 			int yKernelEnd = min(Bottom(yConvoCurr), ipHeight);
 
+			int skipTop = max(0, -yConvoCurr);
+
 			while (Right(xConvoCurr) <= xMax)
 			{
 				int xKernelStart = max(0, xConvoCurr);
@@ -122,7 +124,7 @@ Params ConvoLayer::ComputePacked(int threadIdx, const Params &input, bool isTrai
 
 				for (int filterRow = 0; (filterRow + yKernelStart) < yKernelEnd; ++filterRow)
 				{
-					int kernelColStart = filterRow * _windowSizeX * ipDepth;
+					int kernelColStart = (filterRow + skipTop) * _windowSizeX * ipDepth;
 					kernelColStart += skipLeft * ipDepth; // Also, use skip left to index into the current row
 
 					// Construct a block from the kernel filters of the given row
@@ -158,7 +160,66 @@ Params ConvoLayer::ComputePlanar(int threadIdx, const Params &unpaddedInput, boo
 
 Params ConvoLayer::Backprop(int threadIdx, const Params &lastInput, const Params &lastOutput, const Params &outputErrors)
 {
-	return Params();
+	LinParams &threadPrms = _linearLayer.GetParams(threadIdx);
+	const RMatrix &weights = threadPrms.Weights;
+	const Vector &biases = threadPrms.Biases;
+
+	const int ipWidth = lastInput.Width;
+	const int ipHeight = lastInput.Height;
+	const int ipDepth = lastInput.Depth;
+	const int batchSize = lastInput.BatchSize();
+
+	const int ipStride = ipWidth * ipDepth;
+
+	const int ipEffectiveWidth = ipWidth + _padWidth * 2,
+		      ipEffectiveHeight = ipHeight + _padHeight * 2;
+
+	const int opWidth = (size_t) floor((ipEffectiveWidth - _windowSizeX) / float(_strideX)) + 1;
+	const int opHeight = (size_t) floor((ipEffectiveHeight - _windowSizeY) / float(_strideY)) + 1;
+	const int opDepth = _linearLayer.OutputSize();
+	const int opStride = opWidth * opDepth;
+
+	const auto Right = [this] (int val) { return val + _windowSizeX; };
+	const auto Bottom = [this] (int val) { return val + _windowSizeY; };
+	const auto IpRow = [ipWidth] (int y) { return y * ipWidth; };
+
+	int xMax = ipWidth + _padWidth,
+		yMax = ipHeight + _padHeight;
+
+	Params pInputErrors(lastInput,
+				CMatrix::Zero(lastInput.Data.rows(), lastInput.Data.cols()));
+
+	CMatrix &inputErrors = pInputErrors.Data;
+
+	for (int imageIdx = 0; imageIdx < batchSize; ++imageIdx)
+	{
+		int yOpCurr = 0;
+		int yConvoCurr = -_padHeight;
+
+		while (Bottom(yConvoCurr) <= yMax)
+		{
+			int xOpCurr = 0;
+			int xConvoCurr = -_padWidth;
+
+			int yKernelStart = max(0, yConvoCurr);
+			int yKernelEnd = min(Bottom(yConvoCurr), ipHeight);
+
+			while (Right(xConvoCurr) <= xMax)
+			{
+				int xKernelStart = max(0, xConvoCurr);
+				int xKernelEnd = min(Right(xConvoCurr), ipWidth);
+				int xKernelSize = xKernelEnd - xKernelStart;
+
+				int skipLeft = max(0, -xConvoCurr);
+
+				//for (int filterRow = 0;
+			}
+
+			++yOpCurr;
+		}
+	}
+
+	return move(inputErrors);
 	/*MultiParams &linearInputs = _threadWindows[threadIdx];
 
 	size_t opDepth = _linearLayer.OutputSize();
