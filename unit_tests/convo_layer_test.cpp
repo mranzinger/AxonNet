@@ -203,9 +203,8 @@ TEST(ConvoLayerTest, SimpleBackprop)
 	// as what the linear layer computes
 	LinearLayer validator("", kernel, bias);
 
-	Params linInputErrors = validator.Backprop(0,
+	Params linInputErrors = validator.UTBackprop(0,
 											   input,
-											   validator.Compute(0, input, true),
 											   outputErrors);
 
 	AssertMatrixEquivalence(inputErrors.Data, linInputErrors.Data);
@@ -267,9 +266,8 @@ TEST(ConvoLayerTest, HarderBackprop)
 
 			CMatrix opErrWindow = outputErrors.block(y * 3 + x, 0, 1, 1);
 
-			Params linInputErrors = validator.Backprop(0,
+			Params linInputErrors = validator.UTBackprop(0,
 													   inWindow,
-													   validator.Compute(0, inWindow, true),
 													   opErrWindow);
 
 			CMatrix linErrWindow = RMap(linInputErrors.Data.data(), 3, 3);
@@ -331,9 +329,8 @@ TEST(ConvoLayerTest, HarderBackpropStride)
 
 			CMatrix opErrWindow = outputErrors.block(y * 3 + x, 0, 1, 1);
 
-			Params linInputErrors = validator.Backprop(0,
+			Params linInputErrors = validator.UTBackprop(0,
 													   inWindow,
-													   validator.Compute(0, inWindow, true),
 													   opErrWindow);
 
 			CMatrix linErrWindow = RMap(linInputErrors.Data.data(), 3, 3);
@@ -343,6 +340,53 @@ TEST(ConvoLayerTest, HarderBackpropStride)
 	}
 
 	AssertMatrixEquivalence(inputErrors.Data, cInputErrors);
+}
+
+TEST(ConvoLayerTest, PaddedBackprop)
+{
+	RMatrix kernel(1, 9);
+	kernel << 1, 1, 1,
+			  1, 1, 1,
+			  1, 1, 1;
+	Vector bias(1);
+	bias << 1;
+
+	CMatrix input(1, 1);
+	input << 4;
+
+	CMatrix outputErrors(1, 1);
+	outputErrors << 4;
+
+	RMatrix weightsGrad;
+	Vector biasGrad;
+
+	Params inputErrors = Backprop(kernel, bias,
+								  Params(1, 1, 1, input),
+								  Params(1, 1, 1, outputErrors),
+								  3, 3,
+								  1, 1,
+								  1, 1,
+								  weightsGrad, biasGrad);
+
+	LinearLayer validator("", kernel, bias);
+
+	CMatrix linput(9, 1);
+	linput << 0, 0, 0,
+			  0, 4, 0,
+			  0, 0, 0;
+
+	Params linInputErrors = validator.UTBackprop(0,
+											   linput,
+											   outputErrors);
+
+	AssertMatrixEquivalence(inputErrors.Data,
+							linInputErrors.Data.block(5, 0, 1, 1));
+
+	AssertMatrixEquivalence(validator.GetParams(0).WeightsGrad,
+							weightsGrad);
+
+	AssertVectorEquivalence(validator.GetParams(0).BiasGrad,
+							biasGrad);
 }
 
 

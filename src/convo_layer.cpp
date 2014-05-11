@@ -270,6 +270,10 @@ Params ConvoLayer::Backprop(int threadIdx, const Params &lastInput, const Params
 					auto gradWeightsBlock = prms.WeightsGrad.block(
 												0, kernelColStart, opDepth, inBuffSize);
 
+					//RMatrix tmpOpErrMat = opErrBlock,
+					//		tmpIp = ipBlock;
+					//gradWeightsBlock.noalias() += tmpOpErrMat * tmpIp;
+
 					gradWeightsBlock.noalias() += opErrBlock * ipBlock;
 				}
 

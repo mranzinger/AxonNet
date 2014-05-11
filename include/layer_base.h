@@ -46,6 +46,15 @@ scope_public:
 
 	virtual void SetNet(NeuralNet *net) override { _net = net; }
 
+#ifdef _UNIT_TESTS_
+	Params UTBackprop(int threadIdx, const Params &lastInput, const Params &outputErrors)
+	{
+		Params lastOutput = Compute(threadIdx, lastInput, true);
+
+		return Backprop(threadIdx, lastInput, lastOutput, outputErrors);
+	}
+#endif
+
 scope_protected:
 	void BuildConfig(LayerConfig &config) const;
 };
