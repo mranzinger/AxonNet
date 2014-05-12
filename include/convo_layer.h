@@ -55,7 +55,8 @@ scope_public:
 	virtual void InitializeFromConfig(const LayerConfig::Ptr &config) override;
 	virtual LayerConfig::Ptr GetConfig() const override;
 
-	friend void BindStruct(const axon::serialization::CStructBinder &binder, ConvoLayer &layer);
+	friend void ReadStruct(const axon::serialization::CStructReader &reader, ConvoLayer &layer);
+	friend void WriteStruct(const axon::serialization::CStructWriter &binder, const ConvoLayer &layer);
 
 scope_protected:
 	void BuildConfig(ConvoLayerConfig &config) const;

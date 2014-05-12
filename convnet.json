@@ -3,21 +3,16 @@
         {
             "_realType": "ConvoLayer",
             "name": "C1",
-            "learnRate": 0.0001,
             "momentum": 0.9,
             "weightDecay": 0.0005,
             "windowSizeX": 5,
             "windowSizeY": 5,
             "strideX": 1,
             "strideY": 1,
-            "padMode": 2
-        },
-        {
-            "_realType": "HardTanhNeuronLayer",
-            "name": "C1-NL",
-            "learnRate": 0.0001,
-            "momentum": 0.9,
-            "weightDecay": 0.0005
+            "padWidth": 2,
+            "padHeight": 2,
+            "inputDepth": 1,
+            "outputDepth": 64
         },
         {
             "_realType": "MaxPoolLayer",
@@ -27,73 +22,43 @@
         {
             "_realType": "ConvoLayer",
             "name": "C3",
-            "learnRate": 0.0001,
             "momentum": 0.9,
             "weightDecay": 0.0005,
-            "windowSizeX": 5,
-            "windowSizeY": 5,
+            "windowSizeX": 6,
+            "windowSizeY": 6,
             "strideX": 1,
             "strideY": 1,
-            "padMode": 1
-        },
-        {
-            "_realType": "HardTanhNeuronLayer",
-            "name": "C3-NL",
-            "learnRate": 0.0001,
-            "momentum": 0.9,
-            "weightDecay": 0.0005
+            "inputDepth": 64,
+            "outputDepth": 128
         },
         {
             "_realType": "MaxPoolLayer",
-            "windowSizeX": 2,
-            "windowSizeY": 2
-        },
-        {
-            "_realType": "ConvoLayer",
-            "name": "C5",
-            "learnRate": 0.0001,
-            "momentum": 0.9,
-            "weightDecay": 0.0005,
-            "windowSizeX": 5,
-            "windowSizeY": 5,
-            "strideX": 1,
-            "strideY": 1,
-            "padMode": 1
-        },
-        {
-            "_realType": "TanhNeuronLayer",
-            "name": "L5-NL",
-            "learnRate": 0.0001,
-            "momentum": 0.9,
-            "weightDecay": 0.0005
+            "windowSizeX": 3,
+            "windowSizeY": 3
         },
         {
             "_realType": "LinearLayer",
             "name": "L6",
-            "learnRate": 0.0001,
             "momentum": 0.9,
-            "weightDecay": 0.0005
+            "weightDecay": 0.0005,
+            "numInputs": 1152,
+            "numOutputs": 100
         },
         {
             "_realType": "TanhNeuronLayer",
-            "name": "L6-NL",
-            "learnRate": 0.0001,
-            "momentum": 0.9,
-            "weightDecay": 0.0005
+            "name": "L6-NL"
         },
         {
             "_realType": "LinearLayer",
             "name": "L7",
-            "learnRate": 0.0001,
             "momentum": 0.9,
-            "weightDecay": 0.0005
+            "weightDecay": 0.0005,
+            "numInputs": 100,
+            "numOutputs": 10
         },
         {
             "_realType": "SoftmaxLayer",
-            "name": "soft",
-            "learnRate": 0.0001,
-            "momentum": 0.9,
-            "weightDecay": 0.0005
+            "name": "soft"
         }
     ],
     "cost": {

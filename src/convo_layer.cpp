@@ -344,18 +344,41 @@ void BindStruct(const CStructBinder &binder, ConvoLayerConfig &config)
 	binder("linearConfig", config.LinearConfig);
 }
 
-void BindStruct(const CStructBinder &binder, ConvoLayer &layer)
+void WriteStruct(const CStructWriter &writer, const ConvoLayer &layer)
 {
-	BindStruct(binder, (LayerBase&) layer);
+	WriteStruct(writer, (const LayerBase &)layer);
 
-	binder("windowSizeX", layer._windowSizeX)
+	writer("windowSizeX", layer._windowSizeX)
 		  ("windowSizeY", layer._windowSizeY)
 		  ("strideX", layer._strideX)
 		  ("strideY", layer._strideY)
 		  ("padWidth", layer._padWidth)
 		  ("padHeight", layer._padHeight)
 		  ("inputDepth", layer._inputDepth)
+		  ("outputDepth", layer._linearLayer.OutputSize())
 		  ;
+}
+
+void ReadStruct(const CStructReader &reader, ConvoLayer &layer)
+{
+	ReadStruct(reader, (LayerBase&)layer);
+
+	size_t outputDepth;
+
+	reader("windowSizeX", layer._windowSizeX)
+		  ("windowSizeY", layer._windowSizeY)
+		  ("strideX", layer._strideX)
+		  ("strideY", layer._strideY)
+		  ("padWidth", layer._padWidth)
+		  ("padHeight", layer._padHeight)
+		  ("inputDepth", layer._inputDepth)
+		  ("outputDepth", outputDepth)
+		  ;
+
+	layer._linearLayer = LinearLayer(
+							"",
+							layer._windowSizeX * layer._windowSizeY * layer._inputDepth,
+							outputDepth);
 }
 
 AXON_SERIALIZE_DERIVED_TYPE(LayerConfig, ConvoLayerConfig, ConvoLayerConfig);
