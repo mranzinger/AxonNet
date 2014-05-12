@@ -58,24 +58,54 @@ Params MaxPoolLayer::Compute(int threadIdx, const Params &input, bool isTraining
 
 Params MaxPoolLayer::Backprop(int threadIdx, const Params &lastInput, const Params &lastOutput, const Params &outputErrors)
 {
-	/*Params ret(lastInput, Vector::Zero(lastInput.Width * lastInput.Height * lastInput.Depth));
+	const int ipWidth = lastInput.Width;
+	const int ipHeight = lastInput.Height;
+	const int depth = lastInput.Depth;
+	const int batchSize = lastInput.BatchSize();
 
-	const MatrixXi &mIndexes = _threadIndexes[threadIdx];
+	const int ipStride = ipWidth * depth;
 
-	const int *pIdx = mIndexes.data();
-	const int *pEnd = pIdx + mIndexes.size();
+	const int opWidth = lastOutput.Width;
+	const int opHeight = lastOutput.Height;
 
-	const Real *pOpErrs = outputErrors.Data.data();
-	Real *pIpErrs = ret.Data.data();
+	Params inputErrors(ipWidth, ipHeight, depth,
+			 CMatrix::Zero(lastInput.Data.rows(), lastInput.Data.cols()));
 
-	// Only the input that produced the maximum value propagates errors
-	for (; pIdx != pEnd; ++pIdx, ++pOpErrs)
+	const int opStride = opWidth * depth;
+
+	for (int imgIdx = 0; imgIdx < batchSize; ++imgIdx)
 	{
-		pIpErrs[*pIdx] = *pOpErrs;
+		for (int y = 0; y < ipHeight; ++y)
+		{
+			int opY = y / _windowSizeY;
+
+			for (int x = 0; x < ipWidth; ++x)
+			{
+				int opX = x / _windowSizeX;
+
+				for (int c = 0; c < depth; ++c)
+				{
+					int inputIdx = y * ipStride + x * depth + c;
+					int opIdx = opY * opStride + opX * depth + c;
+
+					const Real ipVal = lastInput.Data(inputIdx, imgIdx);
+					const Real opVal = lastOutput.Data(opIdx, imgIdx);
+
+					// If this value was the maximum, then backprop
+					// the error
+					if (ipVal == opVal)
+					{
+						Real &ipErrVal = inputErrors.Data(inputIdx, imgIdx);
+						const Real opErrVal = outputErrors.Data(opIdx, imgIdx);
+
+						ipErrVal = opErrVal;
+					}
+				}
+			}
+		}
 	}
 
-	return move(ret);*/
-	throw runtime_error("Not implemented");
+	return move(inputErrors);
 }
 
 void BindStruct(const CStructBinder &binder, MaxPoolLayer &layer)
