@@ -150,7 +150,7 @@ void LinearLayer::ApplyDeltas(int threadIdx)
 
 void LinearLayer::ApplyDeltas(LinParams &prms)
 {
-	prms.ExpWeightsGrad.noalias() = _decay * prms.ExpWeightsGrad +
+	/*prms.ExpWeightsGrad.noalias() = _decay * prms.ExpWeightsGrad +
 									(1 - _decay) * (prms.WeightsGrad.cwiseProduct(prms.WeightsGrad));
 	prms.ExpBiasGrad.noalias() = _decay * prms.ExpBiasGrad +
 									(1 - _decay) * (prms.BiasGrad.cwiseProduct(prms.BiasGrad));
@@ -164,26 +164,16 @@ void LinearLayer::ApplyDeltas(LinParams &prms)
 							.sqrt().matrix()
 							.cwiseProduct(prms.BiasGrad);
 
-	/*auto rmsWeights = ((prms.ExpWeightsDelta + _epsilon) /
-						(prms.ExpWeightsGrad + _epsilon)).cwiseSqrt();*/
-	/*auto rmsBias = ((prms.ExpBiasDelta + _epsilon) /
-						(prms.ExpBiasGrad + _epsilon)).cwiseSqrt();*/
-
-	//RMatrix weightsInc = rmsWeights.cwiseProduct(prms.WeightsGrad);
-	//Vector biasInc = rmsBias.cwiseProduct(prms.BiasGrad);
-
 	prms.Weights.noalias() -= weightsInc;
 	prms.Biases.noalias() -= biasInc;
 
 	prms.ExpWeightsDelta.noalias() = _decay * prms.ExpWeightsDelta +
 										(1 - _decay) * (weightsInc.cwiseProduct(weightsInc));
 	prms.ExpBiasDelta.noalias() = _decay * prms.ExpBiasDelta +
-										(1 - _decay) * (biasInc.cwiseProduct(biasInc));
+										(1 - _decay) * (biasInc.cwiseProduct(biasInc));*/
 
 
-	//prms.ExpWeightsDelta.noalias() = _decay * prms.ExpWeightsDelta +
-
-	/*if (_momentum)
+	if (_momentum)
 	{
 		prms.WeightsIncrement *= _momentum;
 		prms.BiasIncrement *= _momentum;
@@ -216,7 +206,7 @@ void LinearLayer::ApplyDeltas(LinParams &prms)
 	{
 		prms.UpdateCt = 0;
 		SyncToMaster(prms);
-	}*/
+	}
 
 	//prms.Weights.noalias() -= (_learningRate * prms.LearningRate2) * prms.WeightDeltas;
 	//prms.Biases.noalias() -= (_learningRate * prms.LearningRate2) * prms.BiasGrad;

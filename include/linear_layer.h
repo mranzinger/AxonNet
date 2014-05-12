@@ -22,20 +22,20 @@ struct LinParams
 	RMatrix Weights;
 	Vector Biases;
 
-	/*RMatrix WeightsRunning;
+	RMatrix WeightsRunning;
 	Vector BiasRunning;
 
 	RMatrix WeightsIncrement;
-	Vector BiasIncrement;*/
+	Vector BiasIncrement;
 
 	RMatrix WeightsGrad;
 	Vector BiasGrad;
 
-	RMatrix ExpWeightsGrad;
+	/*RMatrix ExpWeightsGrad;
 	Vector ExpBiasGrad;
 
 	RMatrix ExpWeightsDelta;
-	Vector ExpBiasDelta;
+	Vector ExpBiasDelta;*/
 
 	float LearningRate2 = 1;
 
@@ -44,28 +44,28 @@ struct LinParams
 	LinParams() { }
 	LinParams(size_t numInputs, size_t numOutputs)
 		: Weights(numOutputs, numInputs), Biases(numOutputs),
-		  //WeightsRunning(numOutputs, numInputs), BiasRunning(numOutputs),
-		  //WeightsIncrement(numOutputs, numInputs), BiasIncrement(numOutputs),
-		  WeightsGrad(numOutputs, numInputs), BiasGrad(numOutputs),
-		  ExpWeightsGrad(numOutputs, numInputs), ExpBiasGrad(numOutputs),
-		  ExpWeightsDelta(numOutputs, numInputs), ExpBiasDelta(numOutputs)
+		  WeightsRunning(numOutputs, numInputs), BiasRunning(numOutputs),
+		  WeightsIncrement(numOutputs, numInputs), BiasIncrement(numOutputs),
+		  WeightsGrad(numOutputs, numInputs), BiasGrad(numOutputs)
+		  //ExpWeightsGrad(numOutputs, numInputs), ExpBiasGrad(numOutputs),
+		  //ExpWeightsDelta(numOutputs, numInputs), ExpBiasDelta(numOutputs)
 	{
 		//InitializeWeights(Weights, 0, 1);
 		//InitializeWeights(Biases, 0, 1);
 		FanInitializeWeights(Weights);
 		FanInitializeWeights(Biases);
 
-		/*WeightsRunning.setZero();
+		WeightsRunning.setZero();
 		BiasRunning.setZero();
 		WeightsIncrement.setZero();
-		BiasIncrement.setZero();*/
+		BiasIncrement.setZero();
 		WeightsGrad.setZero();
 		BiasGrad.setZero();
 
-		ExpWeightsGrad.setZero();
+		/*ExpWeightsGrad.setZero();
 		ExpBiasGrad.setZero();
 		ExpWeightsDelta.setZero();
-		ExpBiasDelta.setZero();
+		ExpBiasDelta.setZero();*/
 	}
 };
 
