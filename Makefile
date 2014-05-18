@@ -1,7 +1,7 @@
 CC=g++-4.7
-FLAGS=-std=c++11 -g -msse4.2
+FLAGS=-std=c++11 -g -mavx2
 DFLAGS=$(FLAGS)
-RFLAGS=-O3 $(FLAGS)
+RFLAGS=-O3 $(FLAGS) -DEIGEN_NO_DEBUG -DEIGEN_FAST_MATH
 
 THIRD_PARTY   ?= ../ThirdParty
 EIGEN_PATH    ?= $(THIRD_PARTY)/eigen-3-2-1

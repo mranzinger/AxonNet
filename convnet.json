@@ -9,10 +9,10 @@
             "windowSizeY": 5,
             "strideX": 1,
             "strideY": 1,
-            "padWidth": 2,
-            "padHeight": 2,
+            "padWidth": 0,
+            "padHeight": 0,
             "inputDepth": 1,
-            "outputDepth": 64
+            "outputDepth": 32
         },
         {
             "_realType": "MaxPoolLayer",
@@ -24,12 +24,12 @@
             "name": "C3",
             "momentum": 0.9,
             "weightDecay": 0.0005,
-            "windowSizeX": 6,
-            "windowSizeY": 6,
+            "windowSizeX": 4,
+            "windowSizeY": 4,
             "strideX": 1,
             "strideY": 1,
-            "inputDepth": 64,
-            "outputDepth": 128
+            "inputDepth": 32,
+            "outputDepth": 64
         },
         {
             "_realType": "MaxPoolLayer",
@@ -41,7 +41,7 @@
             "name": "L6",
             "momentum": 0.9,
             "weightDecay": 0.0005,
-            "numInputs": 1152,
+            "numInputs": 576,
             "numOutputs": 100
         },
         {

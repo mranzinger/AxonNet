@@ -202,6 +202,8 @@ Params ConvoLayer::Backprop(int threadIdx, const Params &lastInput, const Params
 	prms.WeightsGrad.resize(prms.Weights.rows(), prms.Weights.cols());
 	prms.WeightsGrad.setZero();
 
+	int numApplications = 0;
+
 	for (int imageIdx = 0; imageIdx < batchSize; ++imageIdx)
 	{
 		int yOpCurr = 0;
@@ -277,6 +279,7 @@ Params ConvoLayer::Backprop(int threadIdx, const Params &lastInput, const Params
 					gradWeightsBlock.noalias() += opErrBlock * ipBlock;
 				}
 
+				++numApplications;
 				xConvoCurr += _strideX;
 				++xOpCurr;
 			}
@@ -285,6 +288,8 @@ Params ConvoLayer::Backprop(int threadIdx, const Params &lastInput, const Params
 			++yOpCurr;
 		}
 	}
+
+	prms.LearningRate2 = 1.f / numApplications;
 
 	return move(inputErrors);
 }
