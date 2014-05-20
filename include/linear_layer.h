@@ -97,9 +97,7 @@ scope_public:
 	}
 
 	virtual Params Compute(int threadIdx, const Params &input, bool isTraining) override;
-	void Compute(int threadIdx, const Params &input, Real *opBuff);
 	virtual Params Backprop(int threadIdx, const Params &lastInput, const Params &lastOutput, const Params &outputErrors) override;
-	MultiParams BackpropMany(int threadIdx, const MultiParams &lastInputs, const MultiParams &outputErrors);
 
 	virtual void InitializeFromConfig(const LayerConfig::Ptr &config) override;
 	virtual LayerConfig::Ptr GetConfig() const override;

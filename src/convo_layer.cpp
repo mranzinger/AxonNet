@@ -7,6 +7,8 @@
 using namespace std;
 using namespace axon::serialization;
 
+#define SINGLE_IMAGE
+
 ConvoLayer::ConvoLayer(string name, 
 						size_t inputDepth, size_t outputDepth, 
 						size_t windowSizeX, size_t windowSizeY, 
@@ -90,19 +92,38 @@ Params ConvoLayer::ComputePacked(int threadIdx, const Params &input, bool isTrai
 
 	// This object will store the partial convolution product of the current filter
 	// application
-	//Vector convoPartialSum(opDepth);
-	CMatrix convoPartialSum(opDepth, batchSize);
 
-	//for (int imageIdx = 0; imageIdx < batchSize; ++imageIdx)
+
+#ifdef SINGLE_IMAGE
+	Vector convoPartialSum(opDepth);
+#else
+	CMatrix convoPartialSum(opDepth, batchSize);
+#endif
+
+#ifdef SINGLE_IMAGE
+	for (int imageIdx = 0; imageIdx < batchSize; ++imageIdx)
+#endif
 	{
+#ifdef SINGLE_IMAGE
+	    UMapVector vecIpImage(const_cast<Real*>(input.Data.data()) + imageIdx * (ipStride * ipHeight),
+	                       ipStride * ipHeight);
+	    UMapVector vecOpImage(output.Data.data() + imageIdx * (opStride * opHeight),
+	                       opStride * opHeight);
+#endif
+
 		int yOpCurr = 0;
 		int yConvoCurr = -_padHeight;
 
 		// Lambda that returns a block of image data
-		//auto GetImageBlock = [this, &input, ipStride, ipDepth, imageIdx]
-		//                (int row, int col, int size) { return input.Data.block(row * ipStride + col * ipDepth, imageIdx, size * ipDepth, 1); };
+#ifdef SINGLE_IMAGE
+		/*auto GetImageBlock = [this, &input, ipStride, ipDepth, imageIdx]
+		                (int row, int col, int size) { return input.Data.block(row * ipStride + col * ipDepth, imageIdx, size * ipDepth, 1); };*/
+		auto GetImageBlock = [this, &vecIpImage, ipStride, ipDepth, imageIdx]
+                        (int row, int col, int size) { return vecIpImage.segment(row * ipStride + col * ipDepth, size * ipDepth); };
+#else
 		auto GetImageBlock = [this, &input, ipStride, ipDepth, batchSize]
 		                (int row, int col, int size) { return input.Data.block(row * ipStride + col * ipDepth, 0, size * ipDepth, batchSize); };
+#endif
 
 		while (Bottom(yConvoCurr) <= yMax)
 		{
@@ -124,7 +145,11 @@ Params ConvoLayer::ComputePacked(int threadIdx, const Params &input, bool isTrai
 				int skipLeft = max(0, -xConvoCurr); // This will be greater than 0 when xConvoCurr is < 0
 
 				// Always start the partial sum as the biases
+#ifdef SINGLE_IMAGE
+				convoPartialSum = biases;
+#else
 				convoPartialSum.colwise() = biases;
+#endif
 
 				for (int filterRow = 0; (filterRow + yKernelStart) < yKernelEnd; ++filterRow)
 				{
@@ -140,8 +165,12 @@ Params ConvoLayer::ComputePacked(int threadIdx, const Params &input, bool isTrai
 				}
 
 				// Get the assignment block
-				//auto opBlock = output.Data.block(yOpCurr * opStride + xOpCurr * opDepth, imageIdx, opDepth, 1);
+#ifdef SINGLE_IMAGE
+				/*auto opBlock = output.Data.block(yOpCurr * opStride + xOpCurr * opDepth, imageIdx, opDepth, 1);*/
+				auto opBlock = vecOpImage.segment(yOpCurr * opStride + xOpCurr * opDepth, opDepth);
+#else
 				auto opBlock = output.Data.block(yOpCurr * opStride + xOpCurr * opDepth, 0, opDepth, batchSize);
+#endif
 
 				// Assign the now complete sum to the output block
 				opBlock = convoPartialSum;
@@ -170,7 +199,12 @@ Params ConvoLayer::Backprop(int threadIdx, const Params &lastInput, const Params
 	const Vector &biases = prms.Biases;
 
 	CMatrix transWeights = weights.transpose();
+
+#ifdef SINGLE_IMAGE
+	//RMatrix transLastInput = lastInput.Data.transpose();
+#else
 	CMatrix transLastInput = lastInput.Data.transpose();
+#endif
 
 	const int ipWidth = lastInput.Width;
 	const int ipHeight = lastInput.Height;
@@ -209,8 +243,19 @@ Params ConvoLayer::Backprop(int threadIdx, const Params &lastInput, const Params
 
 	int numApplications = 0;
 
-	//for (int imageIdx = 0; imageIdx < batchSize; ++imageIdx)
+#ifdef SINGLE_IMAGE
+	for (int imageIdx = 0; imageIdx < batchSize; ++imageIdx)
+#endif
 	{
+#ifdef SINGLE_IMAGE
+	    UMapVector vecIpErrs(inputErrors.data() + (imageIdx * ipStride * ipHeight),
+	                         ipStride * ipHeight);
+	    UMapVector vecOpErrs(const_cast<Real*>(outputErrors.data()) + (imageIdx * opStride * opHeight),
+	                         opStride * opHeight);
+	    UMapRowVector vecLastInput(const_cast<Real*>(lastInput.Data.data()) + (imageIdx * ipStride * ipHeight),
+	                         ipStride * ipHeight);
+#endif
+
 		int yOpCurr = 0;
 		int yConvoCurr = -_padHeight;
 
@@ -233,16 +278,22 @@ Params ConvoLayer::Backprop(int threadIdx, const Params &lastInput, const Params
 				int skipLeft = max(0, -xConvoCurr);
 
 				// Get the output error for the current application of the kernel
+#ifdef SINGLE_IMAGE
 				/*auto opErrBlock = outputErrors.block(
 									yOpCurr * opStride + xOpCurr * opDepth,
 									imageIdx,
 									opDepth,
 									1);*/
+				auto opErrBlock = vecOpErrs.segment(
+				                    yOpCurr * opStride + xOpCurr * opDepth,
+				                    opDepth);
+#else
 				auto opErrBlock = outputErrors.block(
 									yOpCurr * opStride + xOpCurr * opDepth,
 									0,
 									opDepth,
 									batchSize);
+#endif
 
 				// Update the bias gradient
 				prms.BiasGrad.noalias() += opErrBlock;
@@ -264,38 +315,47 @@ Params ConvoLayer::Backprop(int threadIdx, const Params &lastInput, const Params
 					int inBuffSize = xKernelSize * ipDepth;
 
 					// Indexing a 4D object using 2 dimensions is... ugly.
+#ifdef SINGLE_IMAGE
 					/*auto ipErrBlock = inputErrors.block(
 										inBuffStart,
 										imageIdx,
 										inBuffSize,
 										1);*/
+					auto ipErrBlock = vecIpErrs.segment(
+					                    inBuffStart,
+					                    inBuffSize);
+#else
 					auto ipErrBlock = inputErrors.block(
 										inBuffStart,
 										0,
 										inBuffSize,
 										batchSize);
+#endif
 
 					ipErrBlock.noalias() += kernelBlock * opErrBlock;
 
 					// In transpose space, each input image occupies a row
+#ifdef SINGLE_IMAGE
 					/*auto ipBlock = transLastInput.block(
 										imageIdx,
 										inBuffStart,
 										1,
 										inBuffSize
 									);*/
+					auto ipBlock = vecLastInput.segment(
+					                    inBuffStart,
+					                    inBuffSize);
+#else
 					auto ipBlock = transLastInput.block(
 										0,
 										inBuffStart,
 										batchSize,
 										inBuffSize
 									);
+#endif
+
 					auto gradWeightsBlock = prms.WeightsGrad.block(
 												0, kernelColStart, opDepth, inBuffSize);
-
-					//RMatrix tmpOpErrMat = opErrBlock,
-					//		tmpIp = ipBlock;
-					//gradWeightsBlock.noalias() += tmpOpErrMat * tmpIp;
 
 					gradWeightsBlock.noalias() += opErrBlock * ipBlock;
 				}
@@ -310,7 +370,11 @@ Params ConvoLayer::Backprop(int threadIdx, const Params &lastInput, const Params
 		}
 	}
 
+#ifdef SINGLE_IMAGE
+	prms.LearningRate2 = batchSize / float(numApplications);
+#else
 	prms.LearningRate2 = 1.f / numApplications;
+#endif
 
 	return move(inputErrors);
 }

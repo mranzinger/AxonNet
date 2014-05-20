@@ -12,9 +12,11 @@ namespace axon {
 
 		NEURAL_NET_API void WriteStruct(const CStructWriter &writer, const Vector &vec);
 		NEURAL_NET_API void WriteStruct(const CStructWriter &writer, const RMatrix &mat);
+		NEURAL_NET_API void WriteStruct(const CStructWriter &writer, const CMatrix &mat);
 
 		NEURAL_NET_API void ReadStruct(const CStructReader &reader, Vector &vec);
 		NEURAL_NET_API void ReadStruct(const CStructReader &reader, RMatrix &mat);
+		NEURAL_NET_API void ReadStruct(const CStructReader &reader, CMatrix &mat);
 
 	}
 }

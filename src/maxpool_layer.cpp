@@ -1,4 +1,5 @@
 #include "maxpool_layer.h"
+#include <immintrin.h>
 
 using namespace std;
 using namespace axon::serialization;

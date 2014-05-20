@@ -12,6 +12,12 @@ void InitializeWeights(RMatrix &mat, Real mean, Real stdDev)
 {
 	InitializeWeights(mat.data(), mat.data() + mat.size(), mean, stdDev);
 }
+
+void InitializeWeights(CMatrix& mat, Real mean, Real stdDev)
+{
+    InitializeWeights(mat.data(), mat.data() + mat.size(), mean, stdDev);
+}
+
 void InitializeWeights(Real *iter, Real *end, Real mean, Real stdDev)
 {
 	//std::default_random_engine engine(1234567);
@@ -35,7 +41,12 @@ void FanInitializeWeights(Vector &vec)
 
 void FanInitializeWeights(RMatrix &mat)
 {
-	FanInitializeWeights(mat.data(), mat.data() + mat.size(), mat.innerSize());
+	FanInitializeWeights(mat.data(), mat.data() + mat.size(), mat.cols());
+}
+
+void FanInitializeWeights(CMatrix& mat)
+{
+    FanInitializeWeights(mat.data(), mat.data() + mat.size(), mat.cols());
 }
 
 void FanInitializeWeights(Real *iter, Real *end, int wtSize)
@@ -53,3 +64,7 @@ void FanInitializeWeights(Real *iter, Real *end, int wtSize)
 	for (Real &val : make_range(iter, end))
 		val = dist(engine);
 }
+
+
+
+

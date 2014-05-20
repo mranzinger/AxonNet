@@ -73,16 +73,6 @@ Params LinearLayer::Compute(int threadIdx, const Params &input, bool isTraining)
 	return move(ret);
 }
 
-void LinearLayer::Compute(int threadIdx, const Params &input, Real *opBuff)
-{
-	LinParams &prms = GetParams(threadIdx);
-
-	UMapVector op(opBuff, prms.Biases.size());
-
-	op.noalias() = prms.Weights * input.Data;
-	op.noalias() += prms.Biases;
-}
-
 Params LinearLayer::Backprop(int threadIdx, const Params &lastInput, const Params &lastOutput,
 							 const Params &outputErrors)
 {
@@ -92,33 +82,6 @@ Params LinearLayer::Backprop(int threadIdx, const Params &lastInput, const Param
 
 	prms.WeightsGrad.noalias() = outputErrors.Data * lastInput.Data.transpose();
 	prms.BiasGrad = outputErrors.Data.rowwise().sum();
-
-	return move(inputErrors);
-}
-
-MultiParams LinearLayer::BackpropMany(int threadIdx, const MultiParams &lastInputs, const MultiParams &outputErrors)
-{
-	LinParams &prms = GetParams(threadIdx);
-
-	MultiParams inputErrors(lastInputs.size());
-
-	inputErrors[0].Data.noalias() = prms.Weights.transpose() * outputErrors[0].Data;
-
-	prms.WeightsGrad.noalias() = outputErrors[0].Data * lastInputs[0].Data.transpose();
-	prms.BiasGrad = outputErrors[0].Data;
-
-	for (size_t i = 1; i < lastInputs.size(); ++i)
-	{
-		const Vector &lastInput = lastInputs[i].Data;
-		const Vector &outputError = outputErrors[i].Data;
-
-		inputErrors[i].Data.noalias() = prms.Weights.transpose() * outputError;
-
-		prms.WeightsGrad.noalias() += outputError * lastInput.transpose();
-		prms.BiasGrad += outputError;
-	}
-
-	prms.LearningRate2 = 1.0f / lastInputs.size();
 
 	return move(inputErrors);
 }

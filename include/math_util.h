@@ -7,9 +7,12 @@
 
 typedef float Real;
 typedef Eigen::Matrix<Real, Eigen::Dynamic, 1> Vector;
+typedef Eigen::Matrix<Real, 1, Eigen::Dynamic> RowVector;
 typedef std::vector<Vector> MultiVector;
-typedef Eigen::Map<Vector> MapVector;
+typedef Eigen::Map<Vector, Eigen::Aligned> MapVector;
+typedef Eigen::Map<RowVector, Eigen::Aligned> MapRowVector;
 typedef Eigen::Map<Vector, Eigen::Unaligned> UMapVector;
+typedef Eigen::Map<RowVector, Eigen::Unaligned> UMapRowVector;
 typedef Eigen::Map<Vector, 0, Eigen::OuterStride<>> StrideVec;
 
 typedef Eigen::Matrix<Real, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor> CMatrix;
@@ -26,10 +29,12 @@ typedef Eigen::Map<RMatrix, 0, Eigen::OuterStride<>> RStrideMap;
 
 NEURAL_NET_API void InitializeWeights(Vector &vec, Real mean, Real stdDev);
 NEURAL_NET_API void InitializeWeights(RMatrix &mat, Real mean, Real stdDev);
+NEURAL_NET_API void InitializeWeights(CMatrix &mat, Real mean, Real stdDev);
 NEURAL_NET_API void InitializeWeights(Real *iter, Real *end, Real mean, Real stdDev);
 
 NEURAL_NET_API void FanInitializeWeights(Vector &vec);
 NEURAL_NET_API void FanInitializeWeights(RMatrix &mat);
+NEURAL_NET_API void FanInitializeWeights(CMatrix &mat);
 NEURAL_NET_API void FanInitializeWeights(Real *iter, Real *end, int wtSize = -1);
 
 template<typename T>
@@ -206,3 +211,5 @@ public:
 	}
 
 };
+
+
