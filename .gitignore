@@ -155,3 +155,9 @@ $RECYCLE.BIN/
 # Mac desktop service store files
 .DS_Store
 /Default
+test/
+d_trainer
+d_unit_test
+trainer
+unit_test
+.settings/
