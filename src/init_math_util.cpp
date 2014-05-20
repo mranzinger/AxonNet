@@ -4,6 +4,8 @@
 
 using namespace std;
 
+CThreadPool s_threadPool;
+
 void InitializeWeights(Vector &vec, Real mean, Real stdDev)
 {
 	InitializeWeights(vec.data(), vec.data() + vec.size(), mean, stdDev);

@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "dll_include.h"
+#include "thread/thread_pool.h"
 
 typedef float Real;
 typedef Eigen::Matrix<Real, Eigen::Dynamic, 1> Vector;
@@ -36,6 +37,8 @@ NEURAL_NET_API void FanInitializeWeights(Vector &vec);
 NEURAL_NET_API void FanInitializeWeights(RMatrix &mat);
 NEURAL_NET_API void FanInitializeWeights(CMatrix &mat);
 NEURAL_NET_API void FanInitializeWeights(Real *iter, Real *end, int wtSize = -1);
+
+NEURAL_NET_API extern CThreadPool s_threadPool;
 
 template<typename T>
 auto Square(const T &val) -> decltype(val * val)

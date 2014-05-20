@@ -9,8 +9,6 @@ using namespace axon::serialization;
 
 //#define SINGLE_IMAGE
 
-CThreadPool ConvoLayer::s_threadPool;
-
 ConvoLayer::ConvoLayer(string name, 
 						size_t inputDepth, size_t outputDepth, 
 						size_t windowSizeX, size_t windowSizeY, 
@@ -224,9 +222,11 @@ Params ConvoLayer::Backprop(int threadIdx, const Params &lastInput, const Params
 	const int ipEffectiveWidth = ipWidth + _padWidth * 2,
 		      ipEffectiveHeight = ipHeight + _padHeight * 2;
 
-	const int opWidth = (size_t) floor((ipEffectiveWidth - _windowSizeX) / float(_strideX)) + 1;
-	const int opHeight = (size_t) floor((ipEffectiveHeight - _windowSizeY) / float(_strideY)) + 1;
-	const int opDepth = _linearLayer.OutputSize();
+	//const int opWidth = (size_t) floor((ipEffectiveWidth - _windowSizeX) / float(_strideX)) + 1;
+	//const int opHeight = (size_t) floor((ipEffectiveHeight - _windowSizeY) / float(_strideY)) + 1;
+	const int opWidth = lastOutput.Width;
+	const int opHeight = lastOutput.Height;
+	const int opDepth = lastOutput.Depth;
 	const int opStride = opWidth * opDepth;
 
 	const auto Right = [this] (int val) { return val + _windowSizeX; };
@@ -248,8 +248,6 @@ Params ConvoLayer::Backprop(int threadIdx, const Params &lastInput, const Params
 
 	prms.WeightsGrad.resize(prms.Weights.rows(), prms.Weights.cols());
 	prms.WeightsGrad.setZero();
-
-	int numApplications = 0;
 
 #ifdef SINGLE_IMAGE
 	int dfMiniBatchSize = 1;
@@ -377,7 +375,6 @@ Params ConvoLayer::Backprop(int threadIdx, const Params &lastInput, const Params
 					gradWeightsBlock.noalias() += opErrBlock * ipBlock;
 				}
 
-				++numApplications;
 				xConvoCurr += _strideX;
 				++xOpCurr;
 			}
@@ -387,11 +384,7 @@ Params ConvoLayer::Backprop(int threadIdx, const Params &lastInput, const Params
 		}
 	});
 
-#ifdef SINGLE_IMAGE
-	prms.LearningRate2 = batchSize / float(numApplications);
-#else
-	prms.LearningRate2 = 1.f / numApplications;
-#endif
+	prms.LearningRate2 = 1.f / (opWidth * opHeight);
 
 	return move(inputErrors);
 }

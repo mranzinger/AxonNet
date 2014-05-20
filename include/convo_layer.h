@@ -24,10 +24,6 @@ scope_private:
 	int _padWidth, _padHeight;
 	size_t _strideX, _strideY;
 
-	//std::vector<MultiParams> _threadWindows;
-
-	static CThreadPool s_threadPool;
-
 scope_public:
 	ConvoLayer() = default;
 	ConvoLayer(std::string name, 
