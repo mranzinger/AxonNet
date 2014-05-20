@@ -212,4 +212,5 @@ public:
 
 };
 
+#include "matrix_math.h"
 
