@@ -58,7 +58,8 @@ Params ConvoLayer::Compute(int threadIdx, const Params &unpaddedInput, bool isTr
 Params ConvoLayer::ComputePacked(int threadIdx, const Params &input, bool isTraining)
 {
 	LinParams &threadPrms = _linearLayer.GetParams(threadIdx);
-	const RMatrix &weights = threadPrms.Weights;
+	//const RMatrix &weights = threadPrms.Weights;
+	const CMatrix weights = threadPrms.Weights;
 	const Vector &biases = threadPrms.Biases;
 
 	const int ipWidth = input.Width;
@@ -89,16 +90,19 @@ Params ConvoLayer::ComputePacked(int threadIdx, const Params &input, bool isTrai
 
 	// This object will store the partial convolution product of the current filter
 	// application
-	Vector convoPartialSum(opDepth);
+	//Vector convoPartialSum(opDepth);
+	CMatrix convoPartialSum(opDepth, batchSize);
 
-	for (int imageIdx = 0; imageIdx < batchSize; ++imageIdx)
+	//for (int imageIdx = 0; imageIdx < batchSize; ++imageIdx)
 	{
 		int yOpCurr = 0;
 		int yConvoCurr = -_padHeight;
 
 		// Lambda that returns a block of image data
-		auto GetImageBlock = [this, &input, ipStride, ipDepth, imageIdx]
-		                (int row, int col, int size) { return input.Data.block(row * ipStride + col * ipDepth, imageIdx, size * ipDepth, 1); };
+		//auto GetImageBlock = [this, &input, ipStride, ipDepth, imageIdx]
+		//                (int row, int col, int size) { return input.Data.block(row * ipStride + col * ipDepth, imageIdx, size * ipDepth, 1); };
+		auto GetImageBlock = [this, &input, ipStride, ipDepth, batchSize]
+		                (int row, int col, int size) { return input.Data.block(row * ipStride + col * ipDepth, 0, size * ipDepth, batchSize); };
 
 		while (Bottom(yConvoCurr) <= yMax)
 		{
@@ -120,7 +124,7 @@ Params ConvoLayer::ComputePacked(int threadIdx, const Params &input, bool isTrai
 				int skipLeft = max(0, -xConvoCurr); // This will be greater than 0 when xConvoCurr is < 0
 
 				// Always start the partial sum as the biases
-				convoPartialSum = biases;
+				convoPartialSum.colwise() = biases;
 
 				for (int filterRow = 0; (filterRow + yKernelStart) < yKernelEnd; ++filterRow)
 				{
@@ -136,7 +140,8 @@ Params ConvoLayer::ComputePacked(int threadIdx, const Params &input, bool isTrai
 				}
 
 				// Get the assignment block
-				auto opBlock = output.Data.block(yOpCurr * opStride + xOpCurr * opDepth, imageIdx, opDepth, 1);
+				//auto opBlock = output.Data.block(yOpCurr * opStride + xOpCurr * opDepth, imageIdx, opDepth, 1);
+				auto opBlock = output.Data.block(yOpCurr * opStride + xOpCurr * opDepth, 0, opDepth, batchSize);
 
 				// Assign the now complete sum to the output block
 				opBlock = convoPartialSum;
@@ -164,7 +169,7 @@ Params ConvoLayer::Backprop(int threadIdx, const Params &lastInput, const Params
 	const RMatrix &weights = prms.Weights;
 	const Vector &biases = prms.Biases;
 
-	RMatrix transWeights = weights.transpose();
+	CMatrix transWeights = weights.transpose();
 	CMatrix transLastInput = lastInput.Data.transpose();
 
 	const int ipWidth = lastInput.Width;
@@ -204,7 +209,7 @@ Params ConvoLayer::Backprop(int threadIdx, const Params &lastInput, const Params
 
 	int numApplications = 0;
 
-	for (int imageIdx = 0; imageIdx < batchSize; ++imageIdx)
+	//for (int imageIdx = 0; imageIdx < batchSize; ++imageIdx)
 	{
 		int yOpCurr = 0;
 		int yConvoCurr = -_padHeight;
@@ -228,11 +233,16 @@ Params ConvoLayer::Backprop(int threadIdx, const Params &lastInput, const Params
 				int skipLeft = max(0, -xConvoCurr);
 
 				// Get the output error for the current application of the kernel
-				auto opErrBlock = outputErrors.block(
+				/*auto opErrBlock = outputErrors.block(
 									yOpCurr * opStride + xOpCurr * opDepth,
 									imageIdx,
 									opDepth,
-									1);
+									1);*/
+				auto opErrBlock = outputErrors.block(
+									yOpCurr * opStride + xOpCurr * opDepth,
+									0,
+									opDepth,
+									batchSize);
 
 				// Update the bias gradient
 				prms.BiasGrad.noalias() += opErrBlock;
@@ -254,19 +264,30 @@ Params ConvoLayer::Backprop(int threadIdx, const Params &lastInput, const Params
 					int inBuffSize = xKernelSize * ipDepth;
 
 					// Indexing a 4D object using 2 dimensions is... ugly.
-					auto ipErrBlock = inputErrors.block(
+					/*auto ipErrBlock = inputErrors.block(
 										inBuffStart,
 										imageIdx,
 										inBuffSize,
-										1);
+										1);*/
+					auto ipErrBlock = inputErrors.block(
+										inBuffStart,
+										0,
+										inBuffSize,
+										batchSize);
 
 					ipErrBlock.noalias() += kernelBlock * opErrBlock;
 
 					// In transpose space, each input image occupies a row
-					auto ipBlock = transLastInput.block(
+					/*auto ipBlock = transLastInput.block(
 										imageIdx,
 										inBuffStart,
 										1,
+										inBuffSize
+									);*/
+					auto ipBlock = transLastInput.block(
+										0,
+										inBuffStart,
+										batchSize,
 										inBuffSize
 									);
 					auto gradWeightsBlock = prms.WeightsGrad.block(
