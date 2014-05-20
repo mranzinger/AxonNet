@@ -38,7 +38,8 @@ INCLUDES= -I$(AXON_PATH)/include \
 LIBS_BASE=-L$(BOOST_PATH)/lib \
 		  -L$(AXON_PATH)/lib \
 		  -L$(GTEST_PATH)/lib \
-		  -lboost_system -lboost_filesystem -lboost_program_options
+		  -lboost_system -lboost_filesystem -lboost_program_options \
+		  -lboost_thread -lpthread
 		  
 LIBS=$(LIBS_BASE) -laxcomm -laxser -laxutil
 LIBS_D=$(LIBS_BASE) -laxcommd -laxserd -laxutild
