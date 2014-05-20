@@ -339,7 +339,7 @@ void NeuralNet::Test(ITrainProvider &provider, const std::string &chkRoot)
 	Real numCorr = 0;
 
 	vector<size_t> idxs;
-	for (size_t i = 0; i < _batchSize; ++i)
+	for (size_t i = 0; i < max(_batchSize, 256ul); ++i)
 	    idxs.push_back(i);
 
 	for (size_t i = 0, end = provider.TestSize(); i < end; i += idxs.size())
@@ -364,8 +364,6 @@ void NeuralNet::Test(ITrainProvider &provider, const std::string &chkRoot)
 
 		transform(idxs.begin(), idxs.end(), idxs.begin(),
 		        [&idxs] (size_t v) { return v + idxs.size(); });
-		//for (size_t &idx : idxs)
-			//idx += 4;
 	}
 
 	auto tEnd = high_resolution_clock::now();
