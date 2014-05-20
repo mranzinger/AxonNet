@@ -1,6 +1,7 @@
 #pragma once
 
 #include "linear_layer.h"
+#include "thread/thread_pool.h"
 
 class NEURAL_NET_API ConvoLayerConfig
 	: public LayerConfig
@@ -23,7 +24,9 @@ scope_private:
 	int _padWidth, _padHeight;
 	size_t _strideX, _strideY;
 
-	std::vector<MultiParams> _threadWindows;
+	//std::vector<MultiParams> _threadWindows;
+
+	static CThreadPool s_threadPool;
 
 scope_public:
 	ConvoLayer() = default;

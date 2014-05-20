@@ -7,7 +7,9 @@
 using namespace std;
 using namespace axon::serialization;
 
-#define SINGLE_IMAGE
+//#define SINGLE_IMAGE
+
+CThreadPool ConvoLayer::s_threadPool;
 
 ConvoLayer::ConvoLayer(string name, 
 						size_t inputDepth, size_t outputDepth, 
@@ -90,20 +92,24 @@ Params ConvoLayer::ComputePacked(int threadIdx, const Params &input, bool isTrai
 	int xMax = ipWidth + _padWidth,
 		yMax = ipHeight + _padHeight;
 
-	// This object will store the partial convolution product of the current filter
-	// application
-
-
 #ifdef SINGLE_IMAGE
-	Vector convoPartialSum(opDepth);
+	int miniBatchSize = 1;
 #else
-	CMatrix convoPartialSum(opDepth, batchSize);
+	int miniBatchSize = (int)ceil(batchSize / float(s_threadPool.NumThreads()));
+#endif
+	for (int imageIdx = 0; imageIdx < batchSize; imageIdx += miniBatchSize)
+	{
+	    miniBatchSize = min(miniBatchSize, batchSize - imageIdx);
+
+	    // This object will store the partial convolution product of the current filter
+	    // application
+#ifdef SINGLE_IMAGE
+	    Vector convoPartialSum(opDepth);
+#else
+	    CMatrix convoPartialSum(opDepth, miniBatchSize);
 #endif
 
-#ifdef SINGLE_IMAGE
-	for (int imageIdx = 0; imageIdx < batchSize; ++imageIdx)
-#endif
-	{
+
 #ifdef SINGLE_IMAGE
 	    UMapVector vecIpImage(const_cast<Real*>(input.Data.data()) + imageIdx * (ipStride * ipHeight),
 	                       ipStride * ipHeight);
@@ -121,8 +127,8 @@ Params ConvoLayer::ComputePacked(int threadIdx, const Params &input, bool isTrai
 		auto GetImageBlock = [this, &vecIpImage, ipStride, ipDepth, imageIdx]
                         (int row, int col, int size) { return vecIpImage.segment(row * ipStride + col * ipDepth, size * ipDepth); };
 #else
-		auto GetImageBlock = [this, &input, ipStride, ipDepth, batchSize]
-		                (int row, int col, int size) { return input.Data.block(row * ipStride + col * ipDepth, 0, size * ipDepth, batchSize); };
+		auto GetImageBlock = [this, &input, ipStride, ipDepth, imageIdx, miniBatchSize]
+		                (int row, int col, int size) { return input.Data.block(row * ipStride + col * ipDepth, imageIdx, size * ipDepth, miniBatchSize); };
 #endif
 
 		while (Bottom(yConvoCurr) <= yMax)
@@ -169,7 +175,7 @@ Params ConvoLayer::ComputePacked(int threadIdx, const Params &input, bool isTrai
 				/*auto opBlock = output.Data.block(yOpCurr * opStride + xOpCurr * opDepth, imageIdx, opDepth, 1);*/
 				auto opBlock = vecOpImage.segment(yOpCurr * opStride + xOpCurr * opDepth, opDepth);
 #else
-				auto opBlock = output.Data.block(yOpCurr * opStride + xOpCurr * opDepth, 0, opDepth, batchSize);
+				auto opBlock = output.Data.block(yOpCurr * opStride + xOpCurr * opDepth, imageIdx, opDepth, miniBatchSize);
 #endif
 
 				// Assign the now complete sum to the output block
@@ -244,9 +250,15 @@ Params ConvoLayer::Backprop(int threadIdx, const Params &lastInput, const Params
 	int numApplications = 0;
 
 #ifdef SINGLE_IMAGE
-	for (int imageIdx = 0; imageIdx < batchSize; ++imageIdx)
+	int miniBatchSize = 1;
+#else
+	int miniBatchSize = (int)ceil(batchSize / float(s_threadPool.NumThreads()));
 #endif
+
+	for (int imageIdx = 0; imageIdx < batchSize; imageIdx += miniBatchSize)
 	{
+	    miniBatchSize = min(miniBatchSize, batchSize - imageIdx);
+
 #ifdef SINGLE_IMAGE
 	    UMapVector vecIpErrs(inputErrors.data() + (imageIdx * ipStride * ipHeight),
 	                         ipStride * ipHeight);
@@ -290,13 +302,14 @@ Params ConvoLayer::Backprop(int threadIdx, const Params &lastInput, const Params
 #else
 				auto opErrBlock = outputErrors.block(
 									yOpCurr * opStride + xOpCurr * opDepth,
-									0,
+									imageIdx,
 									opDepth,
-									batchSize);
+									miniBatchSize);
 #endif
 
 				// Update the bias gradient
-				prms.BiasGrad.noalias() += opErrBlock;
+				auto bGrad = opErrBlock.rowwise().sum();
+				prms.BiasGrad += bGrad;
 
 				for (int filterRow = 0; (filterRow + yKernelStart) < yKernelEnd; ++filterRow)
 				{
@@ -327,9 +340,9 @@ Params ConvoLayer::Backprop(int threadIdx, const Params &lastInput, const Params
 #else
 					auto ipErrBlock = inputErrors.block(
 										inBuffStart,
-										0,
+										imageIdx,
 										inBuffSize,
-										batchSize);
+										miniBatchSize);
 #endif
 
 					ipErrBlock.noalias() += kernelBlock * opErrBlock;
@@ -347,9 +360,9 @@ Params ConvoLayer::Backprop(int threadIdx, const Params &lastInput, const Params
 					                    inBuffSize);
 #else
 					auto ipBlock = transLastInput.block(
-										0,
+										imageIdx,
 										inBuffStart,
-										batchSize,
+										miniBatchSize,
 										inBuffSize
 									);
 #endif
@@ -391,8 +404,6 @@ void ConvoLayer::ApplyDeltas(int threadIdx)
 
 void ConvoLayer::PrepareForThreads(size_t num)
 {
-	_threadWindows.resize(num);
-
 	_linearLayer.PrepareForThreads(num);
 }
 
