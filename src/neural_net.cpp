@@ -30,6 +30,7 @@ using namespace std::chrono;
 
 NeuralNet::NeuralNet()
 	: _batchSize(32)
+    //: _batchSize(128)
 {
 	_MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
 

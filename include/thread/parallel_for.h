@@ -12,13 +12,13 @@
 #include "thread_pool.h"
 
 template<typename NumType, typename Fn>
-void ParallelFor(CThreadPool &a_pool, NumType a_lowerBdInclusive, NumType a_upperBdExclusive, Fn a_handler)
+void ParallelFor(CThreadPool &a_pool, NumType a_lowerBdInclusive, NumType a_upperBdExclusive, NumType a_increment, Fn a_handler)
 {
     std::exception_ptr l_unhandledException;
 
     std::atomic<NumType> l_procCt(0);
 
-    for (NumType i = a_lowerBdInclusive; i < a_upperBdExclusive; ++i)
+    for (NumType i = a_lowerBdInclusive; i < a_upperBdExclusive; i += a_increment)
     {
         a_pool.QueueTask([&, i]
         {
@@ -28,7 +28,7 @@ void ParallelFor(CThreadPool &a_pool, NumType a_lowerBdInclusive, NumType a_uppe
                 a_handler(i);
 
                 // Increment the counter
-                ++l_procCt;
+                l_procCt += a_increment;
             }
             catch (std::exception &)
             {
@@ -49,11 +49,37 @@ void ParallelFor(CThreadPool &a_pool, NumType a_lowerBdInclusive, NumType a_uppe
 }
 
 template<typename NumType, typename Fn>
-void ParallelFor(NumType a_lowerBdInclusive, NumType a_upperBdExclusive, Fn a_handler)
+void ParallelFor(NumType a_lowerBdInclusive, NumType a_upperBdExclusive, NumType a_increment, Fn a_handler)
 {
     CThreadPool l_pool;
 
-    ParallelFor(l_pool, a_lowerBdInclusive, a_upperBdExclusive, std::move(a_handler));
+    ParallelFor(l_pool, a_lowerBdInclusive, a_upperBdExclusive, a_increment, std::move(a_handler));
+}
+
+template<typename NumType, typename Fn>
+void FastFor(CThreadPool &a_pool, NumType a_lowerBdInclusive, NumType a_upperBdExclusive, NumType a_increment, Fn a_handler)
+{
+#ifdef _DEBUG
+    for (NumType i = a_lowerBdInclusive; i < a_upperBdExclusive; i += a_increment)
+    {
+        a_handler(i);
+    }
+#else
+    ParallelFor(a_pool, a_lowerBdInclusive, a_upperBdExclusive, a_increment, a_handler);
+#endif
+}
+
+template<typename NumType, typename Fn>
+void FastFor(NumType a_lowerBdInclusive, NumType a_upperBdExclusive, NumType a_increment, Fn a_handler)
+{
+#ifdef _DEBUG
+    for (NumType i = a_lowerBdInclusive; i < a_upperBdExclusive; i += a_increment)
+    {
+        a_handler(i);
+    }
+#else
+    ParallelFor(a_lowerBdInclusive, a_upperBdExclusive, a_increment, a_handler);
+#endif
 }
 
 

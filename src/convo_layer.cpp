@@ -2,7 +2,7 @@
 
 #include "util/enum_to_string.h"
 #include "memset_util.h"
-
+#include "thread/parallel_for.h"
 
 using namespace std;
 using namespace axon::serialization;
@@ -93,13 +93,15 @@ Params ConvoLayer::ComputePacked(int threadIdx, const Params &input, bool isTrai
 		yMax = ipHeight + _padHeight;
 
 #ifdef SINGLE_IMAGE
-	int miniBatchSize = 1;
+	int dfMiniBatchSize = 1;
 #else
-	int miniBatchSize = (int)ceil(batchSize / float(s_threadPool.NumThreads()));
+	int dfMiniBatchSize = (int)ceil(batchSize / float(s_threadPool.NumThreads()));
 #endif
-	for (int imageIdx = 0; imageIdx < batchSize; imageIdx += miniBatchSize)
+	//for (int imageIdx = 0; imageIdx < batchSize; imageIdx += dfMiniBatchSize)
+	ParallelFor(s_threadPool, 0, batchSize, dfMiniBatchSize,
+	        [&] (int imageIdx)
 	{
-	    miniBatchSize = min(miniBatchSize, batchSize - imageIdx);
+	    int miniBatchSize = min(dfMiniBatchSize, batchSize - imageIdx);
 
 	    // This object will store the partial convolution product of the current filter
 	    // application
@@ -188,7 +190,7 @@ Params ConvoLayer::ComputePacked(int threadIdx, const Params &input, bool isTrai
 			yConvoCurr += _strideY;
 			yOpCurr++;
 		}
-	}
+	});
 
 	return move(output);
 }
@@ -250,14 +252,16 @@ Params ConvoLayer::Backprop(int threadIdx, const Params &lastInput, const Params
 	int numApplications = 0;
 
 #ifdef SINGLE_IMAGE
-	int miniBatchSize = 1;
+	int dfMiniBatchSize = 1;
 #else
-	int miniBatchSize = (int)ceil(batchSize / float(s_threadPool.NumThreads()));
+	int dfMiniBatchSize = (int)ceil(batchSize / float(s_threadPool.NumThreads()));
 #endif
 
-	for (int imageIdx = 0; imageIdx < batchSize; imageIdx += miniBatchSize)
+	//for (int imageIdx = 0; imageIdx < batchSize; imageIdx += miniBatchSize)
+	ParallelFor(s_threadPool, 0, batchSize, dfMiniBatchSize,
+	        [&] (int imageIdx)
 	{
-	    miniBatchSize = min(miniBatchSize, batchSize - imageIdx);
+	    int miniBatchSize = min(dfMiniBatchSize, batchSize - imageIdx);
 
 #ifdef SINGLE_IMAGE
 	    UMapVector vecIpErrs(inputErrors.data() + (imageIdx * ipStride * ipHeight),
@@ -381,7 +385,7 @@ Params ConvoLayer::Backprop(int threadIdx, const Params &lastInput, const Params
 			yConvoCurr += _strideY;
 			++yOpCurr;
 		}
-	}
+	});
 
 #ifdef SINGLE_IMAGE
 	prms.LearningRate2 = batchSize / float(numApplications);
