@@ -1,5 +1,7 @@
 #pragma once
 
+#include <mutex>
+
 #include "single_input_layer.h"
 #include "weight_layer.h"
 
@@ -8,10 +10,11 @@ class NEURAL_NET_API ConvoLayer
 	  public WeightLayer
 {
 scope_private:
-	size_t _inputDepth;
 	int _windowSizeX, _windowSizeY;
 	int _padWidth, _padHeight;
 	size_t _strideX, _strideY;
+
+	std::mutex _bpLock;
 
 scope_public:
 	ConvoLayer() = default;
@@ -43,5 +46,7 @@ scope_protected:
 scope_private:
 	Params ComputePacked(const Params &input, bool isTraining);
 	Params ComputePlanar(const Params &input, bool isTraining);
+
+	size_t GetInputDepth() const;
 };
 

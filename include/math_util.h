@@ -38,7 +38,7 @@ NEURAL_NET_API void FanInitializeWeights(RMatrix &mat);
 NEURAL_NET_API void FanInitializeWeights(CMatrix &mat);
 NEURAL_NET_API void FanInitializeWeights(Real *iter, Real *end, int wtSize = -1);
 
-NEURAL_NET_API extern CThreadPool s_threadPool;
+NEURAL_NET_API CThreadPool &GetThreadPool();
 
 template<typename T>
 auto Square(const T &val) -> decltype(val * val)

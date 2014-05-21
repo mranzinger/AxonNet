@@ -3,7 +3,8 @@ ARCHITECTURE ?= -mavx2
 
 FLAGS=-std=c++11 -g3 $(ARCHITECTURE)
 DFLAGS=$(FLAGS) -D_DEBUG
-RFLAGS=-O3 $(FLAGS) -DEIGEN_NO_DEBUG -DEIGEN_FAST_MATH
+UTRFLAGS=$(FLAGS) -O2 -DEIGEN_FAST_MATH
+RFLAGS=$(FLAGS) -O3 -DEIGEN_NO_DEBUG -DEIGEN_FAST_MATH
 
 THIRD_PARTY   ?= ../ThirdParty
 EIGEN_PATH    ?= $(THIRD_PARTY)/eigen-3-2-1
@@ -70,7 +71,7 @@ $(UNIT_EXE_D): $(UNIT_SRC) $(OBJS_D)
 	$(CC) $(DFLAGS) -D_UNIT_TESTS_ $(UNIT_SRC) -o $@ $(INCLUDES) $(OBJS_D) $(LIBS_D) -lgtest_main -lpthread
 	
 $(UNIT_EXE): $(UNIT_SRC) $(OBJS)
-	$(CC) $(RFLAGS) -D_UNIT_TESTS_ $(UNIT_SRC) -o $@ $(INCLUDES) $(OBJS_D) $(LIBS) -lgtest_main -lpthread
+	$(CC) $(UTRFLAGS) -D_UNIT_TESTS_ $(UNIT_SRC) -o $@ $(INCLUDES) $(OBJS_D) $(LIBS) -lgtest_main -lpthread
 
 setup:
 	mkdir -p obj

@@ -378,7 +378,7 @@ void NeuralNet::Test(ITrainProvider &provider, const std::string &chkRoot)
 
 		Real err = _cost->Compute(op, labels);
 
-		testErr += err;
+		testErr += err * batchSize;
 
 		MaxBinarize(op.Data);
 
