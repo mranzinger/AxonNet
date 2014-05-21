@@ -246,8 +246,8 @@ Params ConvoLayer::Backprop(int threadIdx, const Params &lastInput, const Params
 	prms.BiasGrad.resize(prms.Biases.size());
 	prms.BiasGrad.setZero();
 
-	prms.WeightsGrad.resize(prms.Weights.rows(), prms.Weights.cols());
-	prms.WeightsGrad.setZero();
+	CMatrix cWeightsGrad(prms.Weights.rows(), prms.Weights.cols());
+	cWeightsGrad.setZero();
 
 #ifdef SINGLE_IMAGE
 	int dfMiniBatchSize = 1;
@@ -369,7 +369,7 @@ Params ConvoLayer::Backprop(int threadIdx, const Params &lastInput, const Params
 									);
 #endif
 
-					auto gradWeightsBlock = prms.WeightsGrad.block(
+					auto gradWeightsBlock = cWeightsGrad.block(
 												0, kernelColStart, opDepth, inBuffSize);
 
 					gradWeightsBlock.noalias() += opErrBlock * ipBlock;
@@ -383,6 +383,8 @@ Params ConvoLayer::Backprop(int threadIdx, const Params &lastInput, const Params
 			++yOpCurr;
 		}
 	});
+
+	prms.WeightsGrad = cWeightsGrad;
 
 	prms.LearningRate2 = 1.f / (opWidth * opHeight);
 

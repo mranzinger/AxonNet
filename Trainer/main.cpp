@@ -81,6 +81,7 @@ int main(int argc, char *argv [])
     if (!fs::exists(datasetRoot))
     {
         cout << "The specified dataset root directory doesn't exist." << endl;
+        cout << datasetRoot << endl;
         return EXIT_FAILURE;
     }
 
