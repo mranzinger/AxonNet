@@ -3,7 +3,7 @@
 #include "i_layer.h"
 
 class NEURAL_NET_API LayerBase
-	: public ILayer
+	: public virtual ILayer
 {
 scope_protected:
 	std::string _name;
@@ -38,23 +38,22 @@ scope_public:
 
 	friend void BindStruct(const axon::serialization::CStructBinder &binder, LayerBase &layer);
 
-	virtual void SyncWithHost() override { }
-	virtual void PrepareForThreads(size_t num) override { }
-
-	virtual void ApplyDeltas() override { }
-	virtual void ApplyDeltas(int threadIdx) override { }
+	virtual void ApplyGradient() override { }
 
 	virtual void SetNet(NeuralNet *net) override { _net = net; }
 
 #ifdef _UNIT_TESTS_
-	Params UTBackprop(int threadIdx, const Params &lastInput, const Params &outputErrors)
+	void UTBackprop(ParamMap &computeMap, ParamMap &inputErrorMap)
 	{
-		Params lastOutput = Compute(threadIdx, lastInput, true);
+		Compute(computeMap, true);
 
-		return Backprop(threadIdx, lastInput, lastOutput, outputErrors);
+		Backprop(computeMap, inputErrorMap);
 	}
 #endif
 
 scope_protected:
 	void BuildConfig(LayerConfig &config) const;
+
+	Params *GetData(ParamMap &pMap, const std::string &name, bool enforce = true) const;
+	const Params *GetData(const ParamMap &pMap, const std::string &name, bool enforce = true) const;
 };

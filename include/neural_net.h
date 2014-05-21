@@ -63,6 +63,8 @@ public:
 
 	ILayer::Ptr GetLayer(size_t index) const { return _layers[index]; }
 	ILayer::Ptr FindLayer(const std::string &name) const;
+	int GetLayerIndex(const std::string &name) const;
+	int GetLayerIndex(const ILayer *layer) const;
 
 	size_t NumLayers() const { return _layers.size(); }
 

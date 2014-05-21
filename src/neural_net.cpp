@@ -99,6 +99,26 @@ ILayer::Ptr NeuralNet::FindLayer(const string &name) const
 	return ILayer::Ptr();
 }
 
+int NeuralNet::GetLayerIndex(const std::string& name) const
+{
+	for (int i = 0; i < _layers.size(); ++i)
+	{
+		if (_layers[i]->GetLayerName() == name)
+			return i;
+	}
+	return -1;
+}
+
+int NeuralNet::GetLayerIndex(const ILayer* layer) const
+{
+	for (int i = 0; i < _layers.size(); ++i)
+	{
+		if (_layers[i].get() == layer)
+			return i;
+	}
+	return -1;
+}
+
 void NeuralNet::SetLearningRate(Real rate)
 {
 	for (auto layer : _layers)
@@ -275,6 +295,8 @@ void NeuralNet::Train(ITrainProvider &provider, size_t maxIters, size_t testFreq
 		t.join();
 	}
 }
+
+
 
 void NeuralNet::RunTrainThread(ThreadTrainConfig &config)
 {

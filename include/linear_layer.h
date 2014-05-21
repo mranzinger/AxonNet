@@ -1,94 +1,17 @@
 #pragma once
 
-#include "layer_base.h"
+#include "single_input_layer.h"
+#include "weight_layer.h"
 
-class NEURAL_NET_API LinearLayerConfig
-	: public LayerConfig
-{
-public:
-	typedef std::shared_ptr<LinearLayerConfig> Ptr;
-
-	RMatrix Weights;
-	Vector Biases;
-
-	RMatrix WeightsIncrement;
-	Vector BiasesIncrement;
-
-	friend void BindStruct(const axon::serialization::CStructBinder &binder, LinearLayerConfig &config);
-};
-
-struct LinParams
-{
-	RMatrix Weights;
-	Vector Biases;
-
-	RMatrix WeightsRunning;
-	Vector BiasRunning;
-
-	RMatrix WeightsIncrement;
-	Vector BiasIncrement;
-
-	RMatrix WeightsGrad;
-	Vector BiasGrad;
-
-	/*RMatrix ExpWeightsGrad;
-	Vector ExpBiasGrad;
-
-	RMatrix ExpWeightsDelta;
-	Vector ExpBiasDelta;*/
-
-	float LearningRate2 = 1;
-
-	size_t UpdateCt = 0;
-
-	LinParams() { }
-	LinParams(size_t numInputs, size_t numOutputs)
-		: Weights(numOutputs, numInputs), Biases(numOutputs),
-		  WeightsRunning(numOutputs, numInputs), BiasRunning(numOutputs),
-		  WeightsIncrement(numOutputs, numInputs), BiasIncrement(numOutputs),
-		  WeightsGrad(numOutputs, numInputs), BiasGrad(numOutputs)
-		  //ExpWeightsGrad(numOutputs, numInputs), ExpBiasGrad(numOutputs),
-		  //ExpWeightsDelta(numOutputs, numInputs), ExpBiasDelta(numOutputs)
-	{
-		//InitializeWeights(Weights, 0, 1);
-		//InitializeWeights(Biases, 0, 1);
-		FanInitializeWeights(Weights);
-		FanInitializeWeights(Biases);
-
-		WeightsRunning.setZero();
-		BiasRunning.setZero();
-		WeightsIncrement.setZero();
-		BiasIncrement.setZero();
-		WeightsGrad.setZero();
-		BiasGrad.setZero();
-
-		/*ExpWeightsGrad.setZero();
-		ExpBiasGrad.setZero();
-		ExpWeightsDelta.setZero();
-		ExpBiasDelta.setZero();*/
-	}
-};
-
-typedef std::vector<LinParams> LinParamsList;
 
 class NEURAL_NET_API LinearLayer
-	: public LayerBase
+	: public SingleInputLayer,
+	  public WeightLayer
 {
-	friend class ConvoLayer;
-
-scope_protected:
-	LinParams _master;
-	LinParamsList _threadParams;
-
-	size_t _updateInterval = 5;
-
-	float _epsilon = 1e-6;
-	float _decay = 0.95;
-
 scope_public:
 	typedef std::shared_ptr<LinearLayer> Ptr;
 
-	LinearLayer() { }
+	LinearLayer() = default;
 	LinearLayer(std::string name, size_t numInputs, size_t numOutputs);
 	LinearLayer(std::string name, RMatrix weights, Vector biases);
 
@@ -96,36 +19,13 @@ scope_public:
 		return "Linear Layer";
 	}
 
-	virtual Params Compute(int threadIdx, const Params &input, bool isTraining) override;
-	virtual Params Backprop(int threadIdx, const Params &lastInput, const Params &lastOutput, const Params &outputErrors) override;
-
-	virtual void InitializeFromConfig(const LayerConfig::Ptr &config) override;
+	virtual void InitializeFromConfig(const LayerConfig::Ptr &config);
 	virtual LayerConfig::Ptr GetConfig() const override;
 
-	virtual void PrepareForThreads(size_t num) override;
-
-	virtual void SyncWithHost() override;
-
-	virtual void ApplyDeltas() override;
-	virtual void ApplyDeltas(int threadIdx) override;
-
-	size_t InputSize() const {
-		return _master.Weights.cols();
-	}
-	size_t OutputSize() const {
-		return _master.Weights.rows();
-	}
-
-	friend void ReadStruct(const axon::serialization::CStructReader &reader, LinearLayer &layer);
-	friend void WriteStruct(const axon::serialization::CStructWriter &binder, const LinearLayer &layer);
+	friend void BindStruct(const aser::CStructBinder &binder, LinearLayer &layer);
 
 scope_protected:
-	void BuildConfig(LinearLayerConfig &config) const;
-
-	LinParams &GetParams(int threadIdx);
-
-scope_private:
-	void ApplyDeltas(LinParams &prms);
-	void SyncToMaster(LinParams &prms);
+	virtual Params SCompute(const Params &input, bool isTraining) override;
+	virtual Params SBackprop(const Params &lastInput, const Params &lastOutput, const Params &outputErrors) override;
 
 };

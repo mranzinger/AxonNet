@@ -1,5 +1,8 @@
 #pragma once
 
+#include <map>
+#include <string>
+
 #include "math_util.h"
 
 struct NEURAL_NET_API Params
@@ -92,4 +95,5 @@ public:
 };
 
 typedef std::vector<Params> MultiParams;
+typedef std::map<std::string, Params> ParamMap;
 

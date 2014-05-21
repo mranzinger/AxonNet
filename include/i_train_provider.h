@@ -9,6 +9,9 @@ class ITrainProvider
 public:
 	virtual ~ITrainProvider() { }
 
+	static const std::string DEFAULT_INPUT_NAME;
+	static const std::string DEFAULT_LABEL_NAME;
+
 	virtual size_t Size() const = 0;
 	virtual void Get(const std::vector<size_t> &idxs, Params &vals, Params &labels) const = 0;
 

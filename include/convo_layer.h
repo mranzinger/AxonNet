@@ -1,24 +1,13 @@
 #pragma once
 
-#include "linear_layer.h"
-#include "thread/thread_pool.h"
-
-class NEURAL_NET_API ConvoLayerConfig
-	: public LayerConfig
-{
-public:
-	typedef std::shared_ptr<ConvoLayerConfig> Ptr;
-
-	LayerConfig::Ptr LinearConfig;
-
-	friend void BindStruct(const axon::serialization::CStructBinder &binder, ConvoLayerConfig &config);
-};
+#include "single_input_layer.h"
+#include "weight_layer.h"
 
 class NEURAL_NET_API ConvoLayer
-	: public LayerBase
+	: public SingleInputLayer,
+	  public WeightLayer
 {
 scope_private:
-	LinearLayer _linearLayer;
 	size_t _inputDepth;
 	int _windowSizeX, _windowSizeY;
 	int _padWidth, _padHeight;
@@ -41,27 +30,18 @@ scope_public:
 		return "Convo Layer";
 	}
 
-	virtual Params Compute(int threadIdx, const Params &input, bool isTraining) override;
-	virtual Params Backprop(int threadIdx, const Params &lastInput, const Params &lastOutput, const Params &outputErrors) override;
-
-	virtual void ApplyDeltas() override;
-	virtual void ApplyDeltas(int threadIdx) override;
-
-	virtual void PrepareForThreads(size_t num) override;
-
-	virtual void SyncWithHost() override;
-
-	virtual void InitializeFromConfig(const LayerConfig::Ptr &config) override;
+	virtual void InitializeFromConfig(const LayerConfig::Ptr &config);
 	virtual LayerConfig::Ptr GetConfig() const override;
 
-	friend void ReadStruct(const axon::serialization::CStructReader &reader, ConvoLayer &layer);
-	friend void WriteStruct(const axon::serialization::CStructWriter &binder, const ConvoLayer &layer);
+	friend void ReadStruct(const aser::CStructReader &reader, ConvoLayer &layer);
+	friend void WriteStruct(const aser::CStructWriter &binder, const ConvoLayer &layer);
 
 scope_protected:
-	void BuildConfig(ConvoLayerConfig &config) const;
+	virtual Params SCompute(const Params &input, bool isTraining) override;
+	virtual Params SBackprop(const Params &lastInput, const Params &lastOutput, const Params &outputErrors) override;
 
 scope_private:
-	Params ComputePacked(int threadidx, const Params &input, bool isTraining);
-	Params ComputePlanar(int threadIdx, const Params &input, bool isTraining);
+	Params ComputePacked(const Params &input, bool isTraining);
+	Params ComputePlanar(const Params &input, bool isTraining);
 };
 

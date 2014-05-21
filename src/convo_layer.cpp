@@ -14,14 +14,13 @@ ConvoLayer::ConvoLayer(string name,
 						size_t windowSizeX, size_t windowSizeY, 
 						size_t strideX, size_t strideY, 
 						int padWidth, int padHeight)
-	: LayerBase(move(name)), 
+	: SingleInputLayer(move(name)),
+	  WeightLayer(inputDepth * windowSizeX * windowSizeY, outputDepth),
 	  	_inputDepth(inputDepth),
-		_linearLayer("", inputDepth * windowSizeX * windowSizeY, outputDepth),
 		_windowSizeX(windowSizeX), _windowSizeY(windowSizeY), 
 		_strideX(strideX), _strideY(strideY),
 		_padWidth(padWidth), _padHeight(padHeight)
 {
-	PrepareForThreads(1);
 }
 
 ConvoLayer::ConvoLayer(std::string name,
@@ -29,18 +28,18 @@ ConvoLayer::ConvoLayer(std::string name,
 						size_t windowSizeX, size_t windowSizeY,
 						size_t strideX, size_t strideY,
 						int padWidth, int padHeight)
-	: LayerBase(move(name)),
-		_linearLayer("", move(linWeights), move(linBias)),
+	: SingleInputLayer(move(name)),
+	  WeightLayer(move(linWeights), move(linBias)),
 		_windowSizeX(windowSizeX), _windowSizeY(windowSizeY),
 		_strideX(strideX), _strideY(strideY),
 		_padWidth(padWidth), _padHeight(padHeight)
 {
-	PrepareForThreads(1);
+	_inputDepth = InputSize() / (_windowSizeX * _windowSizeY);
 }
 
-Params ConvoLayer::Compute(int threadIdx, const Params &unpaddedInput, bool isTraining)
+Params ConvoLayer::SCompute(const Params &unpaddedInput, bool isTraining)
 {
-	if (_linearLayer.InputSize() != unpaddedInput.Depth * _windowSizeX * _windowSizeY)
+	if (InputSize() != unpaddedInput.Depth * _windowSizeX * _windowSizeY)
 	{
 		assert(false);
 		throw runtime_error("The underlying linear layer doesn't take the correct input dimensions.");
@@ -49,20 +48,19 @@ Params ConvoLayer::Compute(int threadIdx, const Params &unpaddedInput, bool isTr
 	switch (unpaddedInput.Layout)
 	{
 	case Params::Packed:
-		return ComputePacked(threadIdx, unpaddedInput, isTraining);
+		return ComputePacked(unpaddedInput, isTraining);
 	case Params::Planar:
-		return ComputePlanar(threadIdx, unpaddedInput, isTraining);
+		return ComputePlanar(unpaddedInput, isTraining);
 	default:
 		throw runtime_error("Unsupported parameter layout.");
 	}
 }
 
-Params ConvoLayer::ComputePacked(int threadIdx, const Params &input, bool isTraining)
+Params ConvoLayer::ComputePacked(const Params &input, bool isTraining)
 {
-	LinParams &threadPrms = _linearLayer.GetParams(threadIdx);
 	//const RMatrix &weights = threadPrms.Weights;
-	const CMatrix weights = threadPrms.Weights;
-	const Vector &biases = threadPrms.Biases;
+	const CMatrix weights = _weights.Weights;
+	const Vector &biases = _weights.Biases;
 
 	const int ipWidth = input.Width;
 	const int ipHeight = input.Height;
@@ -76,7 +74,7 @@ Params ConvoLayer::ComputePacked(int threadIdx, const Params &input, bool isTrai
 
 	const int opWidth = (int) floor((ipEffectiveWidth - _windowSizeX) / float(_strideX)) + 1;
 	const int opHeight = (int) floor((ipEffectiveHeight - _windowSizeY) / float(_strideY)) + 1;
-	const int opDepth = _linearLayer.OutputSize();
+	const int opDepth = OutputSize();
 	const int opStride = opWidth * opDepth;
 
 	const auto Right = [this] (int val) { return val + _windowSizeX; };
@@ -193,16 +191,15 @@ Params ConvoLayer::ComputePacked(int threadIdx, const Params &input, bool isTrai
 	return move(output);
 }
 
-Params ConvoLayer::ComputePlanar(int threadIdx, const Params &unpaddedInput, bool isTraining)
+Params ConvoLayer::ComputePlanar(const Params &unpaddedInput, bool isTraining)
 {
 	throw runtime_error("Planar input data is not currently supported.");
 }
 
-Params ConvoLayer::Backprop(int threadIdx, const Params &lastInput, const Params &lastOutput, const Params &pOutputErrors)
+Params ConvoLayer::SBackprop(const Params &lastInput, const Params &lastOutput, const Params &pOutputErrors)
 {
-	LinParams &prms = _linearLayer.GetParams(threadIdx);
-	const RMatrix &weights = prms.Weights;
-	const Vector &biases = prms.Biases;
+	const RMatrix &weights = _weights.Weights;
+	const Vector &biases = _weights.Biases;
 
 	CMatrix transWeights = weights.transpose();
 
@@ -243,10 +240,10 @@ Params ConvoLayer::Backprop(int threadIdx, const Params &lastInput, const Params
 	CMatrix &inputErrors = pInputErrors.Data;
 
 	// Initialize the gradient matrices
-	prms.BiasGrad.resize(prms.Biases.size());
-	prms.BiasGrad.setZero();
+	_weights.BiasGrad.resize(_weights.Biases.size());
+	_weights.BiasGrad.setZero();
 
-	CMatrix cWeightsGrad(prms.Weights.rows(), prms.Weights.cols());
+	CMatrix cWeightsGrad(_weights.Weights.rows(), _weights.Weights.cols());
 	cWeightsGrad.setZero();
 
 #ifdef SINGLE_IMAGE
@@ -311,7 +308,7 @@ Params ConvoLayer::Backprop(int threadIdx, const Params &lastInput, const Params
 
 				// Update the bias gradient
 				auto bGrad = opErrBlock.rowwise().sum();
-				prms.BiasGrad += bGrad;
+				_weights.BiasGrad += bGrad;
 
 				for (int filterRow = 0; (filterRow + yKernelStart) < yKernelEnd; ++filterRow)
 				{
@@ -384,64 +381,26 @@ Params ConvoLayer::Backprop(int threadIdx, const Params &lastInput, const Params
 		}
 	});
 
-	prms.WeightsGrad = cWeightsGrad;
+	_weights.WeightsGrad = cWeightsGrad;
 
-	prms.LearningRate2 = 1.f / (opWidth * opHeight);
+	_weights.DynamicLearningRate = 1.f / (opWidth * opHeight);
 
 	return move(inputErrors);
 }
 
-void ConvoLayer::ApplyDeltas()
-{
-	_linearLayer.ApplyDeltas();
-}
-
-void ConvoLayer::ApplyDeltas(int threadIdx)
-{
-	_linearLayer.ApplyDeltas(threadIdx);
-}
-
-void ConvoLayer::PrepareForThreads(size_t num)
-{
-	_linearLayer.PrepareForThreads(num);
-}
-
-void ConvoLayer::SyncWithHost()
-{
-	_linearLayer.SyncWithHost();
-}
-
 void ConvoLayer::InitializeFromConfig(const LayerConfig::Ptr &config)
 {
-	LayerBase::InitializeFromConfig(config);
-
-	auto conv = dynamic_pointer_cast<ConvoLayerConfig>(config);
-
-	if (!conv)
-		throw runtime_error("The specified config is not for a convolutional layer.");
-
-	_linearLayer.InitializeFromConfig(conv->LinearConfig);
+	SingleInputLayer::InitializeFromConfig(config);
+	WeightLayer::InitializeFromConfig(config);
 }
 
 LayerConfig::Ptr ConvoLayer::GetConfig() const
 {
-	auto ret = make_shared<ConvoLayerConfig>();
-	BuildConfig(*ret);
-	return ret;
-}
+	auto cfg = WeightLayer::GetConfig();
 
-void ConvoLayer::BuildConfig(ConvoLayerConfig &config) const
-{
-	LayerBase::BuildConfig(config);
+	SingleInputLayer::BuildConfig(*cfg);
 
-	config.LinearConfig = _linearLayer.GetConfig();
-}
-
-void BindStruct(const CStructBinder &binder, ConvoLayerConfig &config)
-{
-	BindStruct(binder, (LayerConfig&) config);
-
-	binder("linearConfig", config.LinearConfig);
+	return cfg;
 }
 
 void WriteStruct(const CStructWriter &writer, const ConvoLayer &layer)
@@ -455,13 +414,17 @@ void WriteStruct(const CStructWriter &writer, const ConvoLayer &layer)
 		  ("padWidth", layer._padWidth)
 		  ("padHeight", layer._padHeight)
 		  ("inputDepth", layer._inputDepth)
-		  ("outputDepth", layer._linearLayer.OutputSize())
+		  ("outputDepth", layer.OutputSize())
+		  ("gradConsumer", layer._gradConsumer)
 		  ;
 }
 
 void ReadStruct(const CStructReader &reader, ConvoLayer &layer)
 {
-	ReadStruct(reader, (LayerBase&)layer);
+	// Don't use WeightLayer's read function because this
+	// read already grabs all of the necessary information
+	// for it
+	ReadStruct(reader, (SingleInputLayer&)layer);
 
 	size_t outputDepth;
 
@@ -473,15 +436,12 @@ void ReadStruct(const CStructReader &reader, ConvoLayer &layer)
 		  ("padHeight", layer._padHeight)
 		  ("inputDepth", layer._inputDepth)
 		  ("outputDepth", outputDepth)
+		  ("gradConsumer", layer._gradConsumer)
 		  ;
 
-	layer._linearLayer = LinearLayer(
-							"",
-							layer._windowSizeX * layer._windowSizeY * layer._inputDepth,
-							outputDepth);
+	layer._weights = CWeights(layer._windowSizeX * layer._windowSizeY * layer._inputDepth,
+							  outputDepth);
 }
-
-AXON_SERIALIZE_DERIVED_TYPE(LayerConfig, ConvoLayerConfig, ConvoLayerConfig);
 
 AXON_SERIALIZE_DERIVED_TYPE(ILayer, ConvoLayer, ConvoLayer);
 
