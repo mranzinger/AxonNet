@@ -4,7 +4,15 @@
 
 using namespace std;
 
-CThreadPool s_threadPool;
+CThreadPool& GetThreadPool()
+{
+    static CThreadPool *s_threadPool = nullptr;
+
+    if (!s_threadPool)
+        s_threadPool = new CThreadPool();
+
+    return *s_threadPool;
+}
 
 void InitializeWeights(Vector &vec, Real mean, Real stdDev)
 {
@@ -66,7 +74,5 @@ void FanInitializeWeights(Real *iter, Real *end, int wtSize)
 	for (Real &val : make_range(iter, end))
 		val = dist(engine);
 }
-
-
 
 

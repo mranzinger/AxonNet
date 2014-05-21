@@ -1,5 +1,7 @@
 #pragma once
 
+#include <mutex>
+
 #include "linear_layer.h"
 #include "thread/thread_pool.h"
 
@@ -19,10 +21,11 @@ class NEURAL_NET_API ConvoLayer
 {
 scope_private:
 	LinearLayer _linearLayer;
-	size_t _inputDepth;
 	int _windowSizeX, _windowSizeY;
 	int _padWidth, _padHeight;
 	size_t _strideX, _strideY;
+
+	std::mutex _bpLock;
 
 scope_public:
 	ConvoLayer() = default;
@@ -63,5 +66,7 @@ scope_protected:
 scope_private:
 	Params ComputePacked(int threadidx, const Params &input, bool isTraining);
 	Params ComputePlanar(int threadIdx, const Params &input, bool isTraining);
+
+	size_t GetInputDepth() const;
 };
 

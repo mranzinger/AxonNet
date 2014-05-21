@@ -7,21 +7,17 @@
 using namespace std;
 using namespace axon::serialization;
 
-//#define SINGLE_IMAGE
-
 ConvoLayer::ConvoLayer(string name, 
 						size_t inputDepth, size_t outputDepth, 
 						size_t windowSizeX, size_t windowSizeY, 
 						size_t strideX, size_t strideY, 
 						int padWidth, int padHeight)
 	: LayerBase(move(name)), 
-	  	_inputDepth(inputDepth),
 		_linearLayer("", inputDepth * windowSizeX * windowSizeY, outputDepth),
 		_windowSizeX(windowSizeX), _windowSizeY(windowSizeY), 
 		_strideX(strideX), _strideY(strideY),
 		_padWidth(padWidth), _padHeight(padHeight)
 {
-	PrepareForThreads(1);
 }
 
 ConvoLayer::ConvoLayer(std::string name,
@@ -35,7 +31,6 @@ ConvoLayer::ConvoLayer(std::string name,
 		_strideX(strideX), _strideY(strideY),
 		_padWidth(padWidth), _padHeight(padHeight)
 {
-	PrepareForThreads(1);
 }
 
 Params ConvoLayer::Compute(int threadIdx, const Params &unpaddedInput, bool isTraining)
@@ -60,7 +55,6 @@ Params ConvoLayer::Compute(int threadIdx, const Params &unpaddedInput, bool isTr
 Params ConvoLayer::ComputePacked(int threadIdx, const Params &input, bool isTraining)
 {
 	LinParams &threadPrms = _linearLayer.GetParams(threadIdx);
-	//const RMatrix &weights = threadPrms.Weights;
 	const CMatrix weights = threadPrms.Weights;
 	const Vector &biases = threadPrms.Biases;
 
@@ -90,46 +84,28 @@ Params ConvoLayer::ComputePacked(int threadIdx, const Params &input, bool isTrai
 	int xMax = ipWidth + _padWidth,
 		yMax = ipHeight + _padHeight;
 
-#ifdef SINGLE_IMAGE
-	int dfMiniBatchSize = 1;
-#else
-	int dfMiniBatchSize = (int)ceil(batchSize / float(s_threadPool.NumThreads()));
-#endif
-	//for (int imageIdx = 0; imageIdx < batchSize; imageIdx += dfMiniBatchSize)
-	ParallelFor(s_threadPool, 0, batchSize, dfMiniBatchSize,
+	const int dfMiniBatchSize = 1;
+
+	FastFor(GetThreadPool(), 0, batchSize, dfMiniBatchSize,
 	        [&] (int imageIdx)
 	{
 	    int miniBatchSize = min(dfMiniBatchSize, batchSize - imageIdx);
 
 	    // This object will store the partial convolution product of the current filter
 	    // application
-#ifdef SINGLE_IMAGE
 	    Vector convoPartialSum(opDepth);
-#else
-	    CMatrix convoPartialSum(opDepth, miniBatchSize);
-#endif
 
-
-#ifdef SINGLE_IMAGE
 	    UMapVector vecIpImage(const_cast<Real*>(input.Data.data()) + imageIdx * (ipStride * ipHeight),
 	                       ipStride * ipHeight);
 	    UMapVector vecOpImage(output.Data.data() + imageIdx * (opStride * opHeight),
 	                       opStride * opHeight);
-#endif
 
 		int yOpCurr = 0;
 		int yConvoCurr = -_padHeight;
 
 		// Lambda that returns a block of image data
-#ifdef SINGLE_IMAGE
-		/*auto GetImageBlock = [this, &input, ipStride, ipDepth, imageIdx]
-		                (int row, int col, int size) { return input.Data.block(row * ipStride + col * ipDepth, imageIdx, size * ipDepth, 1); };*/
 		auto GetImageBlock = [this, &vecIpImage, ipStride, ipDepth, imageIdx]
                         (int row, int col, int size) { return vecIpImage.segment(row * ipStride + col * ipDepth, size * ipDepth); };
-#else
-		auto GetImageBlock = [this, &input, ipStride, ipDepth, imageIdx, miniBatchSize]
-		                (int row, int col, int size) { return input.Data.block(row * ipStride + col * ipDepth, imageIdx, size * ipDepth, miniBatchSize); };
-#endif
 
 		while (Bottom(yConvoCurr) <= yMax)
 		{
@@ -151,11 +127,7 @@ Params ConvoLayer::ComputePacked(int threadIdx, const Params &input, bool isTrai
 				int skipLeft = max(0, -xConvoCurr); // This will be greater than 0 when xConvoCurr is < 0
 
 				// Always start the partial sum as the biases
-#ifdef SINGLE_IMAGE
 				convoPartialSum = biases;
-#else
-				convoPartialSum.colwise() = biases;
-#endif
 
 				for (int filterRow = 0; (filterRow + yKernelStart) < yKernelEnd; ++filterRow)
 				{
@@ -171,12 +143,7 @@ Params ConvoLayer::ComputePacked(int threadIdx, const Params &input, bool isTrai
 				}
 
 				// Get the assignment block
-#ifdef SINGLE_IMAGE
-				/*auto opBlock = output.Data.block(yOpCurr * opStride + xOpCurr * opDepth, imageIdx, opDepth, 1);*/
 				auto opBlock = vecOpImage.segment(yOpCurr * opStride + xOpCurr * opDepth, opDepth);
-#else
-				auto opBlock = output.Data.block(yOpCurr * opStride + xOpCurr * opDepth, imageIdx, opDepth, miniBatchSize);
-#endif
 
 				// Assign the now complete sum to the output block
 				opBlock = convoPartialSum;
@@ -206,12 +173,6 @@ Params ConvoLayer::Backprop(int threadIdx, const Params &lastInput, const Params
 
 	CMatrix transWeights = weights.transpose();
 
-#ifdef SINGLE_IMAGE
-	//RMatrix transLastInput = lastInput.Data.transpose();
-#else
-	CMatrix transLastInput = lastInput.Data.transpose();
-#endif
-
 	const int ipWidth = lastInput.Width;
 	const int ipHeight = lastInput.Height;
 	const int ipDepth = lastInput.Depth;
@@ -222,8 +183,6 @@ Params ConvoLayer::Backprop(int threadIdx, const Params &lastInput, const Params
 	const int ipEffectiveWidth = ipWidth + _padWidth * 2,
 		      ipEffectiveHeight = ipHeight + _padHeight * 2;
 
-	//const int opWidth = (size_t) floor((ipEffectiveWidth - _windowSizeX) / float(_strideX)) + 1;
-	//const int opHeight = (size_t) floor((ipEffectiveHeight - _windowSizeY) / float(_strideY)) + 1;
 	const int opWidth = lastOutput.Width;
 	const int opHeight = lastOutput.Height;
 	const int opDepth = lastOutput.Depth;
@@ -246,142 +205,98 @@ Params ConvoLayer::Backprop(int threadIdx, const Params &lastInput, const Params
 	prms.BiasGrad.resize(prms.Biases.size());
 	prms.BiasGrad.setZero();
 
-	CMatrix cWeightsGrad(prms.Weights.rows(), prms.Weights.cols());
-	cWeightsGrad.setZero();
+	CMatrix cWeightsGrad = CMatrix::Zero(prms.Weights.rows(), prms.Weights.cols());
 
-#ifdef SINGLE_IMAGE
-	int dfMiniBatchSize = 1;
-#else
-	int dfMiniBatchSize = (int)ceil(batchSize / float(s_threadPool.NumThreads()));
-#endif
-
-	//for (int imageIdx = 0; imageIdx < batchSize; imageIdx += miniBatchSize)
-	ParallelFor(s_threadPool, 0, batchSize, dfMiniBatchSize,
-	        [&] (int imageIdx)
+	FastFor(GetThreadPool(), 0, batchSize, 1,
+	        [&, this] (int imageIdx)
 	{
-	    int miniBatchSize = min(dfMiniBatchSize, batchSize - imageIdx);
+	    Vector threadBiasGrad = Vector::Zero(prms.BiasGrad.size());
+	    CMatrix threadWeightsGrad = CMatrix::Zero(cWeightsGrad.rows(), cWeightsGrad.cols());
 
-#ifdef SINGLE_IMAGE
-	    UMapVector vecIpErrs(inputErrors.data() + (imageIdx * ipStride * ipHeight),
-	                         ipStride * ipHeight);
-	    UMapVector vecOpErrs(const_cast<Real*>(outputErrors.data()) + (imageIdx * opStride * opHeight),
-	                         opStride * opHeight);
-	    UMapRowVector vecLastInput(const_cast<Real*>(lastInput.Data.data()) + (imageIdx * ipStride * ipHeight),
-	                         ipStride * ipHeight);
-#endif
+        UMapVector vecIpErrs(inputErrors.data() + (imageIdx * ipStride * ipHeight),
+                             ipStride * ipHeight);
+        UMapVector vecOpErrs(const_cast<Real*>(outputErrors.data()) + (imageIdx * opStride * opHeight),
+                             opStride * opHeight);
+        UMapRowVector vecLastInput(const_cast<Real*>(lastInput.Data.data()) + (imageIdx * ipStride * ipHeight),
+                             ipStride * ipHeight);
 
-		int yOpCurr = 0;
-		int yConvoCurr = -_padHeight;
+        int yOpCurr = 0;
+        int yConvoCurr = -_padHeight;
 
-		while (Bottom(yConvoCurr) <= yMax)
-		{
-			int xOpCurr = 0;
-			int xConvoCurr = -_padWidth;
+        while (Bottom(yConvoCurr) <= yMax)
+        {
+            int xOpCurr = 0;
+            int xConvoCurr = -_padWidth;
 
-			int yKernelStart = max(0, yConvoCurr);
-			int yKernelEnd = min(Bottom(yConvoCurr), ipHeight);
+            int yKernelStart = max(0, yConvoCurr);
+            int yKernelEnd = min(Bottom(yConvoCurr), ipHeight);
 
-			int skipTop = max(0, -yConvoCurr);
+            int skipTop = max(0, -yConvoCurr);
 
-			while (Right(xConvoCurr) <= xMax)
-			{
-				int xKernelStart = max(0, xConvoCurr);
-				int xKernelEnd = min(Right(xConvoCurr), ipWidth);
-				int xKernelSize = xKernelEnd - xKernelStart;
+            while (Right(xConvoCurr) <= xMax)
+            {
+                int xKernelStart = max(0, xConvoCurr);
+                int xKernelEnd = min(Right(xConvoCurr), ipWidth);
+                int xKernelSize = xKernelEnd - xKernelStart;
 
-				int skipLeft = max(0, -xConvoCurr);
+                int skipLeft = max(0, -xConvoCurr);
 
-				// Get the output error for the current application of the kernel
-#ifdef SINGLE_IMAGE
-				/*auto opErrBlock = outputErrors.block(
-									yOpCurr * opStride + xOpCurr * opDepth,
-									imageIdx,
-									opDepth,
-									1);*/
-				auto opErrBlock = vecOpErrs.segment(
-				                    yOpCurr * opStride + xOpCurr * opDepth,
-				                    opDepth);
-#else
-				auto opErrBlock = outputErrors.block(
-									yOpCurr * opStride + xOpCurr * opDepth,
-									imageIdx,
-									opDepth,
-									miniBatchSize);
-#endif
+                // Get the output error for the current application of the kernel
+                auto opErrBlock = vecOpErrs.segment(
+                                    yOpCurr * opStride + xOpCurr * opDepth,
+                                    opDepth);
 
-				// Update the bias gradient
-				auto bGrad = opErrBlock.rowwise().sum();
-				prms.BiasGrad += bGrad;
+                // Update the bias gradient
+                threadBiasGrad.noalias() += opErrBlock;
 
-				for (int filterRow = 0; (filterRow + yKernelStart) < yKernelEnd; ++filterRow)
-				{
-					int kernelColStart = (filterRow + skipTop) * _windowSizeX * ipDepth;
-					kernelColStart += skipLeft * ipDepth;
+                for (int filterRow = 0; (filterRow + yKernelStart) < yKernelEnd; ++filterRow)
+                {
+                    int kernelColStart = (filterRow + skipTop) * _windowSizeX * ipDepth;
+                    kernelColStart += skipLeft * ipDepth;
 
-					// In transpose space, each filter occupies a column, so
-					// kernelColStart maps to the rows
-					auto kernelBlock = transWeights.block(kernelColStart,
-														  0,
-														  xKernelSize * ipDepth,
-														  opDepth);
+                    // In transpose space, each filter occupies a column, so
+                    // kernelColStart maps to the rows
+                    auto kernelBlock = transWeights.block(kernelColStart,
+                                                          0,
+                                                          xKernelSize * ipDepth,
+                                                          opDepth);
 
-					int inBuffStart = (filterRow + yKernelStart) * ipStride
-											+ xKernelStart * ipDepth;
-					int inBuffSize = xKernelSize * ipDepth;
+                    int inBuffStart = (filterRow + yKernelStart) * ipStride
+                                            + xKernelStart * ipDepth;
+                    int inBuffSize = xKernelSize * ipDepth;
 
-					// Indexing a 4D object using 2 dimensions is... ugly.
-#ifdef SINGLE_IMAGE
-					/*auto ipErrBlock = inputErrors.block(
-										inBuffStart,
-										imageIdx,
-										inBuffSize,
-										1);*/
-					auto ipErrBlock = vecIpErrs.segment(
-					                    inBuffStart,
-					                    inBuffSize);
-#else
-					auto ipErrBlock = inputErrors.block(
-										inBuffStart,
-										imageIdx,
-										inBuffSize,
-										miniBatchSize);
-#endif
+                    // Indexing a 4D object using 2 dimensions is... ugly.
+                    auto ipErrBlock = vecIpErrs.segment(
+                                        inBuffStart,
+                                        inBuffSize);
 
-					ipErrBlock.noalias() += kernelBlock * opErrBlock;
+                    ipErrBlock.noalias() += kernelBlock * opErrBlock;
 
-					// In transpose space, each input image occupies a row
-#ifdef SINGLE_IMAGE
-					/*auto ipBlock = transLastInput.block(
-										imageIdx,
-										inBuffStart,
-										1,
-										inBuffSize
-									);*/
-					auto ipBlock = vecLastInput.segment(
-					                    inBuffStart,
-					                    inBuffSize);
-#else
-					auto ipBlock = transLastInput.block(
-										imageIdx,
-										inBuffStart,
-										miniBatchSize,
-										inBuffSize
-									);
-#endif
+                    // In transpose space, each input image occupies a row
+                    auto ipBlock = vecLastInput.segment(
+                                        inBuffStart,
+                                        inBuffSize);
 
-					auto gradWeightsBlock = cWeightsGrad.block(
-												0, kernelColStart, opDepth, inBuffSize);
+                    auto gradWeightsBlock = threadWeightsGrad.block(
+                                                0, kernelColStart, opDepth, inBuffSize);
 
-					gradWeightsBlock.noalias() += opErrBlock * ipBlock;
-				}
+                    gradWeightsBlock.noalias() += opErrBlock * ipBlock;
+                } // End of Kernel Loop
 
-				xConvoCurr += _strideX;
-				++xOpCurr;
-			}
+                xConvoCurr += _strideX;
+                ++xOpCurr;
+            } // End of X loop
 
-			yConvoCurr += _strideY;
-			++yOpCurr;
-		}
+            yConvoCurr += _strideY;
+            ++yOpCurr;
+        } // End of Y loop
+
+	    // Now we need to integrate all of the threaded gradients into the main gradients.
+	    // Get a lock to the accumulator
+	    lock_guard<mutex> lock(_bpLock);
+
+	    prms.BiasGrad += threadBiasGrad;
+	    cWeightsGrad += threadWeightsGrad;
 	});
 
 	prms.WeightsGrad = cWeightsGrad;
@@ -437,6 +352,11 @@ void ConvoLayer::BuildConfig(ConvoLayerConfig &config) const
 	config.LinearConfig = _linearLayer.GetConfig();
 }
 
+size_t ConvoLayer::GetInputDepth() const
+{
+    return _linearLayer.InputSize() / (_windowSizeX * _windowSizeY);
+}
+
 void BindStruct(const CStructBinder &binder, ConvoLayerConfig &config)
 {
 	BindStruct(binder, (LayerConfig&) config);
@@ -454,7 +374,7 @@ void WriteStruct(const CStructWriter &writer, const ConvoLayer &layer)
 		  ("strideY", layer._strideY)
 		  ("padWidth", layer._padWidth)
 		  ("padHeight", layer._padHeight)
-		  ("inputDepth", layer._inputDepth)
+		  ("inputDepth", layer.GetInputDepth())
 		  ("outputDepth", layer._linearLayer.OutputSize())
 		  ;
 }
@@ -463,7 +383,7 @@ void ReadStruct(const CStructReader &reader, ConvoLayer &layer)
 {
 	ReadStruct(reader, (LayerBase&)layer);
 
-	size_t outputDepth;
+	size_t outputDepth, inputDepth;
 
 	reader("windowSizeX", layer._windowSizeX)
 		  ("windowSizeY", layer._windowSizeY)
@@ -471,13 +391,13 @@ void ReadStruct(const CStructReader &reader, ConvoLayer &layer)
 		  ("strideY", layer._strideY)
 		  ("padWidth", layer._padWidth)
 		  ("padHeight", layer._padHeight)
-		  ("inputDepth", layer._inputDepth)
+		  ("inputDepth", inputDepth)
 		  ("outputDepth", outputDepth)
 		  ;
 
 	layer._linearLayer = LinearLayer(
 							"",
-							layer._windowSizeX * layer._windowSizeY * layer._inputDepth,
+							layer._windowSizeX * layer._windowSizeY * inputDepth,
 							outputDepth);
 }
 

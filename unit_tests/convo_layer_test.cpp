@@ -6,6 +6,7 @@
  */
 
 #include <vector>
+#include <iostream>
 
 #include <gtest/gtest.h>
 
@@ -398,14 +399,14 @@ TEST(ConvoLayerTest, PaddedBackpropHarder)
 	Vector bias(1);
 	bias << 3;
 
-	CMatrix input(9, 1);
-	input << 1, 1, 1,
-			 1, 2, 1,
-			 1, 1, 1;
+	CMatrix input(9, 2);
+	input << 1, 1, 1, 1, 1, 1,
+			 1, 1, 2, 2, 1, 1,
+			 1, 1, 1, 1, 1, 1;
 
-	CMatrix outputErrors(4, 1);
-	outputErrors << 1, -1,
-			       -1,  1;
+	CMatrix outputErrors(4, 2);
+	outputErrors << 1, 1, -1, -1,
+			       -1, -1,  1, 1;
 
 	RMatrix weightsGrad;
 	Vector biasGrad;
@@ -451,8 +452,13 @@ TEST(ConvoLayerTest, PaddedBackpropHarder)
 
 	RMatrix cInputErrWnd = cInputErrors.block(1, 1, 3, 3);
 
+	RMap cInputErrWndCol(cInputErrWnd.data(), 9, 1);
+
+	CMatrix cTrueInputErr(9, 2);
+	cTrueInputErr << cInputErrWndCol, cInputErrWndCol;
+
 	AssertMatrixEquivalence(inputErrors.Data,
-							RMap(cInputErrWnd.data(), 9, 1) );
+							cTrueInputErr );
 }
 
 

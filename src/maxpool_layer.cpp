@@ -10,7 +10,6 @@ using namespace axon::serialization;
 MaxPoolLayer::MaxPoolLayer(string name, size_t windowSizeX, size_t windowSizeY)
 	: LayerBase(move(name)), _windowSizeX(windowSizeX), _windowSizeY(windowSizeY)
 {
-	PrepareForThreads(1);
 }
 
 Params MaxPoolLayer::Compute(int threadIdx, const Params &input, bool isTraining)
@@ -32,10 +31,10 @@ Params MaxPoolLayer::Compute(int threadIdx, const Params &input, bool isTraining
 
 	const int opStride = opWidth * depth;
 
-	int miniBatchSize = (int)ceil(batchSize / float(s_threadPool.NumThreads()));
+	int miniBatchSize = (int)ceil(batchSize / float(GetThreadPool().NumThreads()));
 
 	//for (int imgIdx = 0; imgIdx < batchSize; ++imgIdx)
-	FastFor(s_threadPool, 0, batchSize, miniBatchSize,
+	FastFor(GetThreadPool(), 0, batchSize, miniBatchSize,
 	    [&] (int baseImgIdx)
 	{
 	    for (int imgIdx = baseImgIdx, end = min(imgIdx + miniBatchSize, batchSize);
@@ -86,10 +85,10 @@ Params MaxPoolLayer::Backprop(int threadIdx, const Params &lastInput, const Para
 
 	const int opStride = opWidth * depth;
 
-	int miniBatchSize = (int)ceil(batchSize / float(s_threadPool.NumThreads()));
+	int miniBatchSize = (int)ceil(batchSize / float(GetThreadPool().NumThreads()));
 
 	//for (int imgIdx = 0; imgIdx < batchSize; ++imgIdx)
-    FastFor(s_threadPool, 0, batchSize, miniBatchSize,
+    FastFor(GetThreadPool(), 0, batchSize, miniBatchSize,
         [&] (int baseImgIdx)
     {
         for (int imgIdx = baseImgIdx, end = min(imgIdx + miniBatchSize, batchSize);
