@@ -161,3 +161,4 @@ d_unit_test
 trainer
 unit_test
 .settings/
+vtune/
