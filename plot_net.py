@@ -18,13 +18,13 @@ def getErrorRates(fileName):
     
     return errRates
 
-def showCost(fileName):
+def showCost(fileName, testFreq):
     errRates = getErrorRates(fileName)
 
     numCycles = len(errRates['train'])
     
     testErrors = n.row_stack(errRates['test'])
-    testErrors = n.tile(testErrors, (1, 390))
+    testErrors = n.tile(testErrors, (1, testFreq))
     testErrors = list(testErrors.flatten())
     testErrors += [testErrors[-1]] * max(0, len(errRates['train']) - len(errRates['test']))
     testErrors = testErrors[:len(errRates['train'])]
@@ -55,8 +55,12 @@ def showCost(fileName):
     print len(errRates['test'])
 
 if __name__ == "__main__":
+    testFreq = 463;
+    if len(sys.argv) == 3:
+        testFreq = int(sys.argv[2])
+
     if (os.path.exists(sys.argv[1])):
-        showCost(sys.argv[1])
+        showCost(sys.argv[1], testFreq)
         pl.show()
     else:
         print 'File Not Found'
