@@ -7,36 +7,31 @@
 class DropRand
 {
 private:
-	std::mt19937_64 _engine;
-	std::uniform_int_distribution<uint64_t> _dist;
+	std::mt19937 _engine;
+	std::uniform_real_distribution<Real> _dist;
 
 public:
 	DropRand()
-		: _dist(0, std::numeric_limits<uint64_t>::max())
+		: _dist(0, 1)
     {
         std::random_device rd;
         _engine.seed(rd());
     }
 
-	uint64_t Next() {
+	Real Next() {
 		return _dist(_engine);
 	}
 };
 
 class NEURAL_NET_API DropoutLayer
-	: public LayerBase
+	: public SingleInputLayer
 {
-	typedef std::vector<uint64_t> RandVec;
-	typedef std::vector<RandVec> RandVecs;
-	typedef std::vector<DropRand> Gens;
-
-private:
+scope_private:
 	Real _dropout;
 	
-	Gens _trainGens;
-	RandVecs _trainRands;
+	DropRand _rand;
 
-public:
+scope_public:
 	typedef std::shared_ptr<DropoutLayer> Ptr;
 
 	DropoutLayer(Real dropout = 0.5f) : DropoutLayer("", dropout) { }
@@ -46,13 +41,9 @@ public:
 		return "Dropout Layer";
 	}
 
-	virtual Params Compute(int threadIdx, const Params &input, bool isTraining) override;
-	virtual Params Backprop(int threadIdx, const Params &lastInput, const Params &lastOutput, const Params &outputErrors) override;
+	friend void BindStruct(const aser::CStructBinder &binder, DropoutLayer &layer);
 
-	virtual void PrepareForThreads(size_t num) override;
-
-	friend void BindStruct(const axon::serialization::CStructBinder &binder, DropoutLayer &layer);
-
-private:
-	void Dropout(int threadIdx, const CMatrix &input, CMatrix &output, bool generate);
+scope_protected:
+	virtual Params SCompute(const Params &input, bool isTraining) override;
+	virtual Params SBackprop(const Params &lastInput, const Params &lastOutput, const Params &outputErrors) override;
 };
