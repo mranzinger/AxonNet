@@ -6,13 +6,33 @@
 
 #include "bibdigit_loader.h"
 
-void WriteStruct(const axon::serialization::CStructWriter &writer, const BibDigitLoader &loader)
+BibDigitLoader::BibDigitLoader(const std::string& rootDir)
+{
+}
+
+void BibDigitLoader::GetTrain(ParamMap& inputMap, size_t a_batchSize)
+{
+}
+
+void BibDigitLoader::GetTest(ParamMap& inputMap, size_t a_offset,
+        size_t a_batchSize)
+{
+}
+
+void BibDigitLoader::LoadDataset(const std::string& file, MultiDataVec& data,
+        LabelVec& labels) const
+{
+}
+
+
+
+void ReadStruct(const aser::CStructReader &reader, BibDigitLoader &loader)
 {
 
 }
-void ReadStruct(const axon::serialization::CStructReader &reader, BibDigitLoader &loader)
+
+void WriteStruct(const aser::CStructWriter &writer, const BibDigitLoader &loader)
 {
 
 }
-
 

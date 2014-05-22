@@ -11,7 +11,7 @@
 
 class NeuralNet;
 
-struct NEURAL_NET_API ICost
+class NEURAL_NET_API ICost
 {
 public:
 	typedef std::shared_ptr<ICost> Ptr;
@@ -20,8 +20,8 @@ public:
 
 	virtual std::string GetType() const = 0;
 
-	virtual Real Compute(const Params &pred, const Params &labels) = 0;
-	virtual Params ComputeGrad(const Params &pred, const Params &labels) = 0;
+	virtual Real Compute(const ParamMap &inputs) = 0;
+	virtual void ComputeGrad(const ParamMap &inputs, ParamMap &inputErrors) = 0;
 
 	virtual void SetNet(NeuralNet *net) = 0;
 };

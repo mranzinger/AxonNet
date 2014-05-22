@@ -17,12 +17,13 @@ class BibDigitLoader
 private:
 	typedef std::vector<Real> DataVec;
 	typedef std::vector<DataVec> MultiDataVec;
+	typedef std::vector<size_t> LabelVec;
 
 	MultiDataVec _trainData;
-	MultiDataVec _trainLabels;
+	LabelVec _trainLabels;
 
 	MultiDataVec _testData;
-	MultiDataVec _testLabels;
+	LabelVec _testLabels;
 
 	std::string _rootDir;
 
@@ -30,17 +31,17 @@ public:
 	BibDigitLoader() = default;
 	BibDigitLoader(const std::string &rootDir);
 
-	virtual size_t Size() const override { return _trainData.size(); }
-	virtual void Get(const std::vector<size_t> &idxs, Params &vals, Params &labels) const override;
-
+	virtual size_t TrainSize() const override { return _trainData.size(); }
 	virtual size_t TestSize() const override { return _testData.size(); }
-	virtual void GetTest(const std::vector<size_t> &idxs, Params &vals, Params &labels) const override;
 
-	friend void WriteStruct(const axon::serialization::CStructWriter &writer, const BibDigitLoader &loader);
-	friend void ReadStruct(const axon::serialization::CStructReader &reader, BibDigitLoader &loader);
+	virtual void GetTrain(ParamMap &inputMap, size_t a_batchSize) override;
+    virtual void GetTest(ParamMap &inputMap, size_t a_offset, size_t a_batchSize) override;
+
+	friend void WriteStruct(const aser::CStructWriter &writer, const BibDigitLoader &loader);
+	friend void ReadStruct(const aser::CStructReader &reader, BibDigitLoader &loader);
 
 private:
-	void LoadDataset(const std::string &file, MultiDataVec &data, MultiDataVec &labels) const;
+	void LoadDataset(const std::string &file, MultiDataVec &data, LabelVec &labels) const;
 };
 
 

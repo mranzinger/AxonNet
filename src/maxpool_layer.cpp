@@ -8,11 +8,11 @@ using namespace std;
 using namespace axon::serialization;
 
 MaxPoolLayer::MaxPoolLayer(string name, size_t windowSizeX, size_t windowSizeY)
-	: LayerBase(move(name)), _windowSizeX(windowSizeX), _windowSizeY(windowSizeY)
+	: SingleInputLayer(move(name)), _windowSizeX(windowSizeX), _windowSizeY(windowSizeY)
 {
 }
 
-Params MaxPoolLayer::Compute(int threadIdx, const Params &input, bool isTraining)
+Params MaxPoolLayer::SCompute(const Params &input, bool isTraining)
 {
 	const int ipWidth = input.Width;
 	const int ipHeight = input.Height;
@@ -68,7 +68,8 @@ Params MaxPoolLayer::Compute(int threadIdx, const Params &input, bool isTraining
 	return move(output);
 }
 
-Params MaxPoolLayer::Backprop(int threadIdx, const Params &lastInput, const Params &lastOutput, const Params &outputErrors)
+Params MaxPoolLayer::SBackprop(const Params &lastInput, const Params &lastOutput,
+                             const Params &outputErrors)
 {
 	const int ipWidth = lastInput.Width;
 	const int ipHeight = lastInput.Height;

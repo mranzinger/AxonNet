@@ -1,29 +1,31 @@
 #pragma once
 
-#include "i_cost.h"
+#include "simple_cost.h"
 
 class NEURAL_NET_API LogLossCost
-	: public ICost
+	: public SimpleCost
 {
-private:
-	NeuralNet *_net;
+scope_private:
 	bool _checked;
 	bool _outputIsSoftmax;
 
-public:
+scope_public:
 	typedef std::shared_ptr<LogLossCost> Ptr;
 
-	LogLossCost() : _net(nullptr), _checked(false), _outputIsSoftmax(false) { }
+	LogLossCost();
+	LogLossCost(std::string inputName);
+	LogLossCost(std::string inputName, std::string labelName);
 
 	virtual std::string GetType() const {
 		return "Log Loss";
 	}
 
-	virtual Real Compute(const Params &pred, const Params &labels) override;
-	virtual Params ComputeGrad(const Params &pred, const Params &labels) override;
+	friend void BindStruct(const aser::CStructBinder &binder, LogLossCost &cost);
 
-	virtual void SetNet(NeuralNet *net) override { _net = net; }
+scope_protected:
+    virtual Real SCompute(const Params &pred, const Params &labels) override;
+    virtual Params SComputeGrad(const Params &pred, const Params &labels) override;
 
-private:
+scope_private:
 	void EstablishContext();
 };

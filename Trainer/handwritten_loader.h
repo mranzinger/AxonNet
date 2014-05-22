@@ -2,20 +2,21 @@
 
 #include <vector>
 
-#include "i_train_provider.h"
+#include "2d_train_provider_base.h"
 
 class HandwrittenLoader
-	: public ITrainProvider
+	: public C2dTrainProviderBase
 {
 private:
 	typedef std::vector<Real> DataVec;
 	typedef std::vector<DataVec> MultiDataVec;
+	typedef std::vector<size_t> LabelVec;
 
 	MultiDataVec _trainData;
-	MultiDataVec _trainLabels;
+	LabelVec _trainLabels;
 
 	MultiDataVec _testData;
-	MultiDataVec _testLabels;
+	LabelVec _testLabels;
 
 	size_t _numRows;
 	size_t _numCols;
@@ -24,6 +25,8 @@ private:
 	std::string _rootDir,
 				_dataFile, _labelFile,
 				_testDataFile, _testLabelFile;
+	std::string _inputName,
+	            _labelName;
 
 public: 
 	HandwrittenLoader() = default;
@@ -31,18 +34,18 @@ public:
     HandwrittenLoader(const std::string &dataFile, const std::string &labelFile,
 		              const std::string &testDataFile, const std::string &testLabelFile);
 
-	virtual size_t Size() const override {
+	virtual size_t TrainSize() const override {
 		return _trainData.size();
 	}
-	virtual void Get(const std::vector<size_t> &idxs, Params &vals, Params &labels) const override;
-
 	virtual size_t TestSize() const override {
 		return _testData.size();
 	}
-	virtual void GetTest(const std::vector<size_t> &idxs, Params &vals, Params &labels) const override;
 
-	friend void WriteStruct(const axon::serialization::CStructWriter &writer, const HandwrittenLoader &loader);
-	friend void ReadStruct(const axon::serialization::CStructReader &reader, HandwrittenLoader &loader);
+	virtual void GetTrain(ParamMap &inputMap, size_t a_batchSize) override;
+    virtual void GetTest(ParamMap &inputMap, size_t a_offset, size_t a_batchSize) override;
+
+	friend void WriteStruct(const aser::CStructWriter &writer, const HandwrittenLoader &loader);
+	friend void ReadStruct(const aser::CStructReader &reader, HandwrittenLoader &loader);
 
 private:
 	void Load();
@@ -50,6 +53,6 @@ private:
 	MultiDataVec LoadImages(const std::string &file);
 	MultiDataVec LoadLabels(const std::string &file);
 
-	void Get(const std::vector<size_t> &idxs, Params &vals, Params &labels,
-			 const MultiDataVec &allImages, const MultiDataVec &allLabels, bool deform) const;
+	void Get(const std::vector<size_t> &idxs, ParamMap &inputMap,
+			 const MultiDataVec &allImages, const LabelVec &allLabels, bool deform) const;
 };

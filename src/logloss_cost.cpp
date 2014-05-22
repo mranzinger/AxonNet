@@ -7,7 +7,23 @@ using namespace std;
 
 static const Real s_epss = 0.0000001;
 
-Real LogLossCost::Compute(const Params &preds, const Params &labels)
+LogLossCost::LogLossCost()
+    : LogLossCost("", "")
+{
+}
+
+LogLossCost::LogLossCost(std::string inputName)
+    : LogLossCost(move(inputName), "")
+{
+}
+
+LogLossCost::LogLossCost(std::string inputName, std::string labelName)
+    : SimpleCost(move(inputName), move(labelName)),
+      _checked(false), _outputIsSoftmax(false)
+{
+}
+
+Real LogLossCost::SCompute(const Params &preds, const Params &labels)
 {
 	Real ret = 0.0f;
 
@@ -38,7 +54,7 @@ Real LogLossCost::Compute(const Params &preds, const Params &labels)
 	return ret;
 }
 
-Params LogLossCost::ComputeGrad(const Params &pred, const Params &labels)
+Params LogLossCost::SComputeGrad(const Params &pred, const Params &labels)
 {
 	EstablishContext();
 
@@ -80,6 +96,8 @@ Params LogLossCost::ComputeGrad(const Params &pred, const Params &labels)
 	return move(ret);
 }
 
+
+
 void LogLossCost::EstablishContext()
 {
 	if (_checked)
@@ -99,7 +117,10 @@ void LogLossCost::EstablishContext()
 	_outputIsSoftmax = sl != nullptr;
 }
 
-void BindStruct(const axon::serialization::CStructBinder &, LogLossCost&) { }
+void BindStruct(const aser::CStructBinder &binder, LogLossCost &cost)
+{
+    BindStruct(binder, (SimpleCost&)cost);
+}
 
 AXON_SERIALIZE_DERIVED_TYPE(ICost, LogLossCost, LogLossCost);
 

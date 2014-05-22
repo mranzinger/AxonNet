@@ -3,7 +3,7 @@
 #include "layer_base.h"
 
 class NEURAL_NET_API MaxPoolLayer
-	: public LayerBase
+	: public SingleInputLayer
 {
 scope_private:
 	size_t _windowSizeX, _windowSizeY;
@@ -14,8 +14,10 @@ scope_public:
 
 	virtual std::string GetLayerType() const override { return "Max Pool Layer"; }
 
-	virtual Params Compute(int threadIdx, const Params &input, bool isTraining) override;
-	virtual Params Backprop(int threadIdx, const Params &lastInput, const Params &lastOutput, const Params &outputErrors) override;
+	friend void BindStruct(const aser::CStructBinder &binder, MaxPoolLayer &layer);
 
-	friend void BindStruct(const axon::serialization::CStructBinder &binder, MaxPoolLayer &layer);
+scope_protected:
+    virtual Params SCompute(const Params &input, bool isTraining) override;
+    virtual Params SBackprop(const Params &lastInput, const Params &lastOutput, const Params &outputErrors) override;
+
 };

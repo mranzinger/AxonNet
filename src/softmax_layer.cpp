@@ -6,7 +6,22 @@
 using namespace std;
 using namespace axon::serialization;
 
-Params SoftmaxLayer::Compute(int threadIdx, const Params &input, bool isTraining)
+SoftmaxLayer::SoftmaxLayer()
+    : SoftmaxLayer("")
+{
+}
+SoftmaxLayer::SoftmaxLayer(string name)
+    : SoftmaxLayer(move(name), "")
+{
+
+}
+SoftmaxLayer::SoftmaxLayer(string name, string inputName)
+    : SingleInputLayer(move(name), move(inputName)),
+      _checked(false), _costIsLogLoss(false)
+{
+}
+
+Params SoftmaxLayer::SCompute(const Params &input, bool isTraining)
 {
 	// Getting the max value and shifting the dimension is a neat trick to prevent overflow
 	// NOTE: Undeflow may still occur though, but that is far less dangerous :/
@@ -45,7 +60,7 @@ Params SoftmaxLayer::Compute(int threadIdx, const Params &input, bool isTraining
 	return move(ret);
 }
 
-Params SoftmaxLayer::Backprop(int threadIdx, const Params &lastInput, const Params &lastOutput,
+Params SoftmaxLayer::SBackprop(const Params &lastInput, const Params &lastOutput,
 	const Params &outputErrors)
 {
 	EstablishContext();
@@ -106,7 +121,7 @@ void SoftmaxLayer::EstablishContext()
 
 void BindStruct(const CStructBinder &binder, SoftmaxLayer &layer)
 {
-	BindStruct(binder, (LayerBase&) layer);
+	BindStruct(binder, (SingleInputLayer&) layer);
 }
 
 AXON_SERIALIZE_DERIVED_TYPE(ILayer, SoftmaxLayer, SoftmaxLayer);

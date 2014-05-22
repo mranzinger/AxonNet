@@ -157,33 +157,33 @@ HandwrittenLoader::MultiDataVec HandwrittenLoader::LoadLabels(const string &file
 	return ret;
 }
 
-void HandwrittenLoader::Get(const vector<size_t> &idxs, Params &vals, Params &labels) const
+void HandwrittenLoader::GetTrain(ParamMap& inputMap, size_t a_batchSize)
 {
-	Get(idxs, vals, labels, _trainData, _trainLabels, true);
+    Get(GetTrainBatchIdxs(a_batchSize),
+        inputMap,
+        _trainData, _trainLabels, true);
 }
 
-void HandwrittenLoader::GetTest(const vector<size_t> &idxs, Params &vals, Params &labels) const
+void HandwrittenLoader::GetTest(ParamMap& inputMap, size_t a_offset,
+        size_t a_batchSize)
 {
-	Get(idxs, vals, labels, _testData, _testLabels, false);
+    size_t numSamples = min(a_batchSize, TestSize() - a_offset);
+
+    vector<size_t> idxs(numSamples);
+    for (size_t i = 0; i < numSamples; ++i)
+        idxs[i] = i;
+
+    Get(idxs, inputMap, _testData, _testLabels, false);
 }
 
-void HandwrittenLoader::Get(const std::vector<size_t>& idxs, Params& vals, Params& labels,
+void HandwrittenLoader::Get(const vector<size_t>& idxs, ParamMap &inputMap,
 		const MultiDataVec& allImages,
-		const MultiDataVec& allLabels,
+		const LabelVec& allLabels,
 		bool deform) const
 {
-	vals.Width = _numRows;
-	vals.Height = _numCols;
-	vals.Depth = 1;
-
-	// Each row is the ij-th pixel of each image
-	vals.Data.resize(_imgSize, idxs.size());
-
-	labels.Width = 10;
-	labels.Height = 1;
-	labels.Depth = 1;
-
-	labels.Data.resize(10, idxs.size());
+    Params vals(_numCols, _numRows, 1,
+                CMatrix(_imgSize, idxs.size()));
+    Params labels(1, 10, 1, CMatrix::Zero(10, idxs.size()));
 
 	// Since the data is stored column major, it means that each image
 	// is stored in contiguous memory.
@@ -198,7 +198,7 @@ void HandwrittenLoader::Get(const std::vector<size_t>& idxs, Params& vals, Param
 	for (size_t idx : idxs)
 	{
 		const DataVec &vec = allImages[idx];
-		const DataVec &lab = allLabels[idx];
+		size_t label = allLabels[idx];
 
 		if (deform)
 		{
@@ -218,11 +218,14 @@ void HandwrittenLoader::Get(const std::vector<size_t>& idxs, Params& vals, Param
 			copy(vec.begin(), vec.end(), pVals);
 		}
 
-		copy(lab.begin(), lab.end(), pLabels);
+		pLabels[label] = 1.0f;
 
 		pVals += _imgSize;
 		pLabels += 10;
 	}
+
+	inputMap[_inputName.empty() ? DEFAULT_INPUT_NAME : _inputName] = move(vals);
+	inputMap[_labelName.empty() ? DEFAULT_LABEL_NAME : _labelName] = move(labels);
 }
 
 void WriteStruct(const CStructWriter &writer, const HandwrittenLoader &loader)
@@ -238,6 +241,11 @@ void WriteStruct(const CStructWriter &writer, const HandwrittenLoader &loader)
 			  ("testDataFile", loader._testDataFile)
 			  ("testLabelFile", loader._testLabelFile);
 	}
+
+	if (loader._inputName)
+	    writer("inputName", loader._inputName);
+	if (loader._labelName)
+	    writer("labelName", loader._labelName);
 }
 
 void ReadStruct(const CStructReader &reader, HandwrittenLoader &loader)
@@ -255,5 +263,10 @@ void ReadStruct(const CStructReader &reader, HandwrittenLoader &loader)
 			  ("testLabelFile", loader._testLabelFile);
 	}
 
+	reader("inputName", loader._inputName)
+	      ("labelName", loader._labelName);
+
 	loader.Load();
+
+	loader.Finalize();
 }

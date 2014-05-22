@@ -1,24 +1,32 @@
 #pragma once
 
-#include "layer_base.h"
+#include "single_input_layer.h"
 #include "functions.h"
 
 template<typename Fn>
 class NeuronLayer
-	: public LayerBase
+	: public SingleInputLayer
 {
-public:
+scope_public:
 	typedef std::shared_ptr<NeuronLayer> Ptr;
 
 	NeuronLayer() { }
-	NeuronLayer(std::string name) : LayerBase(std::move(name)) { }
+	NeuronLayer(std::string name)
+	    : SingleInputLayer(std::move(name))
+	{
+	}
+	NeuronLayer(std::string name, std::string inputName)
+	    : SingleInputLayer(std::move(name), std::move(inputName))
+	{
+	}
 
 	virtual std::string GetLayerType() const override {
 		return Fn::Type() + " Neuron Layer";
 	}
 
-	virtual Params Compute(int threadIdx, const Params &input, bool isTraining) override;
-	virtual Params Backprop(int threadIdx, const Params &lastInput, const Params &lastOutput, const Params &outputErrors) override;
+scope_protected:
+	virtual Params SCompute(const Params &input, bool isTraining) override;
+    virtual Params SBackprop(const Params &lastInput, const Params &lastOutput, const Params &outputErrors) override;
 };
 
 typedef NeuronLayer<LinearFn> LinearNeuronLayer;
@@ -30,13 +38,13 @@ typedef NeuronLayer<SoftPlusFn> SoftPlusNeuronLayer;
 typedef NeuronLayer<HardTanhFn> HardTanhNeuronLayer;
 
 template<typename Fn>
-Params NeuronLayer<Fn>::Compute(int threadIdx, const Params &input, bool isTraining)
+Params NeuronLayer<Fn>::SCompute(const Params &input, bool isTraining)
 {
 	return Params(input, ApplyFunction<Fn>(input.Data));
 }
 
 template<typename Fn>
-Params NeuronLayer<Fn>::Backprop(int threadIdx, const Params &lastInput, const Params &lastOutput, const Params &outputErrors)
+Params NeuronLayer<Fn>::SBackprop(const Params &lastInput, const Params &lastOutput, const Params &outputErrors)
 {
 	Params ret(lastInput, CMatrix());
 

@@ -27,7 +27,7 @@ public:
 						   WeightLayerConfig &config);
 };
 
-class WeightLayer
+class NEURAL_NET_API WeightLayer
 	: public virtual ILayer
 {
 scope_protected:
