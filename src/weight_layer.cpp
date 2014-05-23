@@ -7,6 +7,8 @@
 
 #include "weight_layer.h"
 
+#include "persist_util.h"
+
 using namespace std;
 
 WeightLayer::WeightLayer()
@@ -92,11 +94,6 @@ void ReadStruct(const aser::CStructReader &reader, WeightLayer &layer)
 		throw runtime_error("The dimensions of the weight layer must be specified.");
 
 	layer._weights = CWeights(numInputs, numOutputs);
-}
-
-void BindStruct(const aser::CStructBinder &binder, WeightLayer &layer)
-{
-	binder("gradConsumer", layer._gradConsumer);
 }
 
 AXON_SERIALIZE_DERIVED_TYPE(LayerConfig, WeightLayerConfig, WeightLayerConfig);

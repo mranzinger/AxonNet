@@ -15,28 +15,19 @@ public:
 
 	std::vector<LayerConfig::Ptr> Configs;
 	ICost::Ptr Cost;
-	Real BestCorr;
+	CostMap BestCost;
 
-	friend void BindStruct(const axon::serialization::CStructBinder &binder, NetworkConfig &config);
+	friend void BindStruct(const aser::CStructBinder &binder, NetworkConfig &config);
 };
 
 struct ThreadTrainConfig;
-
-struct BPStat
-{
-	Real Error;
-	size_t NumCorrect;
-};
 
 class NEURAL_NET_API NeuralNet
 {
 private:
 	std::vector<ILayer::Ptr> _layers;
 	ICost::Ptr _cost;
-	Real _learnRate = 1.0;
-	Real _bestCorr = 0;
-
-	size_t _batchSize;
+	CostMap _bestCost;
 
 public:
 	NeuralNet();
@@ -72,26 +63,26 @@ public:
 
 	void SetLearningRate(Real rate);
 
-	Real GetCost(const Params &pred, const Params &labels);
+	CostMap GetCost(const ParamMap &inputs);
 
-	Params Compute(const Params &input);
-	Params Compute(int threadIdx, const Params &input, bool isTraining);
+	void Compute(ParamMap &inputs, bool isTraining = false);
 
-	BPStat Backprop(int threadIdx, const Params &input, const Params &labels);
+	CostMap Backprop(ParamMap &inputs);
 
-	void Train(ITrainProvider &provider, size_t maxIters, size_t testFreq,
+	void Train(ITrainProvider &provider,
+	           size_t batchSize,
+	           size_t maxIters,
+	           size_t testFreq,
 		       const std::string &chkRoot);
 
-	//friend void BindStruct(const axon::serialization::CStructBinder &binder, NeuralNet &config);
-	friend void WriteStruct(const axon::serialization::CStructWriter &writer, const NeuralNet &net);
-	friend void ReadStruct(const axon::serialization::CStructReader &reader, NeuralNet &net);
+	friend void WriteStruct(const aser::CStructWriter &writer, const NeuralNet &net);
+	friend void ReadStruct(const aser::CStructReader &reader, NeuralNet &net);
 
 private:
-	void ApplyDeltas(int threadIdx);
-	void Test(ITrainProvider &provider, const std::string &chkRoot);
+	void ApplyGradient();
+	void Test(ITrainProvider &provider, size_t batchSize,
+	          const std::string &chkRoot, size_t testNum);
 	void SaveCheckpoint(const std::string &chkRoot);
-	void PrepareThreads(int numThreads);
-
-	void RunTrainThread(ThreadTrainConfig &config);
+	void PrintStats(size_t iteration, double timeSec, const CostMap &cost);
 };
  

@@ -6,6 +6,8 @@
 
 #include "simple_cost.h"
 
+#include "i_train_provider.h"
+
 using namespace std;
 
 SimpleCost::SimpleCost(std::string inputName)
@@ -18,7 +20,7 @@ SimpleCost::SimpleCost(std::string inputName, std::string labelName)
 {
 }
 
-Real SimpleCost::Compute(const ParamMap& inputs)
+CostMap SimpleCost::Compute(const ParamMap& inputs)
 {
     const Params &input = *FindParams(inputs, _inputName);
     const Params &labels = *FindParams(inputs,
@@ -42,9 +44,25 @@ void SimpleCost::ComputeGrad(const ParamMap& inputs, ParamMap& inputErrors)
     inputErrors[_inputName] = move(ipCost);
 }
 
+bool SimpleCost::IsBetter(const CostMap& a, const CostMap& b) const
+{
+    if (a.empty())
+        return false;
+
+    auto aIter = a.find(CostMap::PRIMARY_NAME);
+    auto bIter = b.find(CostMap::PRIMARY_NAME);
+
+    if (aIter == a.end())
+        return false;
+    if (bIter == b.end())
+        return true;
+
+    return aIter->second < bIter->second;
+}
 
 void BindStruct(const aser::CStructBinder &binder, SimpleCost &cost)
 {
     binder("inputName", cost._inputName)
           ("labelName", cost._labelName);
 }
+

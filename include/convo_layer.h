@@ -36,8 +36,10 @@ scope_public:
 	virtual void InitializeFromConfig(const LayerConfig::Ptr &config);
 	virtual LayerConfig::Ptr GetConfig() const override;
 
+	virtual void ApplyGradient() override;
+
+	friend void WriteStruct(const aser::CStructWriter &writer, const ConvoLayer &layer);
 	friend void ReadStruct(const aser::CStructReader &reader, ConvoLayer &layer);
-	friend void WriteStruct(const aser::CStructWriter &binder, const ConvoLayer &layer);
 
 scope_protected:
 	virtual Params SCompute(const Params &input, bool isTraining) override;

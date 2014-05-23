@@ -123,7 +123,7 @@ HandwrittenLoader::MultiDataVec HandwrittenLoader::LoadImages(const std::string 
 
 	return ret;
 }
-HandwrittenLoader::MultiDataVec HandwrittenLoader::LoadLabels(const string &file)
+HandwrittenLoader::LabelVec HandwrittenLoader::LoadLabels(const string &file)
 {
 	static const int MAGIC_NUMBER = 0x00000801; // 2049
 
@@ -142,7 +142,7 @@ HandwrittenLoader::MultiDataVec HandwrittenLoader::LoadLabels(const string &file
 	size_t numLabels = read(fileStream, flipEndian);
 
 	// Output is 10 values, [0, 1] for each character
-	MultiDataVec ret(numLabels, DataVec(10, 0.0f));
+	LabelVec ret(numLabels);
 
 	for (size_t i = 0; i < numLabels; ++i)
 	{
@@ -151,7 +151,7 @@ HandwrittenLoader::MultiDataVec HandwrittenLoader::LoadLabels(const string &file
 		// set the character using val as index to 1.0
 		assert(val >= 0 && val <= 9);
 
-		ret[i][val] = 1.0;
+		ret[i] = val;
 	}
 
 	return ret;
@@ -242,9 +242,9 @@ void WriteStruct(const CStructWriter &writer, const HandwrittenLoader &loader)
 			  ("testLabelFile", loader._testLabelFile);
 	}
 
-	if (loader._inputName)
+	if (!loader._inputName.empty())
 	    writer("inputName", loader._inputName);
-	if (loader._labelName)
+	if (!loader._labelName.empty())
 	    writer("labelName", loader._labelName);
 }
 

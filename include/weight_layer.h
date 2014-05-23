@@ -12,7 +12,7 @@
 #include "weights.h"
 
 class NEURAL_NET_API WeightLayerConfig
-	: public virtual LayerConfig
+	: public LayerConfig
 {
 public:
 	typedef std::shared_ptr<LayerConfig> Ptr;

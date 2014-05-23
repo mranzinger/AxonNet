@@ -1,6 +1,6 @@
 #pragma once
 
-#include "layer_base.h"
+#include "single_input_layer.h"
 
 class NEURAL_NET_API MaxPoolLayer
 	: public SingleInputLayer

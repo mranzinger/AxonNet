@@ -17,9 +17,11 @@ SumSqCost::SumSqCost(std::string inputName, std::string labelName)
 {
 }
 
-Real SumSqCost::SCompute(const Params &pred, const Params &labels)
+CostMap SumSqCost::SCompute(const Params &pred, const Params &labels)
 {
-	return (labels.Data - pred.Data).squaredNorm() / pred.Data.cols();
+	Real cost = (labels.Data - pred.Data).squaredNorm();
+
+	return CostMap{ { CostMap::PRIMARY_NAME, cost } };
 }
 
 Params SumSqCost::SComputeGrad(const Params &pred, const Params &labels)

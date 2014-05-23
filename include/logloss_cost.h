@@ -23,7 +23,7 @@ scope_public:
 	friend void BindStruct(const aser::CStructBinder &binder, LogLossCost &cost);
 
 scope_protected:
-    virtual Real SCompute(const Params &pred, const Params &labels) override;
+    virtual CostMap SCompute(const Params &pred, const Params &labels) override;
     virtual Params SComputeGrad(const Params &pred, const Params &labels) override;
 
 scope_private:

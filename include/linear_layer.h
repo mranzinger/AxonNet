@@ -22,7 +22,10 @@ scope_public:
 	virtual void InitializeFromConfig(const LayerConfig::Ptr &config);
 	virtual LayerConfig::Ptr GetConfig() const override;
 
-	friend void BindStruct(const aser::CStructBinder &binder, LinearLayer &layer);
+	virtual void ApplyGradient() override;
+
+	friend void ReadStruct(const aser::CStructReader &reader, LinearLayer &layer);
+    friend void WriteStruct(const aser::CStructWriter &binder, const LinearLayer &layer);
 
 scope_protected:
 	virtual Params SCompute(const Params &input, bool isTraining) override;

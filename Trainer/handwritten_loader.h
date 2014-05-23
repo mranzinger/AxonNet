@@ -51,7 +51,7 @@ private:
 	void Load();
 
 	MultiDataVec LoadImages(const std::string &file);
-	MultiDataVec LoadLabels(const std::string &file);
+	LabelVec LoadLabels(const std::string &file);
 
 	void Get(const std::vector<size_t> &idxs, ParamMap &inputMap,
 			 const MultiDataVec &allImages, const LabelVec &allLabels, bool deform) const;

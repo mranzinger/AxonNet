@@ -162,3 +162,5 @@ trainer
 unit_test
 .settings/
 vtune/
+schaul.cfg
+schaul.json

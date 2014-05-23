@@ -319,6 +319,12 @@ LayerConfig::Ptr ConvoLayer::GetConfig() const
 	return cfg;
 }
 
+void ConvoLayer::ApplyGradient()
+{
+    SingleInputLayer::ApplyGradient();
+    WeightLayer::ApplyGradient();
+}
+
 size_t ConvoLayer::GetInputDepth() const
 {
     return InputSize() / (_windowSizeX * _windowSizeY);
@@ -326,7 +332,7 @@ size_t ConvoLayer::GetInputDepth() const
 
 void WriteStruct(const CStructWriter &writer, const ConvoLayer &layer)
 {
-	WriteStruct(writer, (const LayerBase &)layer);
+	WriteStruct(writer, (const SingleInputLayer &)layer);
 
 	writer("windowSizeX", layer._windowSizeX)
 		  ("windowSizeY", layer._windowSizeY)

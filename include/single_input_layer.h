@@ -31,6 +31,15 @@ scope_public:
 
 	friend void BindStruct(const axon::serialization::CStructBinder &binder, SingleInputLayer &layer);
 
+#ifdef _UNIT_TESTS_
+	Params UTBackprop(const Params &input, const Params &outputErrors)
+	{
+	    Params output = SCompute(input, true);
+
+	    return SBackprop(input, output, outputErrors);
+	}
+#endif
+
 scope_protected:
 	virtual Params SCompute(const Params &input, bool isTraining) = 0;
 	virtual Params SBackprop(const Params &lastInput, const Params &lastOutput,

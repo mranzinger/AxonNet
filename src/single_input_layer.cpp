@@ -7,6 +7,9 @@
 
 #include "single_input_layer.h"
 
+#include "neural_net.h"
+#include "i_train_provider.h"
+
 using namespace std;
 
 SingleInputLayer::SingleInputLayer(std::string name)
@@ -21,7 +24,7 @@ SingleInputLayer::SingleInputLayer(std::string name, std::string inputName)
 
 void SingleInputLayer::Compute(ParamMap& inputMap, bool isTraining)
 {
-	const Params &input = GetData(inputMap, _inputName, true);
+	const Params &input = *GetData(inputMap, _inputName);
 
 	Params output = SCompute(input, isTraining);
 
@@ -31,10 +34,10 @@ void SingleInputLayer::Compute(ParamMap& inputMap, bool isTraining)
 void SingleInputLayer::Backprop(const ParamMap& computeMap,
 		ParamMap& inputErrorMap)
 {
-	const Params &lastInput = GetData(computeMap, _inputName, true);
-	const Params &lastOutput = GetData(computeMap, _name, true);
+	const Params &lastInput = *GetData(computeMap, _inputName);
+	const Params &lastOutput = *GetData(computeMap, _name);
 
-	const Params &outputErrors = GetData(inputErrorMap, _name, true);
+	const Params &outputErrors = *GetData(inputErrorMap, _name);
 
 	Params inputErrors = SBackprop(lastInput, lastOutput, outputErrors);
 

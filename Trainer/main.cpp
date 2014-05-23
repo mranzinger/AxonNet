@@ -27,7 +27,8 @@ int main(int argc, char *argv [])
     string networkFile;
     string checkpointFile;
     float learningRate;
-    int testRate = -1;
+    size_t testRate = 0;
+    size_t batchSize = 32;
     string configFile;
     string checkpointRoot;
 
@@ -54,7 +55,8 @@ int main(int argc, char *argv [])
             ("checkpoint,c", po::value(&checkpointFile), "Checkpoint File")
             ("save-dir,s", po::value(&checkpointRoot)->default_value("test"), 
                 "Checkpoint Save Directory")
-            ("test-rate,f", po::value(&testRate)->default_value(-1), "Test Frequency.")
+            ("test-rate,f", po::value(&testRate)->default_value(0), "Test Frequency.")
+            ("batch-size,b", po::value(&batchSize)->default_value(32), "Batch Size.")
             ("cfg,g", po::value(&configFile), "Config File")
             ;
         
@@ -86,9 +88,6 @@ int main(int argc, char *argv [])
     }
 
     HandwrittenLoader loader(datasetRoot);
-   
-    if (testRate <= 0)
-        testRate = loader.Size();
     
     if (!fs::exists(networkFile))
     {
@@ -120,5 +119,5 @@ int main(int argc, char *argv [])
 
 	//string root = "/home/mike/dev/personal/mnist/";
 
-	net.Train(loader, 100000000, testRate, checkpointRoot);
+    net.Train(loader, batchSize, 1000000000, testRate, checkpointRoot);
 }

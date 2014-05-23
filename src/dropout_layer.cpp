@@ -40,7 +40,7 @@ Params DropoutLayer::SBackprop(const Params &lastInput, const Params &lastOutput
 	Params inputErrors(lastInput, CMatrix());
 	inputErrors.Data.resize(lastInput.Data.rows(), lastInput.Data.cols());
 
-	inputErrors.Data.noalias() = (lastInput == lastOutput) * outputErrors;
+	inputErrors.Data.noalias() = (lastInput.Data == lastOutput.Data) * outputErrors.Data;
 
 	return move(inputErrors);
 }

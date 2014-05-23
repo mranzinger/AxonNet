@@ -23,9 +23,9 @@ LogLossCost::LogLossCost(std::string inputName, std::string labelName)
 {
 }
 
-Real LogLossCost::SCompute(const Params &preds, const Params &labels)
+CostMap LogLossCost::SCompute(const Params &preds, const Params &labels)
 {
-	Real ret = 0.0f;
+	Real logLoss = 0.0f;
 
 	for (int col = 0, cEnd = preds.Data.cols(); col < cEnd; ++col)
 	{
@@ -45,13 +45,16 @@ Real LogLossCost::SCompute(const Params &preds, const Params &labels)
 				return label * log(pred) + (1 - label) * log(1 - pred);
 			}).sum();
 
-		ret += cVal;
+		logLoss += cVal;
 	}
 
-	// Average the cost
-	ret /= preds.Data.cols();
+	CMatrix binPreds = preds.Data;
+	MaxBinarize(binPreds);
 
-	return ret;
+	Real numCorr = EqCount(binPreds, labels.Data);
+
+	return CostMap{ { CostMap::PRIMARY_NAME, logLoss },
+	                { string("correct"), numCorr } };
 }
 
 Params LogLossCost::SComputeGrad(const Params &pred, const Params &labels)

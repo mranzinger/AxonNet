@@ -1,5 +1,5 @@
+
 #include "linear_layer.h"
-#include "persist_util.h"
 #include "fast_math.h"
 
 using namespace std;
@@ -41,8 +41,6 @@ Params LinearLayer::SCompute(const Params &input, bool isTraining)
 	return move(ret);
 }
 
-
-
 Params LinearLayer::SBackprop(const Params &lastInput, const Params &lastOutput,
 							 const Params &outputErrors)
 {
@@ -54,10 +52,21 @@ Params LinearLayer::SBackprop(const Params &lastInput, const Params &lastOutput,
 	return move(inputErrors);
 }
 
-void BindStruct(const CStructBinder &binder, LinearLayer &layer)
+void LinearLayer::ApplyGradient()
 {
-	BindStruct(binder, (SingleInputLayer&)layer);
-	BindStruct(binder, (WeightLayer&)layer);
+    SingleInputLayer::ApplyGradient();
+    WeightLayer::ApplyGradient();
+}
+
+void WriteStruct(const aser::CStructWriter &writer, const LinearLayer &layer)
+{
+    WriteStruct(writer, (const SingleInputLayer &)layer);
+    WriteStruct(writer, (const WeightLayer &)layer);
+}
+void ReadStruct(const aser::CStructReader &reader, LinearLayer &layer)
+{
+    ReadStruct(reader, (SingleInputLayer &)layer);
+    ReadStruct(reader, (WeightLayer &)layer);
 }
 
 AXON_SERIALIZE_DERIVED_TYPE(ILayer, LinearLayer, LinearLayer);

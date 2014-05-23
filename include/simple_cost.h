@@ -20,13 +20,15 @@ scope_public:
     SimpleCost(std::string inputName);
     SimpleCost(std::string inputName, std::string labelName);
 
-    virtual Real Compute(const ParamMap &inputs) override final;
+    virtual CostMap Compute(const ParamMap &inputs) override final;
     virtual void ComputeGrad(const ParamMap &inputs, ParamMap &inputErrors) override final;
+
+    virtual bool IsBetter(const CostMap &a, const CostMap &b) const override;
 
     friend void BindStruct(const aser::CStructBinder &binder, SimpleCost &cost);
 
 scope_protected:
-    virtual Real SCompute(const Params &input, const Params &labels) = 0;
+    virtual CostMap SCompute(const Params &input, const Params &labels) = 0;
     virtual Params SComputeGrad(const Params &input, const Params &labels) = 0;
 };
 

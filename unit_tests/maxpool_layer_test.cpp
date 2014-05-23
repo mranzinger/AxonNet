@@ -20,7 +20,7 @@ Params Compute(const Params &input,
 			   bool isTraining = false)
 {
 	return MaxPoolLayer("", windowSizeX, windowSizeY)
-			.Compute(0, input, isTraining);
+			.SCompute(input, isTraining);
 }
 
 Params Backprop(const Params &lastInput, const Params &outputErrors,
@@ -31,9 +31,9 @@ Params Backprop(const Params &lastInput, const Params &outputErrors,
 
 	const Params &lastOutput = pLastOutput ?
 								*pLastOutput
-							  : layer.Compute(0, lastInput, true);
+							  : layer.SCompute(lastInput, true);
 
-	Params ret = layer.Backprop(0, lastInput, lastOutput, outputErrors);
+	Params ret = layer.SBackprop(lastInput, lastOutput, outputErrors);
 
 	return move(ret);
 }
