@@ -1,5 +1,5 @@
 CC=g++-4.7
-ARCHITECTURE ?= -mavx2
+ARCHITECTURE ?= -msse4.2
 
 FLAGS=-std=c++11 -g3 $(ARCHITECTURE)
 DFLAGS=$(FLAGS) -D_DEBUG

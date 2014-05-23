@@ -22,6 +22,10 @@ scope_public:
 	virtual void InitializeFromConfig(const LayerConfig::Ptr &config);
 	virtual LayerConfig::Ptr GetConfig() const override;
 
+	virtual void SetLearningRate(Real rate) override;
+    virtual void SetMomentum(Real rate) override;
+    virtual void SetWeightDecay(Real rate) override;
+
 	virtual void ApplyGradient() override;
 
 	friend void ReadStruct(const aser::CStructReader &reader, LinearLayer &layer);

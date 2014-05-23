@@ -132,6 +132,8 @@ Params MaxPoolLayer::SBackprop(const Params &lastInput, const Params &lastOutput
 
 void BindStruct(const CStructBinder &binder, MaxPoolLayer &layer)
 {
+    BindStruct(binder, (SingleInputLayer &)layer);
+
 	binder("windowSizeX", layer._windowSizeX)
 		  ("windowSizeY", layer._windowSizeY);
 }

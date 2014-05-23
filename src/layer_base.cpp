@@ -4,6 +4,11 @@
 
 using namespace std;
 
+LayerBase::LayerBase(std::string name)
+    : _name(std::move(name)), _net(nullptr)
+{
+}
+
 void LayerBase::InitializeFromConfig(const LayerConfig::Ptr &config)
 {
 }
@@ -18,13 +23,6 @@ LayerConfig::Ptr LayerBase::GetConfig() const
 void LayerBase::BuildConfig(LayerConfig &config) const
 {
 	config.Name = _name;
-}
-
-void BindStruct(const axon::serialization::CStructBinder &binder, LayerBase &layer)
-{
-	binder("name", layer._name)
-		("momentum", layer._momentum)
-		("weightDecay", layer._weightDecay);
 }
 
 Params* LayerBase::GetData(ParamMap &pMap, const string &name, bool enforce) const
@@ -43,4 +41,12 @@ Params* LayerBase::GetData(ParamMap &pMap, const string &name, bool enforce) con
 const Params* LayerBase::GetData(const ParamMap &pMap, const string &name, bool enforce) const
 {
 	return GetData(const_cast<ParamMap&>(pMap), name, enforce);
+}
+
+void BindStruct(const aser::CStructBinder &binder, LayerBase &layer)
+{
+    binder("name", layer._name);
+
+    if (binder.IsRead() && layer._name.empty())
+        throw runtime_error("Cannot have a layer without a name.");
 }

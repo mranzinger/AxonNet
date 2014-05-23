@@ -33,6 +33,21 @@ ConvoLayer::ConvoLayer(std::string name,
 {
 }
 
+void ConvoLayer::SetLearningRate(Real rate)
+{
+    WeightLayer::SetLearningRate(rate);
+}
+
+void ConvoLayer::SetMomentum(Real rate)
+{
+    WeightLayer::SetMomentum(rate);
+}
+
+void ConvoLayer::SetWeightDecay(Real rate)
+{
+    WeightLayer::SetWeightDecay(rate);
+}
+
 Params ConvoLayer::SCompute(const Params &unpaddedInput, bool isTraining)
 {
 	if (InputSize() != unpaddedInput.Depth * _windowSizeX * _windowSizeY)

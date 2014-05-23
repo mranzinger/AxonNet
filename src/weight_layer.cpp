@@ -31,20 +31,25 @@ WeightLayer::WeightLayer(RMatrix weights, Vector bias, bool gradConsumer)
 {
 }
 
-void WeightLayer::ApplyGradient()
+void WeightLayer::SetLearningRate(Real rate)
 {
-	if (_gradConsumer)
-		_weights.ApplyGradient();
+    _weights.LearningRate = rate;
 }
 
-void BindStruct(const aser::CStructBinder &binder, WeightLayerConfig &config)
+void WeightLayer::SetMomentum(Real rate)
 {
-	BindStruct(binder, (LayerConfig&)config);
+    _weights.Momentum = rate;
+}
 
-	binder("weights", config.Weights)
-		  ("biases", config.Biases)
-		  ("weightsIncrement", config.WeightsIncrement)
-		  ("biasIncrement", config.BiasesIncrement);
+void WeightLayer::SetWeightDecay(Real rate)
+{
+    _weights.WeightDecay = rate;
+}
+
+void WeightLayer::ApplyGradient()
+{
+    if (_gradConsumer)
+        _weights.ApplyGradient();
 }
 
 void WeightLayer::InitializeFromConfig(const LayerConfig::Ptr& config)
@@ -66,8 +71,6 @@ LayerConfig::Ptr WeightLayer::GetConfig() const
 	return ret;
 }
 
-
-
 void WeightLayer::BuildConfig(WeightLayerConfig& config) const
 {
 	config.Weights = _weights.Weights;
@@ -76,17 +79,33 @@ void WeightLayer::BuildConfig(WeightLayerConfig& config) const
 	config.BiasesIncrement = _weights.BiasIncrement;
 }
 
+void BindStruct(const aser::CStructBinder &binder, WeightLayerConfig &config)
+{
+    BindStruct(binder, (LayerConfig&)config);
+
+    binder("weights", config.Weights)
+          ("biases", config.Biases)
+          ("weightsIncrement", config.WeightsIncrement)
+          ("biasIncrement", config.BiasesIncrement);
+}
+
 void WriteStruct(const aser::CStructWriter &writer, const WeightLayer &layer)
 {
 	writer("gradConsumer", layer._gradConsumer)
+	      ("momentum", layer._weights.Momentum)
+	      ("weightDecay", layer._weights.WeightDecay)
 		  ("numInputs", layer._weights.Weights.cols())
 		  ("numOutputs", layer._weights.Weights.rows());
 }
+
+
 
 void ReadStruct(const aser::CStructReader &reader, WeightLayer &layer)
 {
 	size_t numInputs, numOutputs;
 	reader("gradConsumer", layer._gradConsumer)
+          ("momentum", layer._weights.Momentum)
+          ("weightDecay", layer._weights.WeightDecay)
 		  ("numInputs", numInputs)
 		  ("numOutputs", numOutputs);
 

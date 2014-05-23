@@ -22,8 +22,8 @@ public:
 	Vector BiasGrad;
 
 	Real LearningRate = 0.01f;
-	Real Momentum = 0;
-	Real WeightDecay = 0;
+	Real Momentum = 0.9;
+	Real WeightDecay = 0.0005;
 
 	Real DynamicLearningRate = 1;
 

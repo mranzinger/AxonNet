@@ -31,6 +31,21 @@ LayerConfig::Ptr LinearLayer::GetConfig() const
 	return cfg;
 }
 
+void LinearLayer::SetLearningRate(Real rate)
+{
+    WeightLayer::SetLearningRate(rate);
+}
+
+void LinearLayer::SetMomentum(Real rate)
+{
+    WeightLayer::SetMomentum(rate);
+}
+
+void LinearLayer::SetWeightDecay(Real rate)
+{
+    WeightLayer::SetWeightDecay(rate);
+}
+
 Params LinearLayer::SCompute(const Params &input, bool isTraining)
 {
 	Params ret(_weights.Biases.size(), 1, 1, _weights.Weights * input.Data);

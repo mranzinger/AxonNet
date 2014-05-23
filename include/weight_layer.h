@@ -52,6 +52,10 @@ scope_public:
 	bool GradConsumer() const { return _gradConsumer; }
 	void SetGradConsumer(bool val) { _gradConsumer = val; }
 
+	virtual void SetLearningRate(Real rate) override;
+	virtual void SetMomentum(Real rate) override;
+	virtual void SetWeightDecay(Real rate) override;
+
 	virtual void ApplyGradient() override;
 
 	virtual void InitializeFromConfig(const LayerConfig::Ptr &config) override;

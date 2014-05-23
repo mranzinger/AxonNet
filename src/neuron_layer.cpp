@@ -6,7 +6,7 @@ using namespace axon::serialization;
 template<typename Fn>
 void BindStruct(const CStructBinder &binder, NeuronLayer<Fn> &layer)
 {
-	BindStruct(binder, (LayerBase&) layer);
+	BindStruct(binder, (SingleInputLayer&) layer);
 }
 
 AXON_SERIALIZE_DERIVED_TYPE(ILayer, LinearNeuronLayer, LinearNeuronLayer);

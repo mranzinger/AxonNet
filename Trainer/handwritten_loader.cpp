@@ -86,6 +86,8 @@ void HandwrittenLoader::Load()
 
 	_testData = LoadImages(_testDataFile);
 	_testLabels = LoadLabels(_testLabelFile);
+
+	Finalize();
 }
 
 HandwrittenLoader::MultiDataVec HandwrittenLoader::LoadImages(const std::string &file)

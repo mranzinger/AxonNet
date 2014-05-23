@@ -16,6 +16,7 @@
         },
         {
             "_realType": "MaxPoolLayer",
+            "name" : "MP1",
             "windowSizeX": 2,
             "windowSizeY": 2
         },
@@ -33,6 +34,7 @@
         },
         {
             "_realType": "MaxPoolLayer",
+            "name": "MP2",
             "windowSizeX": 3,
             "windowSizeY": 3
         },
