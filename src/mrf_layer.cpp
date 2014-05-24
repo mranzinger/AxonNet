@@ -8,6 +8,7 @@
 #include "mrf_layer.h"
 
 #include "neural_net.h"
+#include "thread/parallel_for.h"
 
 using namespace std;
 
@@ -38,7 +39,8 @@ void MRFLayer::Compute(ParamMap& inputMap, bool isTraining)
 	Params coordsOut(1, 2, input.Depth,
 					 CMatrix(2 * input.Depth, input.BatchSize()));
 
-	for (int imageIdx = 0; imageIdx < input.BatchSize(); ++imageIdx)
+	FastFor(GetThreadPool(), 0, (int)input.BatchSize(), 1,
+		[&, this] (int imageIdx)
 	{
 		RMap outputField(output.Data.data() + imageIdx * output.size(),
 						 _height, _width * input.Depth);
@@ -122,7 +124,7 @@ void MRFLayer::Compute(ParamMap& inputMap, bool isTraining)
 			vecCoords(i * 2) = coord.first;
 			vecCoords(i * 2 + 1) = coord.second;
 		}
-	}
+	});
 
 	inputMap[_name] = move(output);
 	inputMap[_name + "-coords"] = move(coordsOut);
@@ -139,7 +141,8 @@ void MRFLayer::Backprop(const ParamMap& computeMap, ParamMap& inputErrorMap)
 	Params inputErrors(lastInput,
 			  CMatrix::Zero(lastInput.size(), lastInput.BatchSize()));
 
-	for (int imageIdx = 0; imageIdx < lastInput.BatchSize(); ++imageIdx)
+	FastFor(GetThreadPool(), 0, (int)lastInput.BatchSize(), 1,
+		[&, this] (int imageIdx)
 	{
 		const RMap imgOutputErrs(const_cast<Real*>(outputErrs.Data.data()) + imageIdx * outputErrs.size(),
 						   outputErrs.Height, outputErrs.Width * outputErrs.Depth);
@@ -172,7 +175,7 @@ void MRFLayer::Backprop(const ParamMap& computeMap, ParamMap& inputErrorMap)
 				}
 			}
 		}
-	}
+	});
 
 	inputErrorMap[inputName] = move(inputErrors);
 }
