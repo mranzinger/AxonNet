@@ -2,6 +2,8 @@
 #include "linear_layer.h"
 #include "fast_math.h"
 
+#include "thread/parallel_for.h"
+
 using namespace std;
 using namespace axon::serialization;
 
@@ -48,10 +50,23 @@ void LinearLayer::SetWeightDecay(Real rate)
 
 Params LinearLayer::SCompute(const Params &input, bool isTraining)
 {
-	Params ret(_weights.Biases.size(), 1, 1, _weights.Weights * input.Data);
+	int batchSize = input.BatchSize();
+	int outputSize = _weights.Biases.size();
+	int inputSize = input.size();
 
-	// The bias needs to be applied to each column
-	ret.Data.colwise() += _weights.Biases;
+	Params ret(outputSize, 1, 1,
+			   CMatrix(outputSize, batchSize));
+
+	FastFor(GetThreadPool(), 0, batchSize, 1,
+		[&, this] (int imageIdx)
+	{
+		UMapVector vecIpImage(const_cast<Real*>(input.Data.data()) + imageIdx * inputSize,
+							  inputSize);
+		UMapVector vecOpImage(ret.Data.data() + imageIdx * outputSize,
+							  outputSize);
+
+		vecOpImage.noalias() = _weights.Weights * vecIpImage + _weights.Biases;
+	});
 
 	return move(ret);
 }
@@ -59,7 +74,26 @@ Params LinearLayer::SCompute(const Params &input, bool isTraining)
 Params LinearLayer::SBackprop(const Params &lastInput, const Params &lastOutput,
 							 const Params &outputErrors)
 {
-	CMatrix inputErrors = _weights.Weights.transpose() * outputErrors.Data;
+	int batchSize = lastInput.BatchSize();
+	int outputSize = _weights.Biases.size();
+	int inputSize = lastInput.size();
+
+	RMatrix transWeights = _weights.Weights.transpose();
+
+	Params inputErrors(lastInput,
+					   CMatrix(lastInput.Data.rows(), lastInput.Data.cols()));
+
+	FastFor(GetThreadPool(), 0, batchSize, 1,
+			[&, this] (int imageIdx)
+	{
+		UMapVector vecOutputErrs(const_cast<Real*>(outputErrors.Data.data()) + imageIdx * outputSize,
+								 outputSize);
+
+		UMapVector vecInputErrs(inputErrors.Data.data() + imageIdx * inputSize, inputSize);
+
+		// Calculate the input error
+		vecInputErrs.noalias() = transWeights * vecOutputErrs;
+	});
 
 	_weights.WeightsGrad.noalias() = outputErrors.Data * lastInput.Data.transpose();
 	_weights.BiasGrad = outputErrors.Data.rowwise().sum();
