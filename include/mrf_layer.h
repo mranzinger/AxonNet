@@ -7,13 +7,17 @@
 
 #pragma once
 
+#include <vector>
+
 #include "single_input_layer.h"
 
 class NEURAL_NET_API MRFLayer
-	: public SingleInputLayer
+	: public LayerBase
 {
 scope_private:
 	int _width, _height;
+
+	std::string _inputName;
 
 scope_public:
 	MRFLayer() = default;
@@ -24,9 +28,13 @@ scope_public:
 		return "Max Response Field Layer";
 	}
 
+    virtual void Compute(ParamMap &inputMap, bool isTraining) override;
+	virtual void Backprop(const ParamMap &computeMap, ParamMap &inputErrorMap) override;
+
 	friend void BindStruct(const aser::CStructBinder &binder, MRFLayer &layer);
 
-scope_protected:
-	virtual Params SCompute(const Params &input, bool isTraining) override;
-	virtual Params SBackprop(const Params &lastInput, const Params &lastOutput, const Params &outputErrors) override;
+scope_private:
+	void CalcSAT(const RMap &inputField, RMatrix &sumAreaTable, int depth) const;
+
+	const std::string &GetInputName();
 };

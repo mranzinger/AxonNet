@@ -68,7 +68,7 @@ void SingleInputLayer::SetNet(NeuralNet* net)
 	}
 }
 
-void BindStruct(const axon::serialization::CStructBinder &binder, SingleInputLayer &layer)
+void BindStruct(const aser::CStructBinder &binder, SingleInputLayer &layer)
 {
 	BindStruct(binder, (LayerBase&)layer);
 
