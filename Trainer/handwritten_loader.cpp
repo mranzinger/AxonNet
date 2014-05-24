@@ -173,7 +173,7 @@ void HandwrittenLoader::GetTest(ParamMap& inputMap, size_t a_offset,
 
     vector<size_t> idxs(numSamples);
     for (size_t i = 0; i < numSamples; ++i)
-        idxs[i] = i;
+        idxs[i] = i + a_offset;
 
     Get(idxs, inputMap, _testData, _testLabels, false);
 }

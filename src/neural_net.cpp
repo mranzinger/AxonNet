@@ -61,7 +61,6 @@ void NeuralNet::Load(const NetworkConfig::Ptr &config)
 			layer->InitializeFromConfig(lcfg);
 	}
 
-	SetCost(config->Cost);
 	_bestCost = config->BestCost;
 }
 
@@ -81,7 +80,6 @@ NetworkConfig::Ptr NeuralNet::GetCheckpoint() const
 		ret->Configs.push_back(layer->GetConfig());
 	}
 
-	ret->Cost = _cost;
 	ret->BestCost = _bestCost;
 
 	return move(ret);
@@ -232,7 +230,7 @@ void NeuralNet::Test(ITrainProvider &provider,
 		testCost += batchCost;
 	}
 
-	testCost /= batchSize;
+	testCost /= provider.TestSize();
 
 	auto tEnd = high_resolution_clock::now();
 
@@ -246,7 +244,7 @@ void NeuralNet::Test(ITrainProvider &provider,
 
 	for (const pair<string, Real> &bestCost : _bestCost)
 	{
-	    testCost["best-" + bestCost.first] = bestCost.second;
+	    testCost[bestCost.first + "-best"] = bestCost.second;
 	}
 
 	PrintStats(testNum, timeSec, testCost);
@@ -280,16 +278,15 @@ void NeuralNet::SaveCheckpoint(const std::string &chkRoot)
 void BindStruct(const CStructBinder &binder, NetworkConfig &config)
 {
 	binder("layers", config.Configs)
-		  ("cost", config.Cost)
-		  ("bestCost", config.Cost);
+		  ("bestCost", config.BestCost);
 }
 
-void WriteStruct(const axon::serialization::CStructWriter &writer, const NeuralNet &net)
+void WriteStruct(const aser::CStructWriter &writer, const NeuralNet &net)
 {
 	writer("layers", net._layers)
 		  ("cost", net._cost);
 }
-void ReadStruct(const axon::serialization::CStructReader &reader, NeuralNet &net)
+void ReadStruct(const aser::CStructReader &reader, NeuralNet &net)
 {
 	reader("layers", net._layers)
 		  ("cost", net._cost);

@@ -23,7 +23,11 @@ SimpleCost::SimpleCost(std::string inputName, std::string labelName)
 
 CostMap SimpleCost::Compute(const ParamMap& inputs)
 {
-    const Params &input = *FindParams(inputs, _inputName);
+	const std::string &inputName = !_inputName.empty() ?
+                                        _inputName
+                                    :   _net->GetLayer(_net->NumLayers() - 1)->GetLayerName();
+
+    const Params &input = *FindParams(inputs, inputName);
     const Params &labels = *FindParams(inputs,
                                        _labelName.empty() ?
                                               ITrainProvider::DEFAULT_LABEL_NAME

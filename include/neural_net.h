@@ -14,7 +14,6 @@ public:
 	typedef std::shared_ptr<NetworkConfig> Ptr;
 
 	std::vector<LayerConfig::Ptr> Configs;
-	ICost::Ptr Cost;
 	CostMap BestCost;
 
 	friend void BindStruct(const aser::CStructBinder &binder, NetworkConfig &config);
