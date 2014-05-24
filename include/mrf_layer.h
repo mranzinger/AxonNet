@@ -23,6 +23,8 @@ scope_public:
 	MRFLayer() = default;
 	MRFLayer(std::string name,
 			 size_t width, size_t height);
+	MRFLayer(std::string name, std::string inputName,
+			 size_t width, size_t height);
 
 	virtual std::string GetLayerType() const override {
 		return "Max Response Field Layer";

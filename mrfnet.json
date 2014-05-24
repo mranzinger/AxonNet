@@ -1,0 +1,69 @@
+{
+    "layers": [
+        {
+            "_realType": "ConvoLayer",
+            "name": "C1",
+            "momentum": 0.9,
+            "weightDecay": 0.0005,
+            "windowSizeX": 5,
+            "windowSizeY": 5,
+            "strideX": 1,
+            "strideY": 1,
+            "padWidth": 0,
+            "padHeight": 0,
+            "inputDepth": 1,
+            "outputDepth": 32
+        },
+        {
+            "_realType": "MRFLayer",
+            "name" : "MRF",
+            "width" : 12,
+            "height" : 12
+        },
+        {
+            "_realType": "ConvoLayer",
+            "name": "C3",
+            "momentum": 0.9,
+            "weightDecay": 0.0005,
+            "windowSizeX": 4,
+            "windowSizeY": 4,
+            "strideX": 1,
+            "strideY": 1,
+            "inputDepth": 32,
+            "outputDepth": 64
+        },
+        {
+            "_realType": "MaxPoolLayer",
+            "name": "MP2",
+            "windowSizeX": 3,
+            "windowSizeY": 3
+        },
+        {
+            "_realType": "LinearLayer",
+            "name": "L6",
+            "momentum": 0.9,
+            "weightDecay": 0.0005,
+            "numInputs": 576,
+            "numOutputs": 100
+        },
+        {
+            "_realType": "TanhNeuronLayer",
+            "name": "L6-NL"
+        },
+        {
+            "_realType": "LinearLayer",
+            "name": "L7",
+            "momentum": 0.9,
+            "weightDecay": 0.0005,
+            "numInputs": 100,
+            "numOutputs": 10
+        },
+        {
+            "_realType": "SoftmaxLayer",
+            "name": "soft"
+        }
+    ],
+    "cost": {
+        "_realType": "LogLossCost"
+    }
+}

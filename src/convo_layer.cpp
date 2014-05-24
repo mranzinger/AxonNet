@@ -316,7 +316,7 @@ Params ConvoLayer::SBackprop(const Params &lastInput, const Params &lastOutput, 
 
 	_weights.DynamicLearningRate = 1.f / (opWidth * opHeight);
 
-	return move(inputErrors);
+	return move(pInputErrors);
 }
 
 void ConvoLayer::InitializeFromConfig(const LayerConfig::Ptr &config)

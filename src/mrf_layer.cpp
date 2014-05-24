@@ -13,7 +13,13 @@ using namespace std;
 
 MRFLayer::MRFLayer(std::string name,
 				   size_t width, size_t height)
-	: LayerBase(move(name)),
+	: MRFLayer(move(name), "", width, height)
+{
+}
+
+MRFLayer::MRFLayer(std::string name, std::string inputName,
+		size_t width, size_t height)
+	: LayerBase(move(name)), _inputName(move(inputName)),
 	  _width(width), _height(height)
 {
 }
@@ -53,20 +59,26 @@ void MRFLayer::Compute(ParamMap& inputMap, bool isTraining)
 		vector<Real> maxes(input.Depth, numeric_limits<Real>::lowest());
 		vector<pair<int, int>> coords(input.Depth);
 
-		for (int row = 0, rowEnd = input.Height - _height; row < rowEnd; ++row)
+		for (int row = 0, rowEnd = input.Height - _height + 1; row < rowEnd; ++row)
 		{
 			int rowBottom = row + _height - 1;
 
-			for (int col = 0, colEnd = input.Width - _width; col < colEnd; ++col)
+			for (int col = 0, colEnd = input.Width - _width + 1; col < colEnd; ++col)
 			{
 				int colStart = col * input.Depth;
 				int colRight = colStart + (_width - 1) * input.Depth;
 
 				for (int layer = 0; layer < input.Depth; ++layer)
 				{
-					const Real a = sumAreaTable(row, colStart + layer);
-					const Real b = sumAreaTable(row, colRight + layer);
-					const Real c = sumAreaTable(rowBottom, colStart + layer);
+					const Real a = row > 0 && col > 0 ?
+										sumAreaTable(row - 1, colStart + layer - input.Depth)
+									:   0.0f;
+					const Real b = row > 0 ?
+							            sumAreaTable(row - 1, colRight + layer)
+							        :   0.0f;
+					const Real c = col > 0 ?
+										sumAreaTable(rowBottom, colStart + layer - input.Depth)
+									:   0.0f;
 					const Real d = sumAreaTable(rowBottom, colRight + layer);
 
 					const Real sum = a + d - b - c;
@@ -141,9 +153,9 @@ void MRFLayer::Backprop(const ParamMap& computeMap, ParamMap& inputErrorMap)
 		for (int i = 0; i < imgOutputCoords.size(); i += 2)
 			iCoords.emplace_back(imgOutputCoords(i), imgOutputCoords(i + 1));
 
-		for (int row = 0; row < imgOutputErrs.rows(); ++row)
+		for (int row = 0; row < outputErrs.Height; ++row)
 		{
-			for (int col = 0; col < imgOutputErrs.cols(); ++col)
+			for (int col = 0; col < outputErrs.Width; ++col)
 			{
 				for (int layer = 0; layer < lastInput.Depth; ++layer)
 				{
@@ -175,11 +187,12 @@ void MRFLayer::CalcSAT(const RMap& inputField, RMatrix& sumAreaTable, int depth)
 		{
 			for (int dCell = col; dCell < col + depth; ++dCell)
 			{
-				const Real above = row > 0 ? inputField(row - 1, dCell) : 0.0f;
-				const Real left = dCell > depth ? inputField(row, dCell - depth) : 0.0f;
+				const Real above = row > 0 ? sumAreaTable(row - 1, dCell) : 0.0f;
+				const Real left = dCell >= depth ? sumAreaTable(row, dCell - depth) : 0.0f;
+				const Real al = row > 0 && dCell >= depth ? sumAreaTable(row - 1, dCell - depth) : 0.0f;
 				const Real me = inputField(row, dCell);
 
-				const Real val = above + left + me;
+				const Real val = above + left + me - al;
 
 				sumAreaTable(row, dCell) = val;
 			}
