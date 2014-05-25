@@ -10,60 +10,64 @@
 					<extension id="org.eclipse.cdt.core.GCCErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
 					<extension id="org.eclipse.cdt.core.GASErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
 					<extension id="org.eclipse.cdt.core.GLDErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
+					<extension id="ai3.errorparser.cuda.nvccerrorparser" point="org.eclipse.cdt.core.ErrorParser"/>
 					<extension id="org.eclipse.cdt.core.ELF" point="org.eclipse.cdt.core.BinaryParser"/>
 				</extensions>
 			</storageModule>
 			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
-				<configuration buildProperties="" description="" id="cdt.managedbuild.toolchain.gnu.base.1285129932" name="Default" parent="org.eclipse.cdt.build.core.emptycfg">
+				<configuration artifactName="AxonNet" buildProperties="" description="" id="cdt.managedbuild.toolchain.gnu.base.1285129932" name="Default" parent="org.eclipse.cdt.build.core.emptycfg">
 					<folderInfo id="cdt.managedbuild.toolchain.gnu.base.1285129932.682108905" name="/" resourcePath="">
-						<toolChain id="cdt.managedbuild.toolchain.gnu.base.2097298905" name="cdt.managedbuild.toolchain.gnu.base" superClass="cdt.managedbuild.toolchain.gnu.base">
-							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.ELF" id="cdt.managedbuild.target.gnu.platform.base.998693933" name="Debug Platform" osList="linux,hpux,aix,qnx" superClass="cdt.managedbuild.target.gnu.platform.base"/>
-							<builder id="cdt.managedbuild.target.gnu.builder.base.744234346" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Gnu Make Builder" parallelBuildOn="true" parallelizationNumber="optimal" superClass="cdt.managedbuild.target.gnu.builder.base"/>
-							<tool id="cdt.managedbuild.tool.gnu.archiver.base.888483346" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.base"/>
-							<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.base.1654740311" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.base">
-								<option id="gnu.cpp.compiler.option.include.paths.20078649" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" valueType="includePath">
+						<toolChain id="ai3.toolchain.cuda.1964772459" name="CUDA Toolchain" superClass="ai3.toolchain.cuda">
+							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.ELF" id="ai3.target.cuda.1991349947" name="CUDA Platform" osList="linux,hpux,aix,qnx" superClass="ai3.target.cuda"/>
+							<builder id="ai3.target.cuda.builder.13531202" managedBuildOn="false" name="CUDA Builder.Default" parallelBuildOn="true" parallelizationNumber="optimal" superClass="ai3.target.cuda.builder"/>
+							<tool id="ai3.tool.cuda.cpp_compiler.1213523198" name="C++ Compiler" superClass="ai3.tool.cuda.cpp_compiler">
+								<option id="ai3.tool.cuda.cpp_compiler.option.include.paths.1619386702" superClass="ai3.tool.cuda.cpp_compiler.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/axon/include}&quot;"/>
 									<listOptionValue builtIn="false" value="/home/mike/dev/ThirdParty/eigen-3-2-1"/>
 									<listOptionValue builtIn="false" value="/home/mike/dev/ThirdParty/boost_1_55_0/include"/>
 									<listOptionValue builtIn="false" value="/home/mike/dev/ThirdParty/gtest/include"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/AxonNet/include}&quot;"/>
 								</option>
-								<option id="gnu.cpp.compiler.option.preprocessor.def.2135624303" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" valueType="definedSymbols">
+								<option id="ai3.tool.cuda.cpp_compiler.option.preprocessor.def.1728548911" superClass="ai3.tool.cuda.cpp_compiler.option.preprocessor.def" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="__GXX_EXPERIMENTAL_CXX0X__"/>
 								</option>
-								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.1727104995" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
+								<inputType id="ai3.tool.cuda.cpp_compiler.input.608827011" superClass="ai3.tool.cuda.cpp_compiler.input"/>
 							</tool>
-							<tool id="cdt.managedbuild.tool.gnu.c.compiler.base.1723162938" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.base">
-								<option id="gnu.c.compiler.option.include.paths.1774965297" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
+							<tool id="ai3.tool.cuda.c_compiler.104391412" name="C Compiler" superClass="ai3.tool.cuda.c_compiler">
+								<option id="gnu.c.compiler.option.include.paths.1311369890" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/axon/include}&quot;"/>
 									<listOptionValue builtIn="false" value="/home/mike/dev/ThirdParty/eigen-3-2-1"/>
 									<listOptionValue builtIn="false" value="/home/mike/dev/ThirdParty/gtest/include"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/AxonNet/include}&quot;"/>
 									<listOptionValue builtIn="false" value="/home/mike/dev/ThirdParty/boost_1_55_0/include"/>
 								</option>
-								<option id="gnu.c.compiler.option.preprocessor.def.symbols.858858242" name="Defined symbols (-D)" superClass="gnu.c.compiler.option.preprocessor.def.symbols" valueType="definedSymbols">
+								<option id="gnu.c.compiler.option.preprocessor.def.symbols.1168937495" superClass="gnu.c.compiler.option.preprocessor.def.symbols" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="__GXX_EXPERIMENTAL_CXX0X__"/>
 								</option>
-								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1063843891" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
+								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.113250635" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
-							<tool id="cdt.managedbuild.tool.gnu.c.linker.base.1823071243" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.base"/>
-							<tool id="cdt.managedbuild.tool.gnu.cpp.linker.base.2027206006" name="GCC C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.base">
-								<option id="gnu.cpp.link.option.paths.100841725" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" valueType="libPaths">
+							<tool id="ai3.tool.cuda.nvcc.264843016" name="CUDA NVCC Compiler" superClass="ai3.tool.cuda.nvcc">
+								<inputType id="ai3.tool.cuda.nvcc.input.738655683" name="CUDA Input" superClass="ai3.tool.cuda.nvcc.input"/>
+							</tool>
+							<tool id="ai3.tool.cuda.c_linker.1845138957" name="C Linker" superClass="ai3.tool.cuda.c_linker"/>
+							<tool id="ai3.tool.cuda.cpp_linker.1343328193" name="C++ Linker" superClass="ai3.tool.cuda.cpp_linker">
+								<option id="gnu.cpp.link.option.paths.384118095" superClass="gnu.cpp.link.option.paths" valueType="libPaths">
 									<listOptionValue builtIn="false" value="/home/mike/dev/ThirdParty/boost_1_55_0/lib"/>
 								</option>
-								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.578914809" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
+								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.1255226367" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
 									<additionalInput kind="additionalinput" paths="$(LIBS)"/>
 								</inputType>
 							</tool>
-							<tool id="cdt.managedbuild.tool.gnu.assembler.base.1940614490" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.base">
-								<option id="gnu.both.asm.option.include.paths.1899047414" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths" valueType="includePath">
+							<tool id="ai3.tool.cuda.gnu_archiver.1995087834" name="GNU Archiver" superClass="ai3.tool.cuda.gnu_archiver"/>
+							<tool id="ai3.tool.cuda.gnu_assembler.1422604246" name="GNU Assembler" superClass="ai3.tool.cuda.gnu_assembler">
+								<option id="gnu.both.asm.option.include.paths.112577972" superClass="gnu.both.asm.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/axon/include}&quot;"/>
 									<listOptionValue builtIn="false" value="/home/mike/dev/ThirdParty/eigen-3-2-1"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/AxonNet/include}&quot;"/>
 									<listOptionValue builtIn="false" value="/home/mike/dev/ThirdParty/gtest/include"/>
 								</option>
-								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.547472313" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
+								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.1598350700" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
 							</tool>
 						</toolChain>
 					</folderInfo>
@@ -83,17 +87,23 @@
 	</storageModule>
 	<storageModule moduleId="scannerConfiguration">
 		<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.toolchain.gnu.base.1656375772;cdt.managedbuild.toolchain.gnu.base.1656375772.669574271;cdt.managedbuild.tool.gnu.c.compiler.base.1867505723;cdt.managedbuild.tool.gnu.c.compiler.input.920913601">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="cdt.managedbuild.toolchain.gnu.base.1285129932;cdt.managedbuild.toolchain.gnu.base.1285129932.682108905;cdt.managedbuild.tool.gnu.c.compiler.base.1723162938;cdt.managedbuild.tool.gnu.c.compiler.input.1063843891">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
-		<scannerConfigBuildInfo instanceId="cdt.managedbuild.toolchain.gnu.base.1656375772;cdt.managedbuild.toolchain.gnu.base.1656375772.669574271;cdt.managedbuild.tool.gnu.c.compiler.base.1867505723;cdt.managedbuild.tool.gnu.c.compiler.input.920913601">
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.toolchain.gnu.base.1285129932;cdt.managedbuild.toolchain.gnu.base.1285129932.682108905;ai3.tool.cuda.cpp_compiler.1213523198;ai3.tool.cuda.cpp_compiler.input.608827011">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileCPP"/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.toolchain.gnu.base.1656375772;cdt.managedbuild.toolchain.gnu.base.1656375772.669574271;cdt.managedbuild.tool.gnu.cpp.compiler.base.1056204682;cdt.managedbuild.tool.gnu.cpp.compiler.input.1173615439">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="cdt.managedbuild.toolchain.gnu.base.1285129932;cdt.managedbuild.toolchain.gnu.base.1285129932.682108905;cdt.managedbuild.tool.gnu.cpp.compiler.base.1654740311;cdt.managedbuild.tool.gnu.cpp.compiler.input.1727104995">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
-		<scannerConfigBuildInfo instanceId="cdt.managedbuild.toolchain.gnu.base.1656375772;cdt.managedbuild.toolchain.gnu.base.1656375772.669574271;cdt.managedbuild.tool.gnu.cpp.compiler.base.1056204682;cdt.managedbuild.tool.gnu.cpp.compiler.input.1173615439">
-			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.toolchain.gnu.base.1285129932;cdt.managedbuild.toolchain.gnu.base.1285129932.682108905;ai3.tool.cuda.c_compiler.104391412;cdt.managedbuild.tool.gnu.c.compiler.input.113250635">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileC"/>
 		</scannerConfigBuildInfo>
 	</storageModule>
 </cproject>

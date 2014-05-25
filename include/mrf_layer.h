@@ -10,12 +10,24 @@
 #include <vector>
 
 #include "single_input_layer.h"
+#include "util/enum_to_string.h"
+
+enum class MRFFunction
+{
+	Default,
+	Abs,
+	Squared,
+	SignSquared
+};
+
+ENUM_IO_FWD(MRFFunction, );
 
 class NEURAL_NET_API MRFLayer
 	: public LayerBase
 {
 scope_private:
 	int _width, _height;
+	MRFFunction _function;
 
 	std::string _inputName;
 

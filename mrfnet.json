@@ -15,10 +15,10 @@
             "outputDepth": 32
         },
         {
-            "_realType": "MRFLayer",
-            "name" : "MRF",
-            "width" : 12,
-            "height" : 12
+            "_realType": "MaxPoolLayer",
+            "name": "MP1",
+            "windowSizeX": 2,
+            "windowSizeY": 2
         },
         {
             "_realType": "ConvoLayer",
@@ -33,10 +33,11 @@
             "outputDepth": 64
         },
         {
-            "_realType": "MaxPoolLayer",
-            "name": "MP2",
-            "windowSizeX": 3,
-            "windowSizeY": 3
+            "_realType": "MRFLayer",
+            "name": "MRF1",
+            "width": 3,
+            "height": 3,
+            "function": "squared"
         },
         {
             "_realType": "LinearLayer",

@@ -180,7 +180,8 @@ void MRFLayer::Backprop(const ParamMap& computeMap, ParamMap& inputErrorMap)
 	inputErrorMap[inputName] = move(inputErrors);
 }
 
-void MRFLayer::CalcSAT(const RMap& inputField, RMatrix& sumAreaTable, int depth) const
+template<typename Function>
+void CalcSATFn(const RMap &inputField, RMatrix &sumAreaTable, int depth, Function fn)
 {
 	// The good news is that computing this is a separable problem. I just
 	// don't feel like doing that right now
@@ -193,13 +194,42 @@ void MRFLayer::CalcSAT(const RMap& inputField, RMatrix& sumAreaTable, int depth)
 				const Real above = row > 0 ? sumAreaTable(row - 1, dCell) : 0.0f;
 				const Real left = dCell >= depth ? sumAreaTable(row, dCell - depth) : 0.0f;
 				const Real al = row > 0 && dCell >= depth ? sumAreaTable(row - 1, dCell - depth) : 0.0f;
-				const Real me = inputField(row, dCell);
+				const Real me = fn( inputField(row, dCell) );
 
 				const Real val = above + left + me - al;
 
 				sumAreaTable(row, dCell) = val;
 			}
 		}
+	}
+}
+
+void MRFLayer::CalcSAT(const RMap& inputField, RMatrix& sumAreaTable, int depth) const
+{
+	switch (_function)
+	{
+	case MRFFunction::Default:
+	default:
+		CalcSATFn(inputField, sumAreaTable, depth, [] (Real val) { return val; });
+		break;
+	case MRFFunction::Abs:
+		CalcSATFn(inputField, sumAreaTable, depth, [] (Real val) { return abs(val); });
+		break;
+	case MRFFunction::Squared:
+		CalcSATFn(inputField, sumAreaTable, depth, [] (Real val) { return Square(val); });
+		break;
+	case MRFFunction::SignSquared:
+		CalcSATFn(inputField, sumAreaTable, depth,
+			[] (Real val)
+			{
+				Real sqVal = Square(val);
+
+				if (val < 0)
+					sqVal = -sqVal;
+
+				return sqVal;
+			});
+		break;
 	}
 }
 
@@ -220,12 +250,20 @@ const std::string& MRFLayer::GetInputName()
 	return _inputName;
 }
 
+ENUM_IO_MAP(MRFFunction)
+	DEFMAP(MRFFunction::Default, "default")
+	ENMAP(MRFFunction::Abs, "abs")
+	ENMAP(MRFFunction::Squared, "squared")
+	ENMAP(MRFFunction::SignSquared, "sign-squared");
+
 void BindStruct(const aser::CStructBinder &binder, MRFLayer &layer)
 {
 	BindStruct(binder, (LayerBase&)layer);
 
 	binder("width", layer._width)
-		  ("height", layer._height);
+		  ("height", layer._height)
+		  ("function", layer._function)
+		  ("inputName", layer._inputName);
 }
 
 AXON_SERIALIZE_DERIVED_TYPE(ILayer, MRFLayer, MRFLayer);
