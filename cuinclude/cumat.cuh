@@ -41,6 +41,12 @@ public:
 	void CopyToDeviceAsync(const CMatrix &hMatrix, cudaStream_t stream);
 	void CopyToDeviceAsync(const RMatrix &hMatrix, cudaStream_t stream);
 	
+	void CopyToHost(Real *hMatrix) const;
+	void CopyToHost(CMatrix &hMatrix) const;
+	void CopyToHost(RMatrix &hMatrix) const;
+	void CopyToHostAsync(Real *hMatrix, cudaStream_t stream);
+	void CopyToHostAsync(CMatrix &hMatrix, cudaStream_t stream);
+
 	friend void swap(CuMat &a, CuMat &b);
 	
 private:

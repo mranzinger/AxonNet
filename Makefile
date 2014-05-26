@@ -18,7 +18,7 @@ CUDA_LIB_PATH     ?= $(CUDA_INSTALL_PATH)/lib64
 NVCC              ?= $(CUDA_INSTALL_PATH)/bin/nvcc
 CUDA_INSTALL_LIBS := -lcudart -lcublas -L$(CUDA_LIB_PATH)
 CUDA_SDK          ?= 5.5
-NVCCFLAGS := --ptxas-options=-v
+NVCCFLAGS := --ptxas-options=-v -D_CUDA_COMPILE_
 DNVCCFLAGS := $(NVCCFLAGS) -G -g
 RNVCCFLAGS := $(NVCCFLAGS) -O3
 

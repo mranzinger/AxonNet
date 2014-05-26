@@ -113,6 +113,41 @@ void CuMat::CopyToDeviceAsync(const RMatrix &hMatrix, cudaStream_t stream)
 	CopyToDeviceAsync(cMat, stream);
 }
 
+void CuMat::CopyToHost(Real* hMatrix) const
+{
+	cublasStatus_t status = cublasGetMatrix(_rows, _cols, sizeof(Real),
+											_dMat, _rows, hMatrix, _rows);
+
+	if (status != CUBLAS_STATUS_SUCCESS)
+		throw runtime_error("Unable to copy the device matrix to the host.");
+}
+
+void CuMat::CopyToHost(CMatrix& hMatrix) const
+{
+	CopyToHost(hMatrix.data());
+}
+
+void CuMat::CopyToHost(RMatrix& hMatrix) const
+{
+	CMatrix cMat(hMatrix.rows(), hMatrix.cols());
+	CopyToHost(cMat);
+	hMatrix = cMat;
+}
+
+void CuMat::CopyToHostAsync(Real* hMatrix, cudaStream_t stream)
+{
+	cublasStatus_t status = cublasGetMatrixAsync(_rows, _cols, sizeof(Real),
+								_dMat, _rows, hMatrix, _rows, stream);
+
+	if (status != CUBLAS_STATUS_SUCCESS)
+		throw runtime_error("Unable to copy the device matrix to the host.");
+}
+
+void CuMat::CopyToHostAsync(CMatrix& hMatrix, cudaStream_t stream)
+{
+	CopyToHostAsync(hMatrix.data(), stream);
+}
+
 void swap(CuMat &a, CuMat &b)
 {
 	swap(a._handle, b._handle);

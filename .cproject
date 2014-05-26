@@ -19,39 +19,44 @@
 					<folderInfo id="cdt.managedbuild.toolchain.gnu.base.1285129932.682108905" name="/" resourcePath="">
 						<toolChain id="ai3.toolchain.cuda.1964772459" name="CUDA Toolchain" superClass="ai3.toolchain.cuda">
 							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.ELF" id="ai3.target.cuda.1991349947" name="CUDA Platform" osList="linux,hpux,aix,qnx" superClass="ai3.target.cuda"/>
-							<builder id="ai3.target.cuda.builder.13531202" managedBuildOn="false" name="CUDA Builder.Default" parallelBuildOn="true" parallelizationNumber="optimal" superClass="ai3.target.cuda.builder"/>
+							<builder id="ai3.target.cuda.builder.13531202" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="CUDA Builder" parallelBuildOn="true" parallelizationNumber="optimal" superClass="ai3.target.cuda.builder"/>
 							<tool id="ai3.tool.cuda.cpp_compiler.1213523198" name="C++ Compiler" superClass="ai3.tool.cuda.cpp_compiler">
-								<option id="ai3.tool.cuda.cpp_compiler.option.include.paths.1619386702" superClass="ai3.tool.cuda.cpp_compiler.option.include.paths" valueType="includePath">
+								<option id="ai3.tool.cuda.cpp_compiler.option.include.paths.1619386702" name="Include Paths (-I)" superClass="ai3.tool.cuda.cpp_compiler.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/axon/include}&quot;"/>
 									<listOptionValue builtIn="false" value="/home/mike/dev/ThirdParty/eigen-3-2-1"/>
 									<listOptionValue builtIn="false" value="/home/mike/dev/ThirdParty/boost_1_55_0/include"/>
 									<listOptionValue builtIn="false" value="/home/mike/dev/ThirdParty/gtest/include"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/AxonNet/include}&quot;"/>
+									<listOptionValue builtIn="false" value="/usr/local/cuda-5.5/include"/>
 								</option>
-								<option id="ai3.tool.cuda.cpp_compiler.option.preprocessor.def.1728548911" superClass="ai3.tool.cuda.cpp_compiler.option.preprocessor.def" valueType="definedSymbols">
+								<option id="ai3.tool.cuda.cpp_compiler.option.preprocessor.def.1728548911" name="Defined Symbols (-D)" superClass="ai3.tool.cuda.cpp_compiler.option.preprocessor.def" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="__GXX_EXPERIMENTAL_CXX0X__"/>
 								</option>
 								<inputType id="ai3.tool.cuda.cpp_compiler.input.608827011" superClass="ai3.tool.cuda.cpp_compiler.input"/>
 							</tool>
 							<tool id="ai3.tool.cuda.c_compiler.104391412" name="C Compiler" superClass="ai3.tool.cuda.c_compiler">
-								<option id="gnu.c.compiler.option.include.paths.1311369890" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
+								<option id="gnu.c.compiler.option.include.paths.1311369890" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/axon/include}&quot;"/>
 									<listOptionValue builtIn="false" value="/home/mike/dev/ThirdParty/eigen-3-2-1"/>
 									<listOptionValue builtIn="false" value="/home/mike/dev/ThirdParty/gtest/include"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/AxonNet/include}&quot;"/>
 									<listOptionValue builtIn="false" value="/home/mike/dev/ThirdParty/boost_1_55_0/include"/>
+									<listOptionValue builtIn="false" value="/usr/local/cuda-5.5/include"/>
 								</option>
-								<option id="gnu.c.compiler.option.preprocessor.def.symbols.1168937495" superClass="gnu.c.compiler.option.preprocessor.def.symbols" valueType="definedSymbols">
+								<option id="gnu.c.compiler.option.preprocessor.def.symbols.1168937495" name="Defined symbols (-D)" superClass="gnu.c.compiler.option.preprocessor.def.symbols" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="__GXX_EXPERIMENTAL_CXX0X__"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.113250635" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
 							<tool id="ai3.tool.cuda.nvcc.264843016" name="CUDA NVCC Compiler" superClass="ai3.tool.cuda.nvcc">
+								<option id="ai3.tool.cuda.nvcc.includes.incpath.1770768214" superClass="ai3.tool.cuda.nvcc.includes.incpath" valueType="includePath">
+									<listOptionValue builtIn="false" value="/usr/local/cuda-5.5/include"/>
+								</option>
 								<inputType id="ai3.tool.cuda.nvcc.input.738655683" name="CUDA Input" superClass="ai3.tool.cuda.nvcc.input"/>
 							</tool>
 							<tool id="ai3.tool.cuda.c_linker.1845138957" name="C Linker" superClass="ai3.tool.cuda.c_linker"/>
 							<tool id="ai3.tool.cuda.cpp_linker.1343328193" name="C++ Linker" superClass="ai3.tool.cuda.cpp_linker">
-								<option id="gnu.cpp.link.option.paths.384118095" superClass="gnu.cpp.link.option.paths" valueType="libPaths">
+								<option id="gnu.cpp.link.option.paths.384118095" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" valueType="libPaths">
 									<listOptionValue builtIn="false" value="/home/mike/dev/ThirdParty/boost_1_55_0/lib"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.1255226367" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
@@ -61,11 +66,12 @@
 							</tool>
 							<tool id="ai3.tool.cuda.gnu_archiver.1995087834" name="GNU Archiver" superClass="ai3.tool.cuda.gnu_archiver"/>
 							<tool id="ai3.tool.cuda.gnu_assembler.1422604246" name="GNU Assembler" superClass="ai3.tool.cuda.gnu_assembler">
-								<option id="gnu.both.asm.option.include.paths.112577972" superClass="gnu.both.asm.option.include.paths" valueType="includePath">
+								<option id="gnu.both.asm.option.include.paths.112577972" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/axon/include}&quot;"/>
 									<listOptionValue builtIn="false" value="/home/mike/dev/ThirdParty/eigen-3-2-1"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/AxonNet/include}&quot;"/>
 									<listOptionValue builtIn="false" value="/home/mike/dev/ThirdParty/gtest/include"/>
+									<listOptionValue builtIn="false" value="/usr/local/cuda-5.5/include"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.1598350700" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
 							</tool>
