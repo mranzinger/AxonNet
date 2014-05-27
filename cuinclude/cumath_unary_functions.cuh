@@ -8,6 +8,7 @@
 
 #pragma once
 
+#define __CUDACC__
 #include <cuda_runtime_api.h>
 
 #include "cudev_helper.cuh"
@@ -56,7 +57,17 @@ struct CuIntPow
 		return comp;
 	}
 };
+struct CuUnaryScale
+{
+	Real Scale;
 
+	CuUnaryScale(Real scale) : Scale(scale) { }
+
+	__device__ Real operator()(Real val) const
+	{
+		return Scale * val;
+	}
+};
 
 // Neural Network Functions
 struct CuLogistic

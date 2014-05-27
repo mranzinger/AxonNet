@@ -8,11 +8,13 @@
 
 #pragma once
 
+
 #ifndef _CUDA_COMPILE_
 struct cuVec_t
 {
 	unsigned int x, y, z;
 } blockIdx, blockDim, threadIdx;
 #endif
+
 
 

@@ -8,6 +8,7 @@
 
 #pragma once
 
+#define __CUDACC__
 #include <cuda_runtime_api.h>
 
 #include "cudev_helper.cuh"
@@ -48,5 +49,32 @@ struct CuPow
 		return pow(a, b);
 	}
 };
+struct CuAddScaledBinary
+{
+	Real ScaleA, ScaleB;
 
+	CuAddScaledBinary(Real scaleA, Real scaleB)
+		: ScaleA(scaleA), ScaleB(scaleB)
+	{
+	}
+
+	__device__ Real operator()(Real a, Real b) const
+	{
+		return ScaleA * a + ScaleB * b;
+	}
+};
+struct CuMulScaledBinary
+{
+	Real Scale;
+
+	CuMulScaledBinary(Real scale)
+		: Scale(scale)
+	{
+	}
+
+	__device__ Real operator()(Real a, Real b) const
+	{
+		return Scale * a * b;
+	}
+};
 

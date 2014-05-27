@@ -8,21 +8,19 @@
 using namespace std;
 
 CuMat::CuMat()
-	: _handle(0), _refCt(NULL), _dMat(NULL), _rows(0), _cols(0), _storageOrder(CuColMajor)
+	: _handle(0), _dMat(NULL), _rows(0), _cols(0), _storageOrder(CuColMajor)
 {
-	_refCt = new int(1);
+	_refCt = new uint32_t(1);
 }
 
 CuMat::CuMat(cublasHandle_t handle,
-		     unsigned long rows, unsigned long cols, 
+		     uint32_t rows, uint32_t cols,
 		     CuStorageOrder order)
 	: _handle(handle), _dMat(NULL), _rows(rows), _cols(cols), _storageOrder(order)
 {
-	_refCt = new int(1);
+	_refCt = new uint32_t(1);
 	
-	cudaError_t cudaStat = cudaMalloc(&_dMat, rows * cols * sizeof(Real));
-	if (cudaStat != cudaSuccess)
-		throw runtime_error("Unable to allocate the specified matrix");
+	AllocateMatrix();
 }
 
 CuMat::CuMat(const CuMat &other)
@@ -40,9 +38,18 @@ CuMat::~CuMat()
 	if (*_refCt == 0)
 	{
 		delete _refCt;
-		// Free the device memory
-		cudaFree(_dMat);
+		FreeMatrix();
 	}
+}
+
+bool CuMat::Empty() const
+{
+	return !_dMat || !_rows || !_cols;
+}
+
+bool CuMat::SingleOwner() const
+{
+	return *_refCt == 1;
 }
 
 CuMat &CuMat::operator=(CuMat other)
@@ -148,6 +155,141 @@ void CuMat::CopyToHostAsync(CMatrix& hMatrix, cudaStream_t stream)
 	CopyToHostAsync(hMatrix.data(), stream);
 }
 
+CuMat operator+(const CuMat &a, const CuMat &b)
+{
+	CuMat ret;
+	a.BinaryExpr<false>(b, ret, CuPlus());
+	return ret;
+}
+CuMat operator-(const CuMat &a, const CuMat &b)
+{
+	CuMat ret;
+	a.BinaryExpr<false>(b, ret, CuMinus());
+	return ret;
+}
+CuMat operator*(const CuMat &a, const CuMat &b)
+{
+	throw runtime_error("Not implemented yet.");
+}
+
+CuMat &operator+=(CuMat &a, const CuMat &b)
+{
+	a.BinaryExpr(b, CuPlus());
+	return a;
+}
+CuMat &operator-=(CuMat &a, const CuMat &b)
+{
+	a.BinaryExpr(b, CuMinus());
+	return a;
+}
+
+void CuMat::CoeffMultiply(Real val)
+{
+	CoeffMultiply(val, *this);
+}
+
+void CuMat::CoeffMultiply(Real val, CuMat& dest) const
+{
+	UnaryExpr<false>(dest, CuUnaryScale(val));
+}
+
+void CuMat::CoeffMultiply(const CuMat& b)
+{
+	CoeffMultiply(b, *this);
+}
+
+void CuMat::CoeffMultiply(const CuMat& b, CuMat& dest) const
+{
+	BinaryExpr<false>(b, dest, CuMultiply());
+}
+
+void CuMat::AddScaled(Real scaleThis, const CuMat& b, Real scaleB)
+{
+	AddScaled(scaleThis, b, scaleB, *this);
+}
+
+void CuMat::AddScaled(Real scaleThis, const CuMat& b, Real scaleB,
+		CuMat& dest) const
+{
+	AssertSameDims(b);
+
+	BinaryExpr<false>(b, dest, CuAddScaledBinary(scaleThis, scaleB));
+}
+
+void CuMat::Resize(uint32_t rows, uint32_t cols)
+{
+	// Test for a no-op
+	if (SingleOwner() && _rows == rows && _cols == cols)
+		return;
+
+	// Ensure exclusive ownership of the matrix before
+	// modifying it
+	PrepareForWrite(false);
+
+	_rows = rows;
+	_cols = cols;
+
+	// Free the old buffer if it is valid
+	FreeMatrix();
+
+	// Allocate the new matrix of the specified size
+	AllocateMatrix();
+}
+
+void CuMat::ResizeLike(const CuMat& like)
+{
+	Resize(like._rows, like._cols);
+}
+
+void CuMat::Reshape(uint32_t rows, uint32_t cols)
+{
+	throw runtime_error("Not implemented.");
+}
+
+void CuMat::PrepareForWrite(bool alloc)
+{
+	// This is a copy on modify paradigm,
+	// so if this instance is a sole owner of the data,
+	// then nothing needs to be done
+	if (*_refCt == 1)
+		return;
+
+	_refCt = new uint32_t(1);
+
+	if (alloc)
+		AllocateMatrix();
+	else
+		_dMat = NULL;
+}
+
+void CuMat::AllocateMatrix()
+{
+	_dMat = NULL;
+
+	if (_rows == 0 || _cols == 0)
+		return;
+
+	cudaError_t cudaStat = cudaMalloc(&_dMat, _rows * _cols * sizeof(Real));
+	if (cudaStat != cudaSuccess)
+		throw runtime_error("Unable to allocate the specified matrix");
+}
+
+void CuMat::FreeMatrix()
+{
+	// Free the device memory
+	cudaFree(_dMat);
+}
+
+
+
+void CuMat::AssertSameDims(const CuMat& other) const
+{
+	if (_rows != other._rows)
+		throw runtime_error("The specified matrix doesn't have the same number of rows as this one.");
+	if (_cols != other._cols)
+		throw runtime_error("The specified matrix doesn't have the same number of columns as this one.");
+}
+
 void swap(CuMat &a, CuMat &b)
 {
 	swap(a._handle, b._handle);
@@ -157,3 +299,5 @@ void swap(CuMat &a, CuMat &b)
 	swap(a._refCt, b._refCt);
 	swap(a._storageOrder, b._storageOrder);
 }
+
+
