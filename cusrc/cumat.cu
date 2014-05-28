@@ -169,7 +169,28 @@ CuMat operator-(const CuMat &a, const CuMat &b)
 }
 CuMat operator*(const CuMat &a, const CuMat &b)
 {
-	throw runtime_error("Not implemented yet.");
+	static const float s_default = 1.0f;
+
+	// Make sure the matrices are valid
+	assert(a._cols == b._rows);
+	assert(!a.Empty() && !b.Empty());
+	assert(a._handle == b._handle);
+
+	CuMat ret(a._handle, a._rows, b._cols);
+
+	cublasStatus_t status =
+			cublasSgemm_v2(a._handle, a.GetTransOrder(), b.GetTransOrder(),
+							a._rows, b._cols, a._cols,
+							&s_default, a._dMat, a._rows,
+							b._dMat, b._rows,
+							NULL,
+							NULL,
+							0);
+
+	if (status != CUBLAS_STATUS_SUCCESS)
+		throw runtime_error("The matrix multiplication failed.");
+
+	return ret;
 }
 
 CuMat &operator+=(CuMat &a, const CuMat &b)
@@ -290,6 +311,32 @@ void CuMat::AssertSameDims(const CuMat& other) const
 		throw runtime_error("The specified matrix doesn't have the same number of columns as this one.");
 }
 
+CuStorageOrder CuMat::InverseOrder(CuStorageOrder order)
+{
+	switch (order)
+	{
+	case CuColMajor:
+		return CuRowMajor;
+	case CuRowMajor:
+		return CuColMajor;
+	default:
+		throw runtime_error("Invalid storage order");
+	}
+}
+
+cublasOperation_t CuMat::GetTransOrder() const
+{
+	switch (_storageOrder)
+	{
+	case CuColMajor:
+		return CUBLAS_OP_N;
+	case CuRowMajor:
+		return CUBLAS_OP_T;
+	default:
+		throw runtime_error("Invalid storage order");
+	}
+}
+
 void swap(CuMat &a, CuMat &b)
 {
 	swap(a._handle, b._handle);
@@ -300,4 +347,21 @@ void swap(CuMat &a, CuMat &b)
 	swap(a._storageOrder, b._storageOrder);
 }
 
+CuScopedWeakTranspose::CuScopedWeakTranspose(CuMat& mat)
+	: _mat(mat)
+{
+	Invert();
+}
 
+CuScopedWeakTranspose::~CuScopedWeakTranspose()
+{
+	// Undo the inversion
+	Invert();
+}
+
+void CuScopedWeakTranspose::Invert()
+{
+	swap(_mat._rows, _mat._cols);
+
+	_mat._storageOrder = CuMat::InverseOrder(_mat._storageOrder);
+}

@@ -20,6 +20,8 @@
 
 class CuMat
 {
+	friend class CuScopedWeakTranspose;
+
 public:
 	CuMat();
 	CuMat(cublasHandle_t handle, uint32_t rows, uint32_t cols,
@@ -82,6 +84,8 @@ public:
 	void ResizeLike(const CuMat &like);
 	void Reshape(uint32_t rows, uint32_t cols);
 
+	static CuStorageOrder InverseOrder(CuStorageOrder order);
+
 	friend void swap(CuMat &a, CuMat &b);
 	
 private:
@@ -89,12 +93,26 @@ private:
 	void AllocateMatrix();
 	void FreeMatrix();
 	void AssertSameDims(const CuMat &other) const;
+	cublasOperation_t GetTransOrder() const;
 
 	Real *_dMat;
 	uint32_t *_refCt;
 	uint32_t _rows, _cols;
 	CuStorageOrder _storageOrder;
 	cublasHandle_t _handle;
+};
+
+class CuScopedWeakTranspose
+{
+private:
+	CuMat &_mat;
+
+public:
+	CuScopedWeakTranspose(CuMat &mat);
+	~CuScopedWeakTranspose();
+
+private:
+	void Invert();
 };
 
 #include "cumat_kernels.cuh"
