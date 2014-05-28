@@ -96,3 +96,5 @@ private:
 	CuStorageOrder _storageOrder;
 	cublasHandle_t _handle;
 };
+
+#include "cumat_kernels.cuh"

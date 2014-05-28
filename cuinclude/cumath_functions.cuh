@@ -9,6 +9,8 @@
 #pragma once
 
 #include <stdexcept>
+#include <stdint.h>
+#include <assert.h>
 
 #define __CUDACC__
 #include <cuda_runtime_api.h>
@@ -31,8 +33,6 @@ inline dim3 round_up(uint32_t x, uint32_t y, uint32_t z, uint32_t base)
 template<uint32_t base>
 dim3 round_up(uint32_t x, uint32_t y = 0, uint32_t z = 0)
 {
-	static_assert(base > 0, "The base must be greater than 0");
-
 	return dim3((x + base - 1) / base,
 				(y + base - 1) / base,
 				(z + base - 1) / base);
@@ -45,7 +45,7 @@ enum CuStorageOrder
 };
 
 template<CuStorageOrder order>
-inline unsigned int ElementIdx(unsigned int row, unsigned int col,
+__device__ inline unsigned int ElementIdx(unsigned int row, unsigned int col,
 						       unsigned int rows, unsigned int cols)
 {
 	if (order == CuRowMajor)
@@ -149,8 +149,9 @@ void ApplyUnaryFn(const Real *pVecSrc, Real *pVecTarget,
 	dim3 blockSize = round_up<32>(cols, rows);
 
 #define CALL_UNARY(orderA, orderDest) \
-		DApplyUnaryFn<<<blockSize, dim3(32, 32)>>> \
-				     <orderA, orderDest, Add>(pVecSrc, pVecTarget, rows, cols, fn)
+		DApplyUnaryFn<UnaryFn, orderA, orderDest, Add> \
+					 <<<blockSize, dim3(32, 32)>>> \
+				     (pVecSrc, pVecTarget, rows, cols, fn)
 
 	if (orderA == CuColMajor)
 	{
@@ -189,8 +190,9 @@ void ApplyBinaryFn(const Real *pVecA, const Real *pVecB,
 	dim3 blockSize = round_up<32>(cols, rows);
 
 #define CALL_BINARY(orderA, orderB, orderDest) \
-	DApplyBinaryFn<<<blockSize, dim3(32, 32)>>> \
-					  <orderA, orderB, orderDest, Add>(pVecA, pVecB, pVecTarget, rows, cols, fn);
+	DApplyBinaryFn<BinaryFn, orderA, orderB, orderDest, Add> \
+				   <<<blockSize, dim3(32, 32)>>> \
+				   (pVecA, pVecB, pVecTarget, rows, cols, fn);
 
 	if (orderA == CuColMajor)
 	{
@@ -258,9 +260,9 @@ void ApplyTrinaryFn(const Real *pVecA, const Real *pVecB, const Real *pVecC,
 	dim3 blockSize = round_up<32>(cols, rows);
 
 #define CALL_TRINARY(orderA, orderB, orderC, orderDest) \
-	DApplyTrinaryFn<<<blockSize, dim3(32, 32)>>> \
-					  <orderA, orderB, orderC, orderDest, Add> \
-					  (pVecA, pVecB, pVecC, pVecTarget, rows, cols, fn);
+	DApplyTrinaryFn<TrinaryFn, orderA, orderB, orderC, orderDest, Add> \
+					<<<blockSize, dim3(32, 32)>>> \
+					(pVecA, pVecB, pVecC, pVecTarget, rows, cols, fn);
 
 	if (orderA == CuColMajor)
 	{
