@@ -43,7 +43,15 @@ CUDA_OBJS_D = $(patsubst %.o, %.od,$(CUDA_OBJS))
 
 NET_SRC=$(wildcard $(SRC_ROOT)/*.cpp)
 TRAINER_SRC=$(wildcard Trainer/*.cpp)
-UNIT_SRC=$(wildcard unit_tests/*.cpp)
+
+UNIT_SRC_ROOT = unit_tests
+UNIT_SRC=$(wildcard $(UNIT_SRC_ROOT)/*.cpp)
+CUDA_UNIT_SRC=$(wildcard $(UNIT_SRC_ROOT)/*.cu)
+
+UNIT_OBJS := $(patsubst $(UNIT_SRC_ROOT)/%.cpp,$(OBJ_ROOT)/%.cpp.o,$(UNIT_SRC))
+UNIT_OBJS += $(patsubst $(UNIT_SRC_ROOT)/%.cu,$(OBJ_ROOT)/%.cu.o,$(CUDA_UNIT_SRC))
+
+UNIT_OBJS_D = $(patsubst %.o, %.od, $(UNIT_OBJS))
 
 TRAINER_EXE=trainer
 TRAINER_EXE_D=d_trainer
@@ -60,7 +68,8 @@ INCLUDES= -I$(AXON_PATH)/include \
 CUDA_INCLUDES = -I$(CUDA_INCLUDE_PATH) \
 				-I$(EIGEN_PATH) \
 				-I$(CUDA_INC_ROOT) \
-				-I$(INC_ROOT)
+				-I$(INC_ROOT) \
+				-I$(GTEST_PATH)/include
 
 LIBS_BASE=-L$(BOOST_PATH)/lib \
 		  -L$(AXON_PATH)/lib \
@@ -95,16 +104,35 @@ $(OBJ_ROOT)/%.cu.o: $(CUDA_SRC_ROOT)/%.cu
 	$(NVCC) $(RNVCCFLAGS) -c $< $(CUDA_INCLUDES) -o $@ $(CUDA_LIBS)
 
 $(TRAINER_EXE_D): $(TRAINER_SRC) $(OBJS_D) $(CUDA_OBJS_D)
-	$(CC) $(DFLAGS) $(TRAINER_SRC) -o $@ $(INCLUDES) $(OBJS_D) $(CUDA_OBJS_D) $(LIBS_D) $(CUDA_LIBS_D)
+	$(CC) $(DFLAGS) $(TRAINER_SRC) -o $@ \
+		$(INCLUDES) $(OBJS_D) $(CUDA_OBJS_D) $(LIBS_D) $(CUDA_LIBS_D)
 
 $(TRAINER_EXE): $(TRAINER_SRC) $(OBJS) $(CUDA_OBJS)
-	$(CC) $(RFLAGS) $(TRAINER_SRC) -o $@ $(INCLUDES) $(OBJS) $(CUDA_OBJS) $(LIBS) $(CUDA_LIBS)
+	$(CC) $(RFLAGS) $(TRAINER_SRC) -o $@ \
+		$(INCLUDES) $(OBJS) $(CUDA_OBJS) $(LIBS) $(CUDA_LIBS)
 
-$(UNIT_EXE_D): $(UNIT_SRC) $(OBJS_D)
-	$(CC) $(DFLAGS) -D_UNIT_TESTS_ $(UNIT_SRC) -o $@ $(INCLUDES) $(OBJS_D) $(LIBS_D) -lgtest_main -lpthread
+
+$(OBJ_ROOT)/%.cpp.od: $(UNIT_SRC_ROOT)/%.cpp
+	$(CC) $(DFLAGS) -D_UNIT_TESTS_ -c $< -o $@ $(INCLUDES)
 	
-$(UNIT_EXE): $(UNIT_SRC) $(OBJS)
-	$(CC) $(UTRFLAGS) -D_UNIT_TESTS_ $(UNIT_SRC) -o $@ $(INCLUDES) $(OBJS_D) $(LIBS) -lgtest_main -lpthread
+$(OBJ_ROOT)/%.cpp.o: $(UNIT_SRC_ROOT)/%.cpp
+	$(CC) $(RFLAGS) -D_UNIT_TESTS_ -c $< -o $@ $(INCLUDES)
+	
+$(OBJ_ROOT)/%.cu.od: $(UNIT_SRC_ROOT)/%.cu
+	$(NVCC) $(DNVCCFLAGS) -D_UNIT_TESTS_ -c $< -o $@ $(CUDA_INCLUDES)
+	
+$(OBJ_ROOT)/%.cu.o: $(UNIT_SRC_ROOT)/%.cu
+	$(NVCC) $(RNVCCFLAGS) -D_UNIT_TESTS_ -c $< -o $@ $(CUDA_INCLUDES)
+
+$(UNIT_EXE_D): $(UNIT_SRC) $(OBJS_D) $(CUDA_OBJS_D) $(UNIT_OBJS_D)
+	$(CC) $(DFLAGS) -D_UNIT_TESTS_ -o $@ \
+		$(INCLUDES) $(OBJS_D) $(CUDA_OBJS_D) $(UNIT_OBJS_D) $(LIBS_D) $(CUDA_LIBS_D) \
+		-lgtest_main -lpthread
+	
+$(UNIT_EXE): $(UNIT_SRC) $(OBJS) $(CUDA_OBJS) $(UNIT_OBJS)
+	$(CC) $(UTRFLAGS) -D_UNIT_TESTS_ -o $@ \
+		$(INCLUDES) $(OBJS) $(CUDA_OBJS) $(UNIT_OBJS) $(LIBS) $(CUDA_LIBS) \
+		-lgtest_main -lpthread
 
 setup:
 	mkdir -p obj
