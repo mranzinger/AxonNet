@@ -250,6 +250,11 @@ void CuMat::AddScaled(Real scaleThis, const CuMat& b, Real scaleB,
 	BinaryExpr<false>(b, dest, CuAddScaledBinary(scaleThis, scaleB));
 }
 
+void AddScaled(const CuMat &a, Real scaleA, const CuMat &b, Real scaleB, CuMat &dest)
+{
+    a.AddScaled(scaleA, b, scaleB, dest);
+}
+
 void CuMat::SetConstant(Real val)
 {
     PrepareForWrite(false);

@@ -56,6 +56,8 @@ public:
 	void AddScaled(Real scaleThis, const CuMat &b, Real scaleB);
 	void AddScaled(Real scaleThis, const CuMat &b, Real scaleB, CuMat &dest) const;
 
+	friend void AddScaled(const CuMat &a, Real scaleA, const CuMat &b, Real scaleB, CuMat &dest);
+
 	void CopyToDevice(const Real *hMatrix);
 	void CopyToDevice(const CMatrix &hMatrix);
 	void CopyToDevice(const RMatrix &hMatrix);

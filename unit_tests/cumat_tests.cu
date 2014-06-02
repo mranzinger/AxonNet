@@ -221,3 +221,47 @@ TEST(CuMatTest, MulCuda)
 
     CuMat dC = dA * dB;
 }
+
+TEST(CuMatTest, MulEigenHuge)
+{
+    CMatrix hA = CMatrix::Constant(10000, 20000, 2),
+            hB = CMatrix::Constant(20000, 128, 4);
+
+    CMatrix hC = hA * hB;
+}
+
+TEST(CuMatTest, MulCudaHuge)
+{
+    cublasHandle_t handle = UTGetCublasHandle();
+
+    CuMat dA(handle, 10000, 20000),
+          dB(handle, 20000, 128);
+
+    dA.SetConstant(2);
+    dB.SetConstant(4);
+
+    CuMat dC = dA * dB;
+}
+
+TEST(CuMatTest, AddScaled)
+{
+    cublasHandle_t handle = UTGetCublasHandle();
+
+    CuMat dA(handle, 2, 3),
+          dB(handle, 2, 3),
+          dC;
+
+    dA.SetConstant(-2);
+    dB.SetConstant(1);
+
+    AddScaled(dA, 1, dB, 2, dC);
+
+    CMatrix hMat;
+    dC.CopyToHost(hMat);
+
+    CMatrix hCorrect = CMatrix::Zero(2, 3);
+
+    AssertMatrixEquivalence(hMat, hCorrect);
+}
+
+
