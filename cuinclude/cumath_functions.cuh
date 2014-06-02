@@ -31,7 +31,7 @@ inline dim3 round_up(uint32_t x, uint32_t y, uint32_t z, uint32_t base)
 }
 
 template<uint32_t base>
-dim3 round_up(uint32_t x, uint32_t y = 0, uint32_t z = 0)
+dim3 round_up(uint32_t x, uint32_t y = 1, uint32_t z = 1)
 {
 	return dim3((x + base - 1) / base,
 				(y + base - 1) / base,
@@ -150,7 +150,7 @@ void ApplyUnaryFn(const Real *pVecSrc, Real *pVecTarget,
 
 #define CALL_UNARY(orderA, orderDest) \
 		DApplyUnaryFn<UnaryFn, orderA, orderDest, Add> \
-					 <<<blockSize, dim3(32, 32)>>> \
+					 <<<blockSize, dim3(min(32, cols), min(32, rows))>>> \
 				     (pVecSrc, pVecTarget, rows, cols, fn)
 
 	if (orderA == CuColMajor)
@@ -191,7 +191,7 @@ void ApplyBinaryFn(const Real *pVecA, const Real *pVecB,
 
 #define CALL_BINARY(orderA, orderB, orderDest) \
 	DApplyBinaryFn<BinaryFn, orderA, orderB, orderDest, Add> \
-				   <<<blockSize, dim3(32, 32)>>> \
+				   <<<blockSize, dim3(min(32, cols), min(32, rows))>>> \
 				   (pVecA, pVecB, pVecTarget, rows, cols, fn);
 
 	if (orderA == CuColMajor)
@@ -261,7 +261,7 @@ void ApplyTrinaryFn(const Real *pVecA, const Real *pVecB, const Real *pVecC,
 
 #define CALL_TRINARY(orderA, orderB, orderC, orderDest) \
 	DApplyTrinaryFn<TrinaryFn, orderA, orderB, orderC, orderDest, Add> \
-					<<<blockSize, dim3(32, 32)>>> \
+					<<<blockSize, dim3(min(32, cols), min(32, rows))>>> \
 					(pVecA, pVecB, pVecC, pVecTarget, rows, cols, fn);
 
 	if (orderA == CuColMajor)

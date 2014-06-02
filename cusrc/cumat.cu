@@ -161,6 +161,12 @@ void CuMat::CopyToHostAsync(CMatrix& hMatrix, cudaStream_t stream)
 	CopyToHostAsync(hMatrix.data(), stream);
 }
 
+CuMat& CuMat::operator =(Real val)
+{
+    SetConstant(val);
+    return *this;
+}
+
 CuMat operator+(const CuMat &a, const CuMat &b)
 {
 	CuMat ret;
@@ -241,6 +247,13 @@ void CuMat::AddScaled(Real scaleThis, const CuMat& b, Real scaleB,
 	AssertSameDims(b);
 
 	BinaryExpr<false>(b, dest, CuAddScaledBinary(scaleThis, scaleB));
+}
+
+void CuMat::SetConstant(Real val)
+{
+    PrepareForWrite(false);
+
+    UnaryExpr(CuConstant(val));
 }
 
 void CuMat::Resize(uint32_t rows, uint32_t cols)
@@ -329,6 +342,10 @@ CuStorageOrder CuMat::InverseOrder(CuStorageOrder order)
 		throw runtime_error("Invalid storage order");
 	}
 }
+
+
+
+
 
 cublasOperation_t CuMat::GetTransOrder() const
 {

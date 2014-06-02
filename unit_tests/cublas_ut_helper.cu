@@ -15,7 +15,7 @@ cublasHandle_t UTGetCublasHandle()
 {
 	static cublasHandle_t s_handle = 0;
 
-	CUresult result = cuInit(0);
+	//CUresult result = cuInit(0);
 
 	if (!s_handle)
 	{

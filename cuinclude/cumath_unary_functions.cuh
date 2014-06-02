@@ -174,3 +174,28 @@ struct CuTanhDerivativeRaw
 		return _calc(_tanh(val));
 	}
 };
+struct CuConstant
+{
+    Real _val;
+
+    CuConstant(Real val) : _val(val) { }
+
+    __device__ Real operator()(Real val) const
+    {
+        return _val;
+    }
+};
+struct CuIdentity
+{
+    __device__ Real operator()(Real val) const
+    {
+        return val;
+    }
+};
+struct CuZero
+{
+    __device__ Real operator()(Real val) const
+    {
+        return 0.0f;
+    }
+};

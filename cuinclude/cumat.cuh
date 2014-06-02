@@ -44,6 +44,10 @@ public:
 	friend CuMat &operator+=(CuMat &a, const CuMat &b);
 	friend CuMat &operator-=(CuMat &a, const CuMat &b);
 
+	CuMat &operator=(Real val);
+
+	void SetConstant(Real val);
+
 	void CoeffMultiply(Real val);
 	void CoeffMultiply(Real val, CuMat &dest) const;
 	void CoeffMultiply(const CuMat &b);
