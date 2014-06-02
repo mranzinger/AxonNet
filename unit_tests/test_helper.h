@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "math_util.h"
+#include "math_defines.h"
 
 extern const Real DEFAULT_PRECISION;
 

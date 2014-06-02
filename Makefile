@@ -12,12 +12,12 @@ BOOST_PATH    ?= $(THIRD_PARTY)/boost_1_55_0
 GTEST_PATH    ?= $(THIRD_PARTY)/gtest
 AXON_PATH     ?= ../axon
 
-CUDA_INSTALL_PATH ?= /usr/local/cuda-5.5
+CUDA_INSTALL_PATH ?= /usr/local/cuda
 CUDA_INCLUDE_PATH ?= $(CUDA_INSTALL_PATH)/include
 CUDA_LIB_PATH     ?= $(CUDA_INSTALL_PATH)/lib64
 NVCC              ?= $(CUDA_INSTALL_PATH)/bin/nvcc
-CUDA_INSTALL_LIBS := -lcudart -lcublas -L$(CUDA_LIB_PATH)
-CUDA_SDK          ?= 5.5
+CUDA_INSTALL_LIBS := -lcudart -lcublas -lcuda -L$(CUDA_LIB_PATH)
+CUDA_SDK          ?= 6.0
 NVCCFLAGS := --ptxas-options=-v -D_CUDA_COMPILE_
 DNVCCFLAGS := $(NVCCFLAGS) -G -g
 RNVCCFLAGS := $(NVCCFLAGS) -O3
@@ -113,16 +113,16 @@ $(TRAINER_EXE): $(TRAINER_SRC) $(OBJS) $(CUDA_OBJS)
 
 
 $(OBJ_ROOT)/%.cpp.od: $(UNIT_SRC_ROOT)/%.cpp
-	$(CC) $(DFLAGS) -D_UNIT_TESTS_ -c $< -o $@ $(INCLUDES)
+	$(CC) $(DFLAGS) -D_UNIT_TESTS_ -c $< -o $@ $(INCLUDES) -I$(UNIT_SRC_ROOT)/inc
 	
 $(OBJ_ROOT)/%.cpp.o: $(UNIT_SRC_ROOT)/%.cpp
-	$(CC) $(RFLAGS) -D_UNIT_TESTS_ -c $< -o $@ $(INCLUDES)
+	$(CC) $(RFLAGS) -D_UNIT_TESTS_ -c $< -o $@ $(INCLUDES) -I$(UNIT_SRC_ROOT)/inc
 	
 $(OBJ_ROOT)/%.cu.od: $(UNIT_SRC_ROOT)/%.cu
-	$(NVCC) $(DNVCCFLAGS) -D_UNIT_TESTS_ -c $< -o $@ $(CUDA_INCLUDES)
+	$(NVCC) $(DNVCCFLAGS) -D_UNIT_TESTS_ -c $< -o $@ $(CUDA_INCLUDES) -I$(UNIT_SRC_ROOT)/inc
 	
 $(OBJ_ROOT)/%.cu.o: $(UNIT_SRC_ROOT)/%.cu
-	$(NVCC) $(RNVCCFLAGS) -D_UNIT_TESTS_ -c $< -o $@ $(CUDA_INCLUDES)
+	$(NVCC) $(RNVCCFLAGS) -D_UNIT_TESTS_ -c $< -o $@ $(CUDA_INCLUDES) -I$(UNIT_SRC_ROOT)/inc
 
 $(UNIT_EXE_D): $(UNIT_SRC) $(OBJS_D) $(CUDA_OBJS_D) $(UNIT_OBJS_D)
 	$(CC) $(DFLAGS) -D_UNIT_TESTS_ -o $@ \

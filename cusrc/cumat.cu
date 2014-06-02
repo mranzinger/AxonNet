@@ -131,6 +131,12 @@ void CuMat::CopyToHost(Real* hMatrix) const
 
 void CuMat::CopyToHost(CMatrix& hMatrix) const
 {
+	if (_rows != hMatrix.rows() ||
+	    _cols != hMatrix.cols())
+	{
+		hMatrix.resize(_rows, _cols);
+	}
+
 	CopyToHost(hMatrix.data());
 }
 
