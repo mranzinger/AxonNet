@@ -113,6 +113,8 @@ private:
 	cublasHandle_t _handle;
 };
 
+CuMat operator*(const CuScopedWeakTranspose &a, const CuScopedWeakTranspose &b);
+
 class CuScopedWeakTranspose
 {
 private:

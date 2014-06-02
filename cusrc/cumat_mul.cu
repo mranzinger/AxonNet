@@ -99,8 +99,31 @@ CuMat operator*(const CuMat &a, const CuScopedWeakTranspose &tB)
     return ret;
 }
 
-CuMat operator*(const CuScopedWeakTranspose &a, const CuScopedWeakTranspose &b)
+CuMat operator*(const CuScopedWeakTranspose &tA, const CuScopedWeakTranspose &tB)
 {
-    throw runtime_error("Not implemented");
+    const CuMat &a = tA.Mat;
+    const CuMat &b = tB.Mat;
+
+    assert(a._rows == b._cols);
+    assert(!a.Empty() && !b.Empty());
+    assert(a._handle == b._handle);
+
+    assert(a._storageOrder == CuColMajor && b._storageOrder == CuColMajor);
+
+    CuMat ret(a._handle, a._cols, b._rows);
+
+    cublasStatus_t status =
+            cublasSgemm_v2(a._handle, CUBLAS_OP_T, CUBLAS_OP_T,
+                    a._cols, b._rows, a._rows,
+                    &s_one, a._dMat, a._rows,
+                    b._dMat, b._rows,
+                    &s_zero,
+                    ret._dMat,
+                    ret._rows);
+
+    if (status != CUBLAS_STATUS_SUCCESS)
+        throw runtime_error("The matrix multiplication failed.");
+
+    return ret;
 }
 
