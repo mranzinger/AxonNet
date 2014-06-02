@@ -317,3 +317,8 @@ CuScopedWeakTranspose::CuScopedWeakTranspose(const CuMat& mat)
 	: Mat(mat)
 {
 }
+
+CuMatInfo CuMat::ToInfo() const
+{
+    return CuMatInfo(*this);
+}

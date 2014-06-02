@@ -19,9 +19,15 @@
 #include "cumath_functions.cuh"
 
 class CuScopedWeakTranspose;
+class CuRowwiseOperator;
+class CuColwiseOperator;
+struct CuMatInfo;
 
 class CuMat
 {
+    friend class CuRowwiseOperator;
+    friend class CuColwiseOperator;
+
 public:
 	CuMat();
 	explicit CuMat(cublasHandle_t handle);
@@ -35,6 +41,7 @@ public:
 	bool Empty() const;
 	bool SingleOwner() const;
 
+	cublasHandle_t Handle() const { return _handle; }
 	uint32_t Rows() const { return _rows; }
 	uint32_t Cols() const { return _cols; }
 
@@ -117,6 +124,8 @@ private:
 	void FreeMatrix();
 	void AssertSameDims(const CuMat &other) const;
 
+	CuMatInfo ToInfo() const;
+
 	Real *_dMat;
 	uint32_t *_refCt;
 	uint32_t _rows, _cols;
@@ -124,16 +133,62 @@ private:
 	cublasHandle_t _handle;
 };
 
-class CuScopedWeakTranspose
+struct CuMatInfo
 {
-private:
     friend class CuMat;
 
+    Real *_dMat;
+    uint32_t _rows, _cols;
+    CuStorageOrder _storageOrder;
+
+    CuMatInfo() : _dMat(NULL), _rows(0), _cols(0),
+                  _storageOrder(CuColMajor) { }
+
+private:
+    CuMatInfo(const CuMat &m)
+        : _dMat(m._dMat), _rows(m._rows), _cols(m._cols),
+          _storageOrder(m._storageOrder) { }
+};
+
+class CuScopedWeakTranspose
+{
+public:
     CuScopedWeakTranspose(const CuMat &mat);
 
-public:
     const CuMat &Mat;
 };
+
+class CuRowwiseOperator
+{
+public:
+    CuRowwiseOperator(const CuMat &mat);
+
+    const CuMat &Mat;
+
+    CuMat Sum() const;
+    template<typename ElemFn>
+    CuMat Sum(ElemFn fn) const;
+
+    template<typename Aggregator, typename ElemFn>
+    CuMat Agg(Aggregator agg, ElemFn fn) const;
+};
+
+class CuColwiseOperator
+{
+public:
+    CuColwiseOperator(const CuMat &mat);
+
+    const CuMat &Mat;
+
+    CuMat Sum() const;
+    template<typename ElemFn>
+    CuMat Sum(ElemFn fn) const;
+
+    template<typename Aggregator, typename ElemFn>
+    CuMat Agg(Aggregator agg, ElemFn fn) const;
+};
+
+
 
 CuMat operator*(const CuScopedWeakTranspose &a, const CuScopedWeakTranspose &b);
 
@@ -148,3 +203,4 @@ void ScaledMultiply(Real mulScale, const CuMat &a, const CuScopedWeakTranspose &
 void ScaledMultiply(Real mulScale, const CuScopedWeakTranspose &tA, const CuScopedWeakTranspose &tB, Real scaleDest, CuMat &dest);
 
 #include "cumat_kernels.cuh"
+#include "cumat_temp_agg.cuh"

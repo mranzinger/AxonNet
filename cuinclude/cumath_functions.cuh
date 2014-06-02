@@ -12,9 +12,6 @@
 #include <stdint.h>
 #include <assert.h>
 
-#define __CUDACC__
-#include <cuda_runtime_api.h>
-
 #include "cumath_unary_functions.cuh"
 #include "cumath_binary_functions.cuh"
 

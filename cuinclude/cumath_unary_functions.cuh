@@ -8,9 +8,6 @@
 
 #pragma once
 
-#define __CUDACC__
-#include <cuda_runtime_api.h>
-
 #include "cudev_helper.cuh"
 #include "math_defines.h"
 
