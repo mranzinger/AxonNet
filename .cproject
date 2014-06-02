@@ -49,8 +49,9 @@
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.113250635" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
 							<tool id="ai3.tool.cuda.nvcc.264843016" name="CUDA NVCC Compiler" superClass="ai3.tool.cuda.nvcc">
-								<option id="ai3.tool.cuda.nvcc.includes.incpath.1770768214" superClass="ai3.tool.cuda.nvcc.includes.incpath" valueType="includePath">
+								<option id="ai3.tool.cuda.nvcc.includes.incpath.1770768214" name="Include Paths (-I)" superClass="ai3.tool.cuda.nvcc.includes.incpath" valueType="includePath">
 									<listOptionValue builtIn="false" value="/usr/local/cuda-5.5/include"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/AxonNet/cuinclude}&quot;"/>
 								</option>
 								<inputType id="ai3.tool.cuda.nvcc.input.738655683" name="CUDA Input" superClass="ai3.tool.cuda.nvcc.input"/>
 							</tool>

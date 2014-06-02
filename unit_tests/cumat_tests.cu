@@ -149,6 +149,26 @@ TEST(CuMatTest, Add2)
     AssertMatrixEquivalence(hMat, hCorrect);
 }
 
+TEST(CuMatTest, Add3)
+{
+    cublasHandle_t handle = UTGetCublasHandle();
+
+    CuMat dA(handle, 10, 5),
+          dB(handle,  5, 10);
+
+    dA.SetConstant(1);
+    dB.SetConstant(-1);
+
+    dA += dB.Transpose();
+
+    CMatrix hMat;
+    dA.CopyToHost(hMat);
+
+    CMatrix hCorrect = CMatrix::Zero(10, 5);
+
+    AssertMatrixEquivalence(hMat, hCorrect);
+}
+
 TEST(CuMatTest, Mul)
 {
     cublasHandle_t handle = UTGetCublasHandle();
@@ -191,6 +211,52 @@ TEST(CuMatTest, Mul2)
     CMatrix hC = hA * hB;
 
     CuMat dC = dA * dB;
+
+    CMatrix hComp;
+    dC.CopyToHost(hComp);
+
+    AssertMatrixEquivalence(hComp, hC);
+}
+
+TEST(CuMatTest, Mul3)
+{
+    cublasHandle_t handle = UTGetCublasHandle();
+
+    CuMat dA(handle, 2000, 1000),
+          dB(handle, 2000, 128);
+
+    CMatrix hA = CMatrix::Random(2000, 1000),
+            hB = CMatrix::Random(2000, 128);
+
+    dA.CopyToDevice(hA);
+    dB.CopyToDevice(hB);
+
+    CMatrix hC = hA.transpose() * hB;
+
+    CuMat dC = dA.WeakTranspose() * dB;
+
+    CMatrix hComp;
+    dC.CopyToHost(hComp);
+
+    AssertMatrixEquivalence(hComp, hC);
+}
+
+TEST(CuMatTest, Mul4)
+{
+    cublasHandle_t handle = UTGetCublasHandle();
+
+    CuMat dA(handle, 1000, 2000),
+          dB(handle, 128, 2000);
+
+    CMatrix hA = CMatrix::Random(1000, 2000),
+            hB = CMatrix::Random(128, 2000);
+
+    dA.CopyToDevice(hA);
+    dB.CopyToDevice(hB);
+
+    CMatrix hC = hA * hB.transpose();
+
+    CuMat dC = dA * dB.WeakTranspose();
 
     CMatrix hComp;
     dC.CopyToHost(hComp);

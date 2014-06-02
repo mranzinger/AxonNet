@@ -15,8 +15,9 @@ CuMat::CuMat()
 
 CuMat::CuMat(cublasHandle_t handle,
 		     uint32_t rows, uint32_t cols,
-		     CuStorageOrder order)
-	: _handle(handle), _dMat(NULL), _rows(rows), _cols(cols), _storageOrder(order)
+		     CuStorageOrder storageOrder)
+	: _handle(handle), _dMat(NULL), _rows(rows), _cols(cols),
+	  _storageOrder(storageOrder)
 {
 	_refCt = new uint32_t(1);
 	
@@ -60,7 +61,7 @@ CuMat &CuMat::operator=(CuMat other)
 
 CuMat CuMat::Copy() const
 {
-	CuMat ret(_handle, _rows, _cols, _storageOrder);
+	CuMat ret(_handle, _rows, _cols);
 	
 	if (_dMat)
 	{
@@ -167,55 +168,7 @@ CuMat& CuMat::operator =(Real val)
     return *this;
 }
 
-CuMat operator+(const CuMat &a, const CuMat &b)
-{
-	CuMat ret;
-	a.BinaryExpr<false>(b, ret, CuPlus());
-	return ret;
-}
-CuMat operator-(const CuMat &a, const CuMat &b)
-{
-	CuMat ret;
-	a.BinaryExpr<false>(b, ret, CuMinus());
-	return ret;
-}
-CuMat operator*(const CuMat &a, const CuMat &b)
-{
-	static const float s_default = 1.0f;
-	static const float s_zero = 0.0f;
 
-	// Make sure the matrices are valid
-	assert(a._cols == b._rows);
-	assert(!a.Empty() && !b.Empty());
-	assert(a._handle == b._handle);
-
-	CuMat ret(a._handle, a._rows, b._cols);
-
-	cublasStatus_t status =
-			cublasSgemm_v2(a._handle, a.GetTransOrder(), b.GetTransOrder(),
-							a._rows, b._cols, a._cols,
-							&s_default, a._dMat, a._rows,
-							b._dMat, b._rows,
-							&s_zero,
-							ret._dMat,
-							ret._rows);
-
-	if (status != CUBLAS_STATUS_SUCCESS)
-		throw runtime_error("The matrix multiplication failed.");
-
-	return ret;
-}
-
-CuMat &operator+=(CuMat &a, const CuMat &b)
-{
-	a.BinaryExpr(b, CuPlus());
-	return a;
-}
-CuMat &operator-=(CuMat &a, const CuMat &b)
-{
-	a.BinaryExpr(b, CuMinus());
-	return a;
-}
 
 void CuMat::CoeffMultiply(Real val)
 {
@@ -237,23 +190,7 @@ void CuMat::CoeffMultiply(const CuMat& b, CuMat& dest) const
 	BinaryExpr<false>(b, dest, CuMultiply());
 }
 
-void CuMat::AddScaled(Real scaleThis, const CuMat& b, Real scaleB)
-{
-	AddScaled(scaleThis, b, scaleB, *this);
-}
 
-void CuMat::AddScaled(Real scaleThis, const CuMat& b, Real scaleB,
-		CuMat& dest) const
-{
-	AssertSameDims(b);
-
-	BinaryExpr<false>(b, dest, CuAddScaledBinary(scaleThis, scaleB));
-}
-
-void AddScaled(const CuMat &a, Real scaleA, const CuMat &b, Real scaleB, CuMat &dest)
-{
-    a.AddScaled(scaleA, b, scaleB, dest);
-}
 
 void CuMat::SetConstant(Real val)
 {
@@ -326,7 +263,32 @@ void CuMat::FreeMatrix()
 	cudaFree(_dMat);
 }
 
+CuMat CuMat::Transpose() const
+{
+    CuMat ret(*this);
 
+    swap(ret._rows, ret._cols);
+    ret._storageOrder = InverseOrder(_storageOrder);
+
+    return ret;
+}
+
+CuMat CuMat::HardTranspose() const
+{
+    CuMat ret(_handle, _rows, _cols, InverseOrder(_storageOrder));
+
+    UnaryExpr<false>(ret, CuIdentity());
+
+    swap(ret._rows, ret._cols);
+    ret._storageOrder = _storageOrder;
+
+    return ret;
+}
+
+CuScopedWeakTranspose CuMat::WeakTranspose() const
+{
+    return CuScopedWeakTranspose(*this);
+}
 
 void CuMat::AssertSameDims(const CuMat& other) const
 {
@@ -336,36 +298,6 @@ void CuMat::AssertSameDims(const CuMat& other) const
 		throw runtime_error("The specified matrix doesn't have the same number of columns as this one.");
 }
 
-CuStorageOrder CuMat::InverseOrder(CuStorageOrder order)
-{
-	switch (order)
-	{
-	case CuColMajor:
-		return CuRowMajor;
-	case CuRowMajor:
-		return CuColMajor;
-	default:
-		throw runtime_error("Invalid storage order");
-	}
-}
-
-
-
-
-
-cublasOperation_t CuMat::GetTransOrder() const
-{
-	switch (_storageOrder)
-	{
-	case CuColMajor:
-		return CUBLAS_OP_N;
-	case CuRowMajor:
-		return CUBLAS_OP_T;
-	default:
-		throw runtime_error("Invalid storage order");
-	}
-}
-
 void swap(CuMat &a, CuMat &b)
 {
 	swap(a._handle, b._handle);
@@ -373,24 +305,9 @@ void swap(CuMat &a, CuMat &b)
 	swap(a._rows, b._rows);
 	swap(a._cols, b._cols);
 	swap(a._refCt, b._refCt);
-	swap(a._storageOrder, b._storageOrder);
 }
 
-CuScopedWeakTranspose::CuScopedWeakTranspose(CuMat& mat)
-	: _mat(mat)
+CuScopedWeakTranspose::CuScopedWeakTranspose(const CuMat& mat)
+	: Mat(mat)
 {
-	Invert();
-}
-
-CuScopedWeakTranspose::~CuScopedWeakTranspose()
-{
-	// Undo the inversion
-	Invert();
-}
-
-void CuScopedWeakTranspose::Invert()
-{
-	swap(_mat._rows, _mat._cols);
-
-	_mat._storageOrder = CuMat::InverseOrder(_mat._storageOrder);
 }

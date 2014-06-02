@@ -44,6 +44,19 @@ enum CuStorageOrder
 	CuColMajor
 };
 
+inline CuStorageOrder InverseOrder(CuStorageOrder order)
+{
+    switch (order)
+    {
+    case CuRowMajor:
+        return CuColMajor;
+    case CuColMajor:
+        return CuRowMajor;
+    default:
+        throw std::runtime_error("Invalid storage order.");
+    }
+}
+
 template<CuStorageOrder order>
 __device__ inline unsigned int ElementIdx(unsigned int row, unsigned int col,
 						       unsigned int rows, unsigned int cols)

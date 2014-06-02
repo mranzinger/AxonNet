@@ -18,14 +18,14 @@
 #include "math_defines.h"
 #include "cumath_functions.cuh"
 
+class CuScopedWeakTranspose;
+
 class CuMat
 {
-	friend class CuScopedWeakTranspose;
-
 public:
 	CuMat();
 	CuMat(cublasHandle_t handle, uint32_t rows, uint32_t cols,
-		  CuStorageOrder order = CuColMajor);
+	      CuStorageOrder storageOrder = CuColMajor);
 	CuMat(const CuMat &other);
 	~CuMat();
 	CuMat &operator=(CuMat other);
@@ -39,7 +39,11 @@ public:
 
 	friend CuMat operator+(const CuMat &a, const CuMat &b);
 	friend CuMat operator-(const CuMat &a, const CuMat &b);
+
 	friend CuMat operator*(const CuMat &a, const CuMat &b);
+	friend CuMat operator*(const CuScopedWeakTranspose &a, const CuMat &b);
+	friend CuMat operator*(const CuMat &a, const CuScopedWeakTranspose &b);
+	friend CuMat operator*(const CuScopedWeakTranspose &a, const CuScopedWeakTranspose &b);
 
 	friend CuMat &operator+=(CuMat &a, const CuMat &b);
 	friend CuMat &operator-=(CuMat &a, const CuMat &b);
@@ -90,7 +94,9 @@ public:
 	void ResizeLike(const CuMat &like);
 	void Reshape(uint32_t rows, uint32_t cols);
 
-	static CuStorageOrder InverseOrder(CuStorageOrder order);
+	CuMat Transpose() const;
+	CuMat HardTranspose() const;
+	CuScopedWeakTranspose WeakTranspose() const;
 
 	friend void swap(CuMat &a, CuMat &b);
 	
@@ -99,7 +105,6 @@ private:
 	void AllocateMatrix();
 	void FreeMatrix();
 	void AssertSameDims(const CuMat &other) const;
-	cublasOperation_t GetTransOrder() const;
 
 	Real *_dMat;
 	uint32_t *_refCt;
@@ -111,14 +116,12 @@ private:
 class CuScopedWeakTranspose
 {
 private:
-	CuMat &_mat;
+    friend class CuMat;
+
+	CuScopedWeakTranspose(const CuMat &mat);
 
 public:
-	CuScopedWeakTranspose(CuMat &mat);
-	~CuScopedWeakTranspose();
-
-private:
-	void Invert();
+	const CuMat &Mat;
 };
 
 #include "cumat_kernels.cuh"
