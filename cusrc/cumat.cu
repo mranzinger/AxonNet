@@ -13,6 +13,12 @@ CuMat::CuMat()
 	_refCt = new uint32_t(1);
 }
 
+CuMat::CuMat(cublasHandle_t handle)
+    : _handle(handle), _dMat(NULL), _rows(0), _cols(0), _storageOrder(CuColMajor)
+{
+    _refCt = new uint32_t(1);
+}
+
 CuMat::CuMat(cublasHandle_t handle,
 		     uint32_t rows, uint32_t cols,
 		     CuStorageOrder storageOrder)
