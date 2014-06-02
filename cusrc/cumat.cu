@@ -182,6 +182,7 @@ CuMat operator-(const CuMat &a, const CuMat &b)
 CuMat operator*(const CuMat &a, const CuMat &b)
 {
 	static const float s_default = 1.0f;
+	static const float s_zero = 0.0f;
 
 	// Make sure the matrices are valid
 	assert(a._cols == b._rows);
@@ -195,9 +196,9 @@ CuMat operator*(const CuMat &a, const CuMat &b)
 							a._rows, b._cols, a._cols,
 							&s_default, a._dMat, a._rows,
 							b._dMat, b._rows,
-							NULL,
-							NULL,
-							0);
+							&s_zero,
+							ret._dMat,
+							ret._rows);
 
 	if (status != CUBLAS_STATUS_SUCCESS)
 		throw runtime_error("The matrix multiplication failed.");
