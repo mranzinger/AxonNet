@@ -332,3 +332,5 @@ CuMatInfo CuMat::ToInfo() const
 {
     return CuMatInfo(*this);
 }
+
+

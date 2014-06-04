@@ -46,6 +46,20 @@ struct CuPow
 		return pow(a, b);
 	}
 };
+struct CuMax
+{
+	__device__ Real operator()(Real a, Real b) const
+	{
+		return max(a, b);
+	}
+};
+struct CuMin
+{
+	__device__ Real operator()(Real a, Real b) const
+	{
+		return min(a, b);
+	}
+};
 struct CuAddScaledBinary
 {
 	Real ScaleA, ScaleB;

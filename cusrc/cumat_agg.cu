@@ -22,4 +22,24 @@ CuMat CuColwiseOperator::Sum() const
     return Sum(CuIdentity());
 }
 
+CuMat CuRowwiseOperator::Max() const
+{
+	return Max(CuIdentity());
+}
+
+CuMat CuRowwiseOperator::Min() const
+{
+	return Min(CuIdentity());
+}
+
+CuMat CuColwiseOperator::Max() const
+{
+	return Max(CuIdentity());
+}
+
+CuMat CuColwiseOperator::Min() const
+{
+	return Min(CuIdentity());
+}
+
 

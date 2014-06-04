@@ -41,6 +41,55 @@ enum CuStorageOrder
 	CuColMajor
 };
 
+template<bool RequiresCoordinates>
+struct CuFunctorCaller_t
+{
+	template<typename UnaryFn>
+	__device__ static Real Call(Real val, uint32_t row, uint32_t col, const UnaryFn &fn)
+	{
+		return fn(val);
+	}
+	template<typename BinaryFn>
+	__device__ static Real Call(Real a, Real b, uint32_t row, uint32_t col, const BinaryFn &fn)
+	{
+		return fn(a, b);
+	}
+	template<typename TrinaryFn>
+	__device__ static Real Call(Real a, Real b, Real c,
+							    uint32_t row, uint32_t col, const TrinaryFn &fn)
+	{
+		return fn(a, b, c);
+	}
+};
+
+template<>
+struct CuFunctorCaller_t<true>
+{
+	template<typename UnaryFn>
+	__device__ static Real Call(Real val, uint32_t row, uint32_t col, const UnaryFn &fn)
+	{
+		return fn(val, row, col);
+	}
+	template<typename BinaryFn>
+	__device__ static Real Call(Real a, Real b, uint32_t row, uint32_t col, const BinaryFn &fn)
+	{
+		return fn(a, b, row, col);
+	}
+	template<typename TrinaryFn>
+	__device__ static Real Call(Real a, Real b, Real c,
+							    uint32_t row, uint32_t col, const TrinaryFn &fn)
+	{
+		return fn(a, b, c, row, col);
+	}
+};
+
+template<typename T>
+struct CuFunctorCaller
+	: CuFunctorCaller_t<CuFunctorTraits<T>::RequiresCoordinates>
+{
+
+};
+
 inline CuStorageOrder InverseOrder(CuStorageOrder order)
 {
     switch (order)
@@ -80,7 +129,8 @@ __global__ void DApplyUnaryFn(const Real *pVecSrc, Real *pVecTarget,
 	const unsigned int srcIdx = ElementIdx<orderSrc>(row, col, rows, cols),
 					   destIdx = ElementIdx<orderDest>(row, col, rows, cols);
 
-	const Real srcVal = fn(pVecSrc[srcIdx]);
+	const Real srcVal = CuFunctorCaller<UnaryFn>::Call(pVecSrc[srcIdx], row, col, fn);
+
 	Real &destVal = pVecTarget[destIdx];
 
 	if (Add)
@@ -110,7 +160,11 @@ __global__ void DApplyBinaryFn(const Real *pVecA, const Real *pVecB,
 					   idxB = ElementIdx<orderB>(row, col, rows, cols),
 					   idxDest = ElementIdx<orderDest>(row, col, rows, cols);
 
-	const Real srcVal = fn(pVecA[idxA], pVecB[idxB]);
+	const Real srcVal = CuFunctorCaller<BinaryFn>::Call(
+								pVecA[idxA],
+								pVecB[idxB],
+								row, col, fn);
+
 	Real &destVal = pVecTarget[idxDest];
 
 	if (Add)
@@ -141,7 +195,12 @@ __global__ void DApplyTrinaryFn(const Real *pVecA, const Real *pVecB, const Real
 					   idxC = ElementIdx<orderC>(row, col, rows, cols),
 					   idxDest = ElementIdx<orderDest>(row, col, rows, cols);
 
-	const Real srcVal = fn(pVecA[idxA], pVecB[idxB], pVecC[idxC]);
+
+	const Real srcVal = CuFunctorCaller<TrinaryFn>::Call(
+								pVecA[idxA],
+								pVecB[idxB],
+								pVecC[idxC],
+								row, col, fn);
 	Real &destVal = pVecTarget[idxDest];
 
 	if (Add)

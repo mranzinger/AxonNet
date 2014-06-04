@@ -311,7 +311,7 @@ TEST(CuMatTest, MulCuda)
     CuMat dC = dA * dB;
 }
 
-/*TEST(CuMatTest, MulEigenHuge)
+TEST(CuMatTest, MulEigenHuge)
 {
     CMatrix hA = CMatrix::Constant(10000, 20000, 2),
             hB = CMatrix::Constant(20000, 128, 4);
@@ -330,7 +330,7 @@ TEST(CuMatTest, MulCudaHuge)
     dB.SetConstant(4);
 
     CuMat dC = dA * dB;
-}*/
+}
 
 TEST(CuMatTest, AddScaled)
 {

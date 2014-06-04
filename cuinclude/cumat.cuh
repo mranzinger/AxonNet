@@ -172,6 +172,14 @@ public:
     template<typename ElemFn>
     CuMat Sum(ElemFn fn) const;
 
+    CuMat Max() const;
+    template<typename ElemFn>
+    CuMat Max(ElemFn fn) const;
+
+    CuMat Min() const;
+    template<typename ElemFn>
+    CuMat Min(ElemFn fn) const;
+
     template<typename Aggregator, typename ElemFn>
     CuMat Agg(Aggregator agg, ElemFn fn) const;
 };
@@ -186,6 +194,14 @@ public:
     CuMat Sum() const;
     template<typename ElemFn>
     CuMat Sum(ElemFn fn) const;
+
+    CuMat Max() const;
+    template<typename ElemFn>
+    CuMat Max(ElemFn fn) const;
+
+    CuMat Min() const;
+    template<typename ElemFn>
+    CuMat Min(ElemFn fn) const;
 
     template<typename Aggregator, typename ElemFn>
     CuMat Agg(Aggregator agg, ElemFn fn) const;
@@ -203,7 +219,8 @@ CuMat ScaledMultiply(Real scale, const CuScopedWeakTranspose &tA, const CuScoped
 void ScaledMultiply(Real mulScale, const CuMat &a, const CuMat &b, Real scaleDest, CuMat &dest);
 void ScaledMultiply(Real mulScale, const CuScopedWeakTranspose &tA, const CuMat &b, Real scaleDest, CuMat &dest);
 void ScaledMultiply(Real mulScale, const CuMat &a, const CuScopedWeakTranspose &tB, Real scaleDest, CuMat &dest);
-void ScaledMultiply(Real mulScale, const CuScopedWeakTranspose &tA, const CuScopedWeakTranspose &tB, Real scaleDest, CuMat &dest);
+void ScaledMultiply(Real mulScale, const CuScopedWeakTranspose &tA,
+		const CuScopedWeakTranspose &tB, Real scaleDest, CuMat &dest);
 
 #include "cumat_kernels.cuh"
 #include "cumat_temp_agg.cuh"

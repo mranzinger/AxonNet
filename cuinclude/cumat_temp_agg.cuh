@@ -118,6 +118,30 @@ CuMat CuColwiseOperator::Sum(ElemFn fn) const
     return Agg(CuPlus(), fn);
 }
 
+template<typename ElemFn>
+CuMat CuRowwiseOperator::Max(ElemFn fn) const
+{
+	return Agg(CuMax(), fn);
+}
+
+template<typename ElemFn>
+CuMat CuColwiseOperator::Max(ElemFn fn) const
+{
+	return Agg(CuMax(), fn);
+}
+
+template<typename ElemFn>
+CuMat CuRowwiseOperator::Min(ElemFn fn) const
+{
+	return Agg(CuMin(), fn);
+}
+
+template<typename ElemFn>
+CuMat CuColwiseOperator::Min(ElemFn fn) const
+{
+	return Agg(CuMin(), fn);
+}
+
 template<typename Aggregator, typename ElemFn>
 CuMat CuRowwiseOperator::Agg(Aggregator agg, ElemFn fn) const
 {
@@ -133,3 +157,5 @@ CuMat CuColwiseOperator::Agg(Aggregator agg, ElemFn fn) const
                           Incrementer<1, 0>(),
                           agg, fn);
 }
+
+

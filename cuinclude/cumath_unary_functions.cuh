@@ -11,6 +11,18 @@
 #include "cudev_helper.cuh"
 #include "math_defines.h"
 
+template<typename T>
+struct CuFunctorTraits
+{
+	// Informs the CUDA kernel on whether or not the function
+	// requires the coordinates to function properly.
+	// If it does, the expected function signature is:
+	// (Real val..., uint32_t row, uint32_t col)
+	// Otherwise:
+	// (Real val...)
+	static const bool RequiresCoordinates = false;
+};
+
 // Basic Math Functions
 struct CuSquare
 {
