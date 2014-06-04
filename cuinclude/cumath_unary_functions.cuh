@@ -202,3 +202,14 @@ struct CuZero
         return 0.0f;
     }
 };
+struct CuScalarAdd
+{
+    Real _val;
+
+    CuScalarAdd(Real val) : _val(val) { }
+
+    __device__ Real operator()(Real val)
+    {
+        return val + _val;
+    }
+};

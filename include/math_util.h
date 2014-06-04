@@ -32,6 +32,7 @@ inline Vector SquareV(const Vector &v)
 	return v.unaryExpr(&Square<Real>);
 }
 
+#ifndef _CUDA_COMPILE_
 template<typename IterType>
 class Range
 {
@@ -55,6 +56,7 @@ Range<IterType> make_range(IterType begin, IterType end)
 {
 	return Range<IterType>(std::move(begin), std::move(end));
 }
+#endif
 
 inline void MaxBinarize(CMatrix &mat)
 {
@@ -98,6 +100,4 @@ inline size_t EqCount(const CMatrix &a, const CMatrix &b)
 
 	return ret;
 }
-
-#include "matrix_math.h"
 

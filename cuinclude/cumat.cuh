@@ -69,6 +69,8 @@ public:
 	friend CuMat &operator-=(CuMat &a, const CuMat &b);
 
 	CuMat &operator=(Real val);
+	CuMat &operator*=(Real val);
+	CuMat &operator/=(Real val);
 
 	void SetConstant(Real val);
 
@@ -208,7 +210,13 @@ public:
     CuMat Agg(Aggregator agg, ElemFn fn) const;
 };
 
-
+CuMat operator*(const CuMat &m, Real scale);
+CuMat operator*(Real scale, const CuMat &m);
+CuMat operator/(const CuMat &m, Real scale);
+CuMat operator+(const CuMat &m, Real val);
+CuMat operator+(Real val, const CuMat &m);
+CuMat operator-(const CuMat &m, Real val);
+CuMat operator-(Real val, const CuMat &m);
 
 CuMat operator*(const CuScopedWeakTranspose &a, const CuScopedWeakTranspose &b);
 

@@ -7,15 +7,22 @@
 
 #include "weights.h"
 
+CWeights::CWeights()
+{
+    SetDefaults();
+}
+
 CWeights::CWeights(size_t numInputs, size_t numOutputs)
 		: Weights(numOutputs, numInputs), Biases(numOutputs)
 {
+    SetDefaults();
 	RandInit();
 }
 
-CWeights::CWeights(RMatrix weights, Vector bias)
+CWeights::CWeights(CMatrix weights, Vector bias)
 	: Weights(std::move(weights)), Biases(std::move(bias))
 {
+    SetDefaults();
 	Init();
 }
 
@@ -66,6 +73,14 @@ void CWeights::RandInit()
 	FanInitializeWeights(Biases);
 
 	Init();
+}
+
+void CWeights::SetDefaults()
+{
+    LearningRate = 0.01f;
+    Momentum = 0.9f;
+    WeightDecay = 0.0005;
+    DynamicLearningRate = 1.0f;
 }
 
 void CWeights::Init()

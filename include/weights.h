@@ -12,26 +12,29 @@
 class CWeights
 {
 public:
-	RMatrix Weights;
+	CMatrix Weights;
 	Vector Biases;
 
-	RMatrix WeightsIncrement;
+	CMatrix WeightsIncrement;
 	Vector BiasIncrement;
 
-	RMatrix WeightsGrad;
+	CMatrix WeightsGrad;
 	Vector BiasGrad;
 
-	Real LearningRate = 0.01f;
-	Real Momentum = 0.9;
-	Real WeightDecay = 0.0005;
+	Real LearningRate;
+	Real Momentum;
+	Real WeightDecay;
 
-	Real DynamicLearningRate = 1;
+	Real DynamicLearningRate;
 
-	CWeights() = default;
+	CWeights();
 	CWeights(size_t numInputs, size_t numOutputs);
-	CWeights(RMatrix weights, Vector bias);
+	CWeights(CMatrix weights, Vector bias);
 	CWeights(const CWeights &other);
+
+#ifndef _CUDA_COMPILE_
 	CWeights(CWeights &&other);
+#endif
 
 	CWeights &operator=(CWeights other);
 
@@ -39,6 +42,7 @@ public:
 
 	void RandInit();
 	void Init();
+	void SetDefaults();
 
 	void ApplyGradient();
 };

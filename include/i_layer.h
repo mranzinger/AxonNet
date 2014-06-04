@@ -51,7 +51,5 @@ public:
 	virtual void SetNet(NeuralNet *net) = 0;
 };
 
-
-
 AXON_SERIALIZE_BASE_TYPE(ILayer)
 AXON_SERIALIZE_BASE_TYPE(LayerConfig)
