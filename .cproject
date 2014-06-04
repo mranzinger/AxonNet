@@ -27,7 +27,7 @@
 									<listOptionValue builtIn="false" value="/home/mike/dev/ThirdParty/boost_1_55_0/include"/>
 									<listOptionValue builtIn="false" value="/home/mike/dev/ThirdParty/gtest/include"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/AxonNet/include}&quot;"/>
-									<listOptionValue builtIn="false" value="/usr/local/cuda-5.5/include"/>
+									<listOptionValue builtIn="false" value="/usr/local/cuda/include"/>
 								</option>
 								<option id="ai3.tool.cuda.cpp_compiler.option.preprocessor.def.1728548911" name="Defined Symbols (-D)" superClass="ai3.tool.cuda.cpp_compiler.option.preprocessor.def" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="__GXX_EXPERIMENTAL_CXX0X__"/>
@@ -41,7 +41,7 @@
 									<listOptionValue builtIn="false" value="/home/mike/dev/ThirdParty/gtest/include"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/AxonNet/include}&quot;"/>
 									<listOptionValue builtIn="false" value="/home/mike/dev/ThirdParty/boost_1_55_0/include"/>
-									<listOptionValue builtIn="false" value="/usr/local/cuda-5.5/include"/>
+									<listOptionValue builtIn="false" value="/usr/local/cuda/include"/>
 								</option>
 								<option id="gnu.c.compiler.option.preprocessor.def.symbols.1168937495" name="Defined symbols (-D)" superClass="gnu.c.compiler.option.preprocessor.def.symbols" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="__GXX_EXPERIMENTAL_CXX0X__"/>
@@ -50,8 +50,8 @@
 							</tool>
 							<tool id="ai3.tool.cuda.nvcc.264843016" name="CUDA NVCC Compiler" superClass="ai3.tool.cuda.nvcc">
 								<option id="ai3.tool.cuda.nvcc.includes.incpath.1770768214" name="Include Paths (-I)" superClass="ai3.tool.cuda.nvcc.includes.incpath" valueType="includePath">
-									<listOptionValue builtIn="false" value="/usr/local/cuda-5.5/include"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/AxonNet/cuinclude}&quot;"/>
+									<listOptionValue builtIn="false" value="/usr/local/cuda/include"/>
 								</option>
 								<inputType id="ai3.tool.cuda.nvcc.input.738655683" name="CUDA Input" superClass="ai3.tool.cuda.nvcc.input"/>
 							</tool>
@@ -72,7 +72,7 @@
 									<listOptionValue builtIn="false" value="/home/mike/dev/ThirdParty/eigen-3-2-1"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/AxonNet/include}&quot;"/>
 									<listOptionValue builtIn="false" value="/home/mike/dev/ThirdParty/gtest/include"/>
-									<listOptionValue builtIn="false" value="/usr/local/cuda-5.5/include"/>
+									<listOptionValue builtIn="false" value="/usr/local/cuda/include"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.1598350700" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
 							</tool>
