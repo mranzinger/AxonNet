@@ -311,7 +311,7 @@ TEST(CuMatTest, MulCuda)
     CuMat dC = dA * dB;
 }
 
-/*TEST(CuMatTest, MulEigenHuge)
+TEST(CuMatTest, MulEigenHuge)
 {
     CMatrix hA = CMatrix::Constant(10000, 20000, 2),
             hB = CMatrix::Constant(20000, 128, 4);
@@ -330,7 +330,9 @@ TEST(CuMatTest, MulCudaHuge)
     dB.SetConstant(4);
 
     CuMat dC = dA * dB;
-}*/
+
+    cudaDeviceSynchronize();
+}
 
 TEST(CuMatTest, AddScaled)
 {
@@ -422,10 +424,23 @@ struct CuSoftmaxExpr
 	CuSoftmaxExpr(const CuMat &mat)
 		: _maxBuff(mat.Buff()) { }
 
-	Real operator()(Real value, uint32_t row, uint32_t col) const
+	__device__ Real operator()(Real value, uint32_t row, uint32_t col) const
 	{
 		return exp(value - _maxBuff[col]);
 	}
+};
+
+struct CuSoftmaxDiv
+{
+    const Real *_invSumBuff;
+
+    CuSoftmaxDiv(const CuMat &mat)
+        : _invSumBuff(mat.Buff()) { }
+
+    __device__ Real operator()(Real value, uint32_t row, uint32_t col) const
+    {
+        return value * _invSumBuff[col];
+    }
 };
 
 TEST(CuMatTest, Softmax)
@@ -454,7 +469,21 @@ TEST(CuMatTest, Softmax)
 	// Device Computation
 	CuMat dIpMax = dInput.Colwise().Max();
 
+	CuMat dSoftmax;
+	dInput.UnaryExpr<false>(dSoftmax, CuSoftmaxExpr(dIpMax));
 
+	// Sum the columns, and also take their inverse to make the
+	// subsequent operations faster
+	CuMat dExpMatSum = dSoftmax.Colwise().Sum();
+	dExpMatSum.UnaryExpr(CuInverse());
+
+	// Now divide all of the elements by the columnar sums
+	dSoftmax.UnaryExpr(CuSoftmaxDiv(dExpMatSum));
+
+	CMatrix hCompSoftmax;
+	dSoftmax.CopyToHost(hCompSoftmax);
+
+	AssertMatrixEquivalence(hSoftmax, hCompSoftmax);
 }
 
 

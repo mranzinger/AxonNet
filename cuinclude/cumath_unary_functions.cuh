@@ -8,20 +8,7 @@
 
 #pragma once
 
-#include "cudev_helper.cuh"
-#include "math_defines.h"
-
-template<typename T>
-struct CuFunctorTraits
-{
-	// Informs the CUDA kernel on whether or not the function
-	// requires the coordinates to function properly.
-	// If it does, the expected function signature is:
-	// (Real val..., uint32_t row, uint32_t col)
-	// Otherwise:
-	// (Real val...)
-	static const bool RequiresCoordinates = false;
-};
+#include "cumath_traits.cuh"
 
 // Basic Math Functions
 struct CuSquare
@@ -51,6 +38,13 @@ struct CuExp
 	{
 		return exp(val);
 	}
+};
+struct CuInverse
+{
+    __device__ Real operator()(Real val) const
+    {
+        return 1.0f / val;
+    }
 };
 template<int Pow>
 struct CuIntPow

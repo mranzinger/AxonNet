@@ -8,8 +8,7 @@
 
 #pragma once
 
-#include "cudev_helper.cuh"
-#include "math_defines.h"
+#include "cumath_traits.cuh"
 
 struct CuPlus
 {
