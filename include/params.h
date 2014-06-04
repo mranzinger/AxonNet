@@ -5,93 +5,51 @@
 
 #include "math_util.h"
 
-struct NEURAL_NET_API Params
+class CuMat;
+class Params;
+
+void swap(Params &a, Params &b);
+
+class NEURAL_NET_API Params
 {
 public:
-	enum LayoutKind { Packed, Planar };
+	uint32_t Width;
+	uint32_t Height;
+	uint32_t Depth;
 
-	size_t Width;
-	size_t Height;
-	size_t Depth;
-
-	LayoutKind Layout;
+	uint32_t Rows;
+	uint32_t Cols;
 
 	/*
 	 * Input data matrix. Supports mini-batch when the number of
 	 * columns > 1. Data is stored column major, so accessing the kth element
 	 * of the ith column is (i * #rows) + k
 	 */
-	CMatrix Data;
+	CMatrix *HostMat;
 
-	Params() : Width(0), Height(0), Depth(0), Layout(Packed) { }
-	Params(size_t width, size_t height, size_t depth, CMatrix data, LayoutKind layout = Packed)
-		: Width(width), Height(height), Depth(depth), Layout(layout)
-	{
-		Data.swap(data);
-	}
-	Params(CMatrix data)
-		: Width(data.rows()), Height(1), Depth(1), Layout(Packed)
-	{
-		Data.swap(data);
-	}
-	Params(const Params &other)
-		: Width(other.Width), Height(other.Height), Depth(other.Depth),
-		  Layout(other.Layout), Data(other.Data) 
-	{ 
-	}
-	Params(const Params &other, CMatrix data)
-		: Width(other.Width), Height(other.Height), Depth(other.Depth),
-		  Layout(other.Layout)
-	{
-		Data.swap(data);
-	}
-	Params(Params &&other)
-	{
-		swap(*this, other);
-	}
+	CuMat *CudaMat;
 
-	Params &operator=(Params other)
-	{
-		swap(*this, other);
-		return *this;
-	}
-	Params &operator=(CMatrix data)
-	{
-		Width = data.size();
-		Height = 1;
-		Depth = 1;
-		Layout = Packed;
-		Data.swap(data);
-		return *this;
-	}
+	Params();
+	explicit Params(CMatrix *hostMat);
+	explicit Params(CuMat *cudaMat);
+	Params(size_t width, size_t height, size_t depth, CMatrix *hostMat);
+	Params(size_t width, size_t height, size_t depth, CuMat *cudaMat);
+	Params(const Params &other);
+	Params(const Params &like, CMatrix *hostMat);
+	Params(const Params &like, CuMat *cudaMat);
 
-	bool operator==(const Params &other) const
-	{
-		return Width == other.Width && Height == other.Height && Depth == other.Depth &&
-			Data == other.Data;
-	}
-	bool operator!=(const Params &other) const
-	{
-		return !(*this == other);
-	}
+#ifndef _CUDA_COMPILE_
+	Params(Params &&other);
+#endif
 
-	size_t size() const
-	{
-		return Width * Height * Depth;
-	}
+	~Params();
 
-	size_t BatchSize() const { return Data.cols(); }
+	Params &operator=(Params other);
 
-	friend void swap(Params &a, Params &b)
-	{
-		using std::swap;
+	friend void swap(Params &a, Params &b);
 
-		swap(a.Width, b.Width);
-		swap(a.Height, b.Height);
-		swap(a.Depth, b.Depth);
-		swap(a.Layout, b.Layout);
-		a.Data.swap(b.Data);
-	}
+private:
+	uint32_t *_refCt;
 };
 
 typedef std::vector<Params> MultiParams;
