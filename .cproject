@@ -53,6 +53,9 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/AxonNet/cuinclude}&quot;"/>
 									<listOptionValue builtIn="false" value="/usr/local/cuda/include"/>
 								</option>
+								<option id="ai3.tool.cuda.nvcc.option.preprocessor.def.900692261" name="Defined Symbols" superClass="ai3.tool.cuda.nvcc.option.preprocessor.def" valueType="definedSymbols">
+									<listOptionValue builtIn="false" value="__GXX_EXPERIMENTAL_CXX0X__"/>
+								</option>
 								<inputType id="ai3.tool.cuda.nvcc.input.738655683" name="CUDA Input" superClass="ai3.tool.cuda.nvcc.input"/>
 							</tool>
 							<tool id="ai3.tool.cuda.c_linker.1845138957" name="C Linker" superClass="ai3.tool.cuda.c_linker"/>

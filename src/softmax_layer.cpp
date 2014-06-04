@@ -24,7 +24,7 @@ SoftmaxLayer::SoftmaxLayer(string name, string inputName)
 Params SoftmaxLayer::SCompute(const Params &input, bool isTraining)
 {
 	// Getting the max value and shifting the dimension is a neat trick to prevent overflow
-	// NOTE: Undeflow may still occur though, but that is far less dangerous :/
+	// NOTE: Underflow may still occur though, but that is far less dangerous :/
 
 	Params ret(input, CMatrix(input.Data.rows(), input.Data.cols()));
 

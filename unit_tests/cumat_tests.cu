@@ -399,7 +399,19 @@ TEST(CuMatTest, SumRows)
 	AssertMatrixEquivalence(hComp, hCorrect);
 }
 
+TEST(CuMatTest, Softmax)
+{
+	cublasHandle_t handle = UTGetCublasHandle();
 
+	CuMat dInput(handle, 1000, 128);
+
+	CMatrix hInput = CMatrix::Random(1000, 128);
+
+	// Get the maximum value of each column
+	CMatrix hIpMax = hInput.colwise().maxCoeff();
+
+
+}
 
 
 
