@@ -26,6 +26,38 @@ CuWeights::CuWeights(CuMat weights, CuMat bias)
     Init();
 }
 
+CuWeights::CuWeights(cublasHandle_t handle, const CWeights& hWeights)
+    : Weights(handle, hWeights.Weights),
+      Biases(handle, hWeights.Biases),
+      WeightsIncrement(handle, hWeights.WeightsIncrement),
+      BiasIncrement(handle, hWeights.BiasIncrement),
+      LearningRate(hWeights.LearningRate),
+      Momentum(hWeights.Momentum),
+      WeightDecay(hWeights.WeightDecay),
+      DynamicLearningRate(hWeights.DynamicLearningRate),
+      WeightsGrad(handle),
+      BiasGrad(handle)
+{
+    WeightsGrad.ResizeLike(Weights);
+    BiasGrad.ResizeLike(Biases);
+}
+
+CWeights CuWeights::ToHost() const
+{
+    CWeights ret;
+    CopyToHost(ret);
+
+    ret.WeightsGrad.resizeLike(ret.Weights);
+    ret.BiasGrad.resizeLike(ret.Biases);
+
+    ret.LearningRate = LearningRate;
+    ret.Momentum = Momentum;
+    ret.WeightDecay = WeightDecay;
+    ret.DynamicLearningRate = DynamicLearningRate;
+
+    return ret;
+}
+
 void CuWeights::RandInit()
 {
     CMatrix hWeights(Weights.Rows(), Weights.Cols());
@@ -60,6 +92,24 @@ void CuWeights::SetDefaults()
     Momentum = 0.9f;
     WeightDecay = 0.0005;
     DynamicLearningRate = 1.0f;
+}
+
+void CuWeights::CopyToDevice(const CWeights& hWeights)
+{
+    Weights.CopyToDevice(hWeights.Weights);
+    Biases.CopyToDevice(hWeights.Biases);
+
+    WeightsIncrement.CopyToDevice(hWeights.WeightsIncrement);
+    BiasIncrement.CopyToDevice(hWeights.BiasIncrement);
+}
+
+void CuWeights::CopyToHost(CWeights& hWeights) const
+{
+    Weights.CopyToHost(hWeights.Weights);
+    Biases.CopyToHost(hWeights.Biases);
+
+    WeightsIncrement.CopyToHost(hWeights.WeightsIncrement);
+    BiasIncrement.CopyToHost(hWeights.BiasIncrement);
 }
 
 void CuWeights::ApplyGradient()

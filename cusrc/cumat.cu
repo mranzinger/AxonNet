@@ -30,6 +30,39 @@ CuMat::CuMat(cublasHandle_t handle,
 	AllocateMatrix();
 }
 
+CuMat::CuMat(cublasHandle_t handle, const CMatrix& hMat)
+    : _handle(handle), _rows(hMat.rows()), _cols(hMat.cols()),
+      _storageOrder(CuColMajor)
+{
+    _refCt = new uint32_t(1);
+
+    AllocateMatrix();
+
+    CopyToDevice(hMat);
+}
+
+CuMat::CuMat(cublasHandle_t handle, const RMatrix& hMat)
+    : _handle(handle), _rows(hMat.rows()), _cols(hMat.cols()),
+      _storageOrder(CuRowMajor)
+{
+    _refCt = new uint32_t(1);
+
+    AllocateMatrix();
+
+    CopyToDevice(hMat);
+}
+
+CuMat::CuMat(cublasHandle_t handle, const Vector& hVec)
+    : _handle(handle), _rows(hVec.rows()), _cols(hVec.cols()),
+      _storageOrder(CuRowMajor)
+{
+    _refCt = new uint32_t(1);
+
+    AllocateMatrix();
+
+    CopyToDevice(hVec);
+}
+
 CuMat::CuMat(const CuMat &other)
 	: _handle(other._handle), _dMat(other._dMat), _rows(other._rows), _cols(other._cols),
 	  _refCt(other._refCt), _storageOrder(other._storageOrder)
@@ -94,16 +127,43 @@ void CuMat::CopyToDevice(const CMatrix &hMatrix)
 {
 	Resize(hMatrix.rows(), hMatrix.cols());
 
-	assert(_rows == hMatrix.rows() &&
-           _cols == hMatrix.cols());
-	
-	CopyToDevice(hMatrix.data());
+	if (_storageOrder == CuColMajor)
+	{
+	    CopyToDevice(hMatrix.data());
+	}
+	else
+	{
+	    CuMat dColMat(_handle, hMatrix);
+
+	    // Copy the row-major matrix into this column
+        // major matrix
+	    BinaryExpr(dColMat, CuTakeRight());
+	}
 }
 
 void CuMat::CopyToDevice(const RMatrix &hMatrix)
 {
-	CMatrix cMat = hMatrix;
-	CopyToDevice(cMat);
+    Resize(hMatrix.rows(), hMatrix.cols());
+
+    if (_storageOrder == CuRowMajor)
+    {
+        CopyToDevice(hMatrix.data());
+    }
+    else
+    {
+        CuMat dRowMat(_handle, hMatrix);
+
+        // Copy the row-major matrix into this column
+        // major matrix
+        BinaryExpr(dRowMat, CuTakeRight());
+    }
+}
+
+void CuMat::CopyToDevice(const Vector &hVector)
+{
+    Resize(hVector.size(), 1);
+
+    CopyToDevice(hVector.data());
 }
 
 void CuMat::CopyToDeviceAsync(const Real *hMatrix, cudaStream_t stream)
@@ -149,6 +209,18 @@ void CuMat::CopyToHost(CMatrix& hMatrix) const
 	}
 
 	CopyToHost(hMatrix.data());
+}
+
+void CuMat::CopyToHost(Vector& hVector) const
+{
+    assert(_cols == 1);
+
+    if (_rows != hVector.size())
+    {
+        hVector.resize(_rows);
+    }
+
+    CopyToHost(hVector.data());
 }
 
 void CuMat::CopyToHost(RMatrix& hMatrix) const
@@ -331,6 +403,8 @@ CuColwiseOperator CuMat::Colwise() const
 {
 	return CuColwiseOperator(*this);
 }
+
+
 
 CuMatInfo CuMat::ToInfo() const
 {

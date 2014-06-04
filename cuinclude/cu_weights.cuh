@@ -31,6 +31,13 @@ public:
     CuWeights(cublasHandle_t handle, uint32_t numInputs, uint32_t numOutputs);
     CuWeights(CuMat weights, CuMat bias);
 
+    CuWeights(cublasHandle_t handle, const CWeights &hWeights);
+
+    CWeights ToHost() const;
+
+    void CopyToDevice(const CWeights &hWeights);
+    void CopyToHost(CWeights &hWeights) const;
+
     void RandInit();
     void Init();
     void SetDefaults();

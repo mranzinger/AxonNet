@@ -87,4 +87,18 @@ struct CuMulScaledBinary
 		return Scale * a * b;
 	}
 };
+struct CuTakeLeft
+{
+    __device__ Real operator()(Real a, Real b) const
+    {
+        return a;
+    }
+};
+struct CuTakeRight
+{
+    __device__ Real operator()(Real a, Real b) const
+    {
+        return b;
+    }
+};
 

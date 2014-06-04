@@ -34,6 +34,9 @@ public:
 	explicit CuMat(cublasHandle_t handle);
 	CuMat(cublasHandle_t handle, uint32_t rows, uint32_t cols,
 	      CuStorageOrder storageOrder = CuColMajor);
+	CuMat(cublasHandle_t handle, const CMatrix &hMat);
+	CuMat(cublasHandle_t handle, const RMatrix &hMat);
+	CuMat(cublasHandle_t handle, const Vector &hVec);
 	CuMat(const CuMat &other);
 	~CuMat();
 	CuMat &operator=(CuMat other);
@@ -87,6 +90,7 @@ public:
 	void CopyToDevice(const Real *hMatrix);
 	void CopyToDevice(const CMatrix &hMatrix);
 	void CopyToDevice(const RMatrix &hMatrix);
+	void CopyToDevice(const Vector &hVector);
 	void CopyToDeviceAsync(const Real *hMatrix, cudaStream_t stream);
 	void CopyToDeviceAsync(const CMatrix &hMatrix, cudaStream_t stream);
 	void CopyToDeviceAsync(const RMatrix &hMatrix, cudaStream_t stream);
@@ -94,6 +98,7 @@ public:
 	void CopyToHost(Real *hMatrix) const;
 	void CopyToHost(CMatrix &hMatrix) const;
 	void CopyToHost(RMatrix &hMatrix) const;
+	void CopyToHost(Vector &hVector) const;
 	void CopyToHostAsync(Real *hMatrix, cudaStream_t stream);
 	void CopyToHostAsync(CMatrix &hMatrix, cudaStream_t stream);
 
