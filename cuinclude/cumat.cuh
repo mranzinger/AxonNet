@@ -117,6 +117,9 @@ public:
 	CuMat HardTranspose() const;
 	CuScopedWeakTranspose WeakTranspose() const;
 
+	CuRowwiseOperator Rowwise() const;
+	CuColwiseOperator Colwise() const;
+
 	friend void swap(CuMat &a, CuMat &b);
 	
 private:
@@ -145,7 +148,6 @@ struct CuMatInfo
     CuMatInfo() : _dMat(NULL), _rows(0), _cols(0),
                   _storageOrder(CuColMajor) { }
 
-private:
     CuMatInfo(const CuMat &m)
         : _dMat(m._dMat), _rows(m._rows), _cols(m._cols),
           _storageOrder(m._storageOrder) { }

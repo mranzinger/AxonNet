@@ -318,6 +318,16 @@ CuScopedWeakTranspose::CuScopedWeakTranspose(const CuMat& mat)
 {
 }
 
+CuRowwiseOperator CuMat::Rowwise() const
+{
+	return CuRowwiseOperator(*this);
+}
+
+CuColwiseOperator CuMat::Colwise() const
+{
+	return CuColwiseOperator(*this);
+}
+
 CuMatInfo CuMat::ToInfo() const
 {
     return CuMatInfo(*this);

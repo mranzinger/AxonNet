@@ -311,7 +311,7 @@ TEST(CuMatTest, MulCuda)
     CuMat dC = dA * dB;
 }
 
-TEST(CuMatTest, MulEigenHuge)
+/*TEST(CuMatTest, MulEigenHuge)
 {
     CMatrix hA = CMatrix::Constant(10000, 20000, 2),
             hB = CMatrix::Constant(20000, 128, 4);
@@ -330,7 +330,7 @@ TEST(CuMatTest, MulCudaHuge)
     dB.SetConstant(4);
 
     CuMat dC = dA * dB;
-}
+}*/
 
 TEST(CuMatTest, AddScaled)
 {
@@ -352,5 +352,79 @@ TEST(CuMatTest, AddScaled)
 
     AssertMatrixEquivalence(hMat, hCorrect);
 }
+
+TEST(CuMatTest, SumColumns)
+{
+	cublasHandle_t handle = UTGetCublasHandle();
+
+	CuMat dA(handle, 1000, 128);
+	dA.SetConstant(1);
+
+	CuMat dComp = dA.Rowwise().Sum();
+
+	ASSERT_EQ(dComp.Rows(), dA.Rows());
+	ASSERT_EQ(dComp.Cols(), 1);
+
+	CMatrix hComp;
+	dComp.CopyToHost(hComp);
+
+	CMatrix hCorrect = CMatrix::Constant(1000, 128, 1).rowwise().sum();
+
+	AssertMatrixEquivalence(hComp, hCorrect);
+}
+
+struct HExp
+{
+	Real operator()(Real val) const { return exp(val); }
+};
+
+TEST(CuMatTest, SumRows)
+{
+	cublasHandle_t handle = UTGetCublasHandle();
+
+	CuMat dA(handle, 1000, 128);
+	dA.SetConstant(0.95f);
+
+	// Sum the exponentials
+	CuMat dComp = dA.Colwise().Sum(CuExp());
+
+	ASSERT_EQ(dComp.Rows(), 1);
+	ASSERT_EQ(dComp.Cols(), dA.Cols());
+
+	CMatrix hComp;
+	dComp.CopyToHost(hComp);
+
+	CMatrix hCorrect = CMatrix::Constant(1000, 128, 0.95f).unaryExpr(HExp()).colwise().sum();
+
+	AssertMatrixEquivalence(hComp, hCorrect);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
