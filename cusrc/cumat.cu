@@ -92,8 +92,10 @@ void CuMat::CopyToDevice(const Real *hMatrix)
 
 void CuMat::CopyToDevice(const CMatrix &hMatrix)
 {
+	Resize(hMatrix.rows(), hMatrix.cols());
+
 	assert(_rows == hMatrix.rows() &&
-		   _cols == hMatrix.cols());
+           _cols == hMatrix.cols());
 	
 	CopyToDevice(hMatrix.data());
 }
@@ -115,6 +117,8 @@ void CuMat::CopyToDeviceAsync(const Real *hMatrix, cudaStream_t stream)
 
 void CuMat::CopyToDeviceAsync(const CMatrix &hMatrix, cudaStream_t stream)
 {
+    Resize(hMatrix.rows(), hMatrix.cols());
+
 	assert(_rows == hMatrix.rows() &&
 		   _cols == hMatrix.cols());
 	

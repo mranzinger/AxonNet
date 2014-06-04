@@ -33,4 +33,5 @@ typedef Eigen::Map<RMatrix, Eigen::Unaligned> RUMap;
 typedef Eigen::Map<CMatrix, 0, Eigen::OuterStride<> > CStrideMap;
 typedef Eigen::Map<RMatrix, 0, Eigen::OuterStride<> > RStrideMap;
 
-
+struct cublasContext;
+typedef struct cublasContext *cublasHandle_t;

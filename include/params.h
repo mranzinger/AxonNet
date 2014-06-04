@@ -20,15 +20,6 @@ public:
 	uint32_t Rows;
 	uint32_t Cols;
 
-	/*
-	 * Input data matrix. Supports mini-batch when the number of
-	 * columns > 1. Data is stored column major, so accessing the kth element
-	 * of the ith column is (i * #rows) + k
-	 */
-	CMatrix *HostMat;
-
-	CuMat *CudaMat;
-
 	Params();
 	explicit Params(CMatrix *hostMat);
 	explicit Params(CuMat *cudaMat);
@@ -44,12 +35,20 @@ public:
 
 	~Params();
 
+	bool IsOnHost() const { return _hostMat != NULL; }
+	bool IsOnDevice() const { return _cudaMat != NULL; }
+
+	CMatrix *GetHostMatrix() const;
+	CuMat *GetCudaMatrix(cublasHandle_t handle) const;
+
 	Params &operator=(Params other);
 
 	friend void swap(Params &a, Params &b);
 
 private:
 	uint32_t *_refCt;
+	mutable CMatrix *_hostMat;
+	mutable CuMat *_cudaMat;
 };
 
 typedef std::vector<Params> MultiParams;
