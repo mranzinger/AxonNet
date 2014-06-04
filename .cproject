@@ -32,6 +32,9 @@
 								<option id="ai3.tool.cuda.cpp_compiler.option.preprocessor.def.1728548911" name="Defined Symbols (-D)" superClass="ai3.tool.cuda.cpp_compiler.option.preprocessor.def" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="__GXX_EXPERIMENTAL_CXX0X__"/>
 								</option>
+								<option id="ai3.tool.cuda.cpp_compiler.option.preprocessor.undef.1629048202" name="Undefined Symbols (-U)" superClass="ai3.tool.cuda.cpp_compiler.option.preprocessor.undef" valueType="undefDefinedSymbols">
+									<listOptionValue builtIn="false" value="__cplusplus"/>
+								</option>
 								<inputType id="ai3.tool.cuda.cpp_compiler.input.608827011" superClass="ai3.tool.cuda.cpp_compiler.input"/>
 							</tool>
 							<tool id="ai3.tool.cuda.c_compiler.104391412" name="C Compiler" superClass="ai3.tool.cuda.c_compiler">
