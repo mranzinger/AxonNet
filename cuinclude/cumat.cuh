@@ -45,6 +45,7 @@ public:
 	cublasHandle_t Handle() const { return _handle; }
 	uint32_t Rows() const { return _rows; }
 	uint32_t Cols() const { return _cols; }
+	const Real *Buff() const { return _dMat; }
 
 	friend CuMat operator+(const CuMat &a, const CuMat &b);
 	friend CuMat operator-(const CuMat &a, const CuMat &b);

@@ -311,7 +311,7 @@ TEST(CuMatTest, MulCuda)
     CuMat dC = dA * dB;
 }
 
-TEST(CuMatTest, MulEigenHuge)
+/*TEST(CuMatTest, MulEigenHuge)
 {
     CMatrix hA = CMatrix::Constant(10000, 20000, 2),
             hB = CMatrix::Constant(20000, 128, 4);
@@ -330,7 +330,7 @@ TEST(CuMatTest, MulCudaHuge)
     dB.SetConstant(4);
 
     CuMat dC = dA * dB;
-}
+}*/
 
 TEST(CuMatTest, AddScaled)
 {
@@ -399,6 +399,35 @@ TEST(CuMatTest, SumRows)
 	AssertMatrixEquivalence(hComp, hCorrect);
 }
 
+struct EigSoftmaxExpr
+{
+	Real operator()(Real value, Real colMax) const
+	{
+		return exp(value - colMax);
+	}
+};
+
+struct EigDiv
+{
+	Real operator()(Real numerator, Real denomonator) const
+	{
+		return numerator / denomonator;
+	}
+};
+
+struct CuSoftmaxExpr
+{
+	const Real *_maxBuff;
+
+	CuSoftmaxExpr(const CuMat &mat)
+		: _maxBuff(mat.Buff()) { }
+
+	Real operator()(Real value, uint32_t row, uint32_t col) const
+	{
+		return exp(value - _maxBuff[col]);
+	}
+};
+
 TEST(CuMatTest, Softmax)
 {
 	cublasHandle_t handle = UTGetCublasHandle();
@@ -407,8 +436,23 @@ TEST(CuMatTest, Softmax)
 
 	CMatrix hInput = CMatrix::Random(1000, 128);
 
+	dInput.CopyToDevice(hInput);
+
+	// Host Computation
 	// Get the maximum value of each column
-	CMatrix hIpMax = hInput.colwise().maxCoeff();
+	CMatrix hIpMax = hInput.colwise().maxCoeff().replicate(1000, 1);
+
+	ASSERT_EQ(hIpMax.rows(), 1000);
+	ASSERT_EQ(hIpMax.cols(), 128);
+
+	CMatrix hExpMat = hInput.binaryExpr(hIpMax, EigSoftmaxExpr());
+
+	CMatrix hExpMatSum = hExpMat.colwise().sum().replicate(1000, 1);
+
+	CMatrix hSoftmax = hExpMat.binaryExpr(hExpMatSum, EigDiv());
+
+	// Device Computation
+	CuMat dIpMax = dInput.Colwise().Max();
 
 
 }
