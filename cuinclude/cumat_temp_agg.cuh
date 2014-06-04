@@ -34,19 +34,19 @@ CuMat CuMatAggregate(const CuMat &mat,
 }
 
 template<typename ElemFn>
-CuMat CuRowwiseOperator::Sum<ElemFn>(ElemFn fn) const
+CuMat CuRowwiseOperator::Sum(ElemFn fn) const
 {
     return Agg(CuPlus(), fn);
 }
 
 template<typename ElemFn>
-CuMat CuColwiseOperator::Sum<ElemFn>(ElemFn fn) const
+CuMat CuColwiseOperator::Sum(ElemFn fn) const
 {
     return Agg(CuPlus(), fn);
 }
 
 template<typename Aggregator, typename ElemFn>
-CuMat CuRowwiseOperator::Agg<Aggregator, ElemFn>(Aggregator agg, ElemFn fn) const
+CuMat CuRowwiseOperator::Agg(Aggregator agg, ElemFn fn) const
 {
     return CuMatAggregate(Mat, Mat.ToInfo(),
                           Incrementer<0, 1>(),
@@ -54,7 +54,7 @@ CuMat CuRowwiseOperator::Agg<Aggregator, ElemFn>(Aggregator agg, ElemFn fn) cons
 }
 
 template<typename Aggregator, typename ElemFn>
-CuMat CuColwiseOperator::Agg<Aggregator, ElemFn>(Aggregator agg, ElemFn fn) const
+CuMat CuColwiseOperator::Agg(Aggregator agg, ElemFn fn) const
 {
     return CuMatAggregate(Mat, Mat.ToInfo(),
                           Incrementer<1, 0>(),

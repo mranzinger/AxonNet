@@ -27,6 +27,7 @@ class CuMat
 {
     friend class CuRowwiseOperator;
     friend class CuColwiseOperator;
+    friend struct CuMatInfo;
 
 public:
 	CuMat();
