@@ -125,17 +125,17 @@ CMatrix &Params::GetHostMatrix()
     return *_hostMat;
 }
 
-const CuMat &Params::GetCudaMatrix(cublasHandle_t handle) const
+const CuMat &Params::GetCudaMatrix(CuContext handle) const
 {
     return const_cast<Params*>(this)->GetCudaMatrix(handle);
 }
 
-CuMat &Params::GetCudaMatrix(cublasHandle_t handle)
+CuMat &Params::GetCudaMatrix(CuContext handle)
 {
     if (!_cudaMat)
     {
         assert(_hostMat);
-        assert(handle);
+        assert(handle.CublasHandle);
         _cudaMat = CuMat_CopyToDevice(*_hostMat, handle);
     }
     return *_cudaMat;

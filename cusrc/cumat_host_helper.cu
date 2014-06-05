@@ -28,7 +28,7 @@ void CuMat_SafeDelete(CuMat *&m)
     m = NULL;
 }
 
-CuMat* CuMat_CopyToDevice(const CMatrix& hMat, cublasHandle_t handle)
+CuMat* CuMat_CopyToDevice(const CMatrix& hMat, CuContext handle)
 {
     CuMat *m = new CuMat(handle, hMat.rows(), hMat.cols());
     m->CopyToDevice(hMat);

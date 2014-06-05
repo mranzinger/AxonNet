@@ -13,13 +13,7 @@
 #include <cublas_v2.h>
 #include <cuda.h>
 
-struct CuContext
-{
-	int Device;
-	cublasHandle_t CublasHandle;
-
-	CuContext() : Device(0), CublasHandle(0) { }
-};
+#include "math_defines.h"
 
 class CuSetupProvider
 {

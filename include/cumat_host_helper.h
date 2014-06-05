@@ -16,7 +16,7 @@ uint32_t CuMat_Cols(CuMat *m);
 void CuMat_Delete(CuMat *m);
 void CuMat_SafeDelete(CuMat *&m);
 
-CuMat *CuMat_CopyToDevice(const CMatrix &hMat, cublasHandle_t handle);
+CuMat *CuMat_CopyToDevice(const CMatrix &hMat, CuContext handle);
 void CuMat_CopyToDevice(const CMatrix &hMat, CuMat &dMat);
 
 CMatrix *CuMat_CopyToHost(const CuMat &dMat);

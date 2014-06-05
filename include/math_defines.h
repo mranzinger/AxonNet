@@ -36,3 +36,11 @@ typedef Eigen::Map<RMatrix, 0, Eigen::OuterStride<> > RStrideMap;
 
 struct cublasContext;
 typedef struct cublasContext *cublasHandle_t;
+
+struct CuContext
+{
+	int Device;
+	cublasHandle_t CublasHandle;
+
+	CuContext() : Device(0), CublasHandle(0) { }
+};

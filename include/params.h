@@ -40,8 +40,8 @@ public:
 
 	const CMatrix &GetHostMatrix() const;
 	CMatrix &GetHostMatrix();
-	const CuMat &GetCudaMatrix(cublasHandle_t handle) const;
-	CuMat &GetCudaMatrix(cublasHandle_t handle);
+	const CuMat &GetCudaMatrix(CuContext handle) const;
+	CuMat &GetCudaMatrix(CuContext handle);
 
 	Params &operator=(Params other);
 

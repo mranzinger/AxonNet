@@ -79,14 +79,13 @@ class CuNeuronLayer
     : public ICuNeuronLayer
 {
 private:
-    int _deviceId;
-    cublasHandle_t _handle;
+    CuContext _handle;
 
 public:
     CuNeuronLayer(int deviceId)
-        : _deviceId(deviceId), _handle(0)
     {
-        // TODO: Get handle
+    	// TODO: Thread?
+        _handle = CuSetupProvider::GetHandle(deviceId);
     }
 
     virtual Params Compute(const Params &input, bool isTraining)
