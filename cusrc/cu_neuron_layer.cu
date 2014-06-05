@@ -15,60 +15,60 @@
 using namespace std;
 
 template<typename UnaryFn>
-void NCompute(const Params &input, Params &output, UnaryFn fn, cublasHandle_t handle)
+void NCompute(const Params &input, Params &output, UnaryFn fn, CuContext handle)
 {
     input.GetCudaMatrix(handle).UnaryExpr<false>(output.GetCudaMatrix(handle), fn);
 }
 
-void NCompute(const Params &input, Params &output, CuIdentity, cublasHandle_t handle)
+void NCompute(const Params &input, Params &output, CuIdentity, CuContext handle)
 {
     output = input;
 }
 
 
 void NBackprop(const Params &lastInput, const Params &lastOutput, Params &inputErrs,
-               CuIdentity, cublasHandle_t handle)
+               CuIdentity, CuContext handle)
 {
     inputErrs.GetCudaMatrix(handle).SetConstant(1.0f);
 }
 
 void NBackprop(const Params &lastInput, const Params &lastOutput, Params &inputErrs,
-               CuLogistic, cublasHandle_t handle)
+               CuLogistic, CuContext handle)
 {
     lastOutput.GetCudaMatrix(handle).UnaryExpr<false>(inputErrs.GetCudaMatrix(handle),
             CuLogisticDerivativeCalc());
 }
 
 void NBackprop(const Params &lastInput, const Params &lastOutput, Params &inputErrs,
-               CuRectifier, cublasHandle_t handle)
+               CuRectifier, CuContext handle)
 {
     lastInput.GetCudaMatrix(handle).UnaryExpr<false>(inputErrs.GetCudaMatrix(handle),
             CuRectifierDerivative());
 }
 
 void NBackprop(const Params &lastInput, const Params &lastOutput, Params &inputErrs,
-               CuTanh, cublasHandle_t handle)
+               CuTanh, CuContext handle)
 {
     lastOutput.GetCudaMatrix(handle).UnaryExpr<false>(inputErrs.GetCudaMatrix(handle),
             CuTanhDerivativeCalc());
 }
 
 void NBackprop(const Params &lastInput, const Params &lastOutput, Params &inputErrs,
-                CuRamp, cublasHandle_t handle)
+                CuRamp, CuContext handle)
 {
     lastInput.GetCudaMatrix(handle).UnaryExpr<false>(inputErrs.GetCudaMatrix(handle),
             CuRampDerivative());
 }
 
 void NBackprop(const Params &lastInput, const Params &lastOutput, Params &inputErrs,
-            CuSoftplus, cublasHandle_t handle)
+            CuSoftplus, CuContext handle)
 {
     lastInput.GetCudaMatrix(handle).UnaryExpr<false>(inputErrs.GetCudaMatrix(handle),
             CuSoftplusDerivativeRaw());
 }
 
 void NBackprop(const Params &lastInput, const Params &lastOutput, Params &inputErrs,
-            CuHardTanh, cublasHandle_t handle)
+            CuHardTanh, CuContext handle)
 {
     lastInput.GetCudaMatrix(handle).UnaryExpr<false>(inputErrs.GetCudaMatrix(handle),
             CuHardTanhDerivative());
