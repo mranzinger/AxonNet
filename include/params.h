@@ -38,8 +38,10 @@ public:
 	bool IsOnHost() const { return _hostMat != NULL; }
 	bool IsOnDevice() const { return _cudaMat != NULL; }
 
-	CMatrix *GetHostMatrix() const;
-	CuMat *GetCudaMatrix(cublasHandle_t handle) const;
+	const CMatrix &GetHostMatrix() const;
+	CMatrix &GetHostMatrix();
+	const CuMat &GetCudaMatrix(cublasHandle_t handle) const;
+	CuMat &GetCudaMatrix(cublasHandle_t handle);
 
 	Params &operator=(Params other);
 

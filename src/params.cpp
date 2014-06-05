@@ -110,17 +110,27 @@ Params &Params::operator=(Params other)
     return *this;
 }
 
-CMatrix* Params::GetHostMatrix() const
+const CMatrix &Params::GetHostMatrix() const
+{
+    return const_cast<Params*>(this)->GetHostMatrix();
+}
+
+CMatrix &Params::GetHostMatrix()
 {
     if (!_hostMat)
     {
         assert(_cudaMat);
         _hostMat = CuMat_CopyToHost(*_cudaMat);
     }
-    return _hostMat;
+    return *_hostMat;
 }
 
-CuMat* Params::GetCudaMatrix(cublasHandle_t handle) const
+const CuMat &Params::GetCudaMatrix(cublasHandle_t handle) const
+{
+    return const_cast<Params*>(this)->GetCudaMatrix(handle);
+}
+
+CuMat &Params::GetCudaMatrix(cublasHandle_t handle)
 {
     if (!_cudaMat)
     {
@@ -128,7 +138,7 @@ CuMat* Params::GetCudaMatrix(cublasHandle_t handle) const
         assert(handle);
         _cudaMat = CuMat_CopyToDevice(*_hostMat, handle);
     }
-    return _cudaMat;
+    return *_cudaMat;
 }
 
 void swap(Params &a, Params &b)
@@ -140,3 +150,5 @@ void swap(Params &a, Params &b)
     swap(a._hostMat, b._hostMat);
     swap(a._cudaMat, b._cudaMat);
 }
+
+

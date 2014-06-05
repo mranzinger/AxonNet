@@ -10,6 +10,7 @@
 
 #include <Eigen/Dense>
 #include <vector>
+#include <stdint.h>
 
 typedef float Real;
 typedef Eigen::Matrix<Real, Eigen::Dynamic, 1> Vector;

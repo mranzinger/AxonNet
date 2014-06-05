@@ -6,6 +6,8 @@
 
 #include "device_preference.h"
 
+CPUDevicePreference::Ptr CPUDevicePreference::Instance(new CPUDevicePreference);
+
 AXON_SERIALIZE_DERIVED_TYPE(IDevicePreference, CPUDevicePreference, CPUDevicePreference);
 AXON_SERIALIZE_DERIVED_TYPE(IDevicePreference, CudaDevicePreference, CudaDevicePreference);
 

@@ -110,7 +110,7 @@ struct CuRectifierDerivative
 {
 	__device__ Real operator()(Real val) const
 	{
-		return val > 0.0f ? val : 0.0f;
+		return val > 0.0f ? 1.0f : 0.0f;
 	}
 };
 struct CuHardTanh
@@ -132,6 +132,26 @@ struct CuHardTanhDerivative
 			return 0;
 		return 1;
 	}
+};
+struct CuRamp
+{
+    __device__ Real operator()(Real val) const
+    {
+        if (val < -2.0f)
+            return -1.0f;
+        if (val > 2.0f)
+            return 1.0f;
+        return 0.5f * val;
+    }
+};
+struct CuRampDerivative
+{
+    __device__ Real operator()(Real val) const
+    {
+        if (val < -2.0f || val > 2.0f)
+            return 0.0f;
+        return 0.5f;
+    }
 };
 struct CuSoftplus
 {

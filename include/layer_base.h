@@ -1,6 +1,7 @@
 #pragma once
 
 #include "i_layer.h"
+#include "device_preference.h"
 
 class NEURAL_NET_API LayerBase
 	: public virtual ILayer
@@ -8,13 +9,15 @@ class NEURAL_NET_API LayerBase
 scope_protected:
 	std::string _name;
 
+	IDevicePreference::Ptr _devicePref;
+
 	NeuralNet *_net;
 
 scope_public:
 	typedef std::shared_ptr<LayerBase> Ptr;
 
-	LayerBase() : _net(nullptr) { }
-	LayerBase(std::string name);
+	LayerBase();
+	explicit LayerBase(std::string name);
 
 	virtual const std::string &GetLayerName() const override {
 		return _name;
@@ -47,4 +50,8 @@ scope_protected:
 
 	Params *GetData(ParamMap &pMap, const std::string &name, bool enforce = true) const;
 	const Params *GetData(const ParamMap &pMap, const std::string &name, bool enforce = true) const;
+
+	virtual void OnInitialized();
+	virtual void OnInitCPUDevice() { }
+	virtual void OnInitCudaDevice(int deviceId) { }
 };

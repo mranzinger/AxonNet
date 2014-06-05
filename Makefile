@@ -64,7 +64,8 @@ INCLUDES= -I$(AXON_PATH)/include \
 	      -I$(EIGEN_PATH) \
 	      -I$(BOOST_PATH)/include \
 	      -I$(GTEST_PATH)/include \
-          -I$(INC_ROOT)
+          -I$(INC_ROOT) \
+          -I$(CUDA_INC_ROOT)
 
 CUDA_INCLUDES = -I$(CUDA_INCLUDE_PATH) \
 				-I$(EIGEN_PATH) \

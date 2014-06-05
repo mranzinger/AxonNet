@@ -1,12 +1,19 @@
 #pragma once
 
+#include <type_traits>
+
 #include "single_input_layer.h"
 #include "functions.h"
+
+#include "cu_neuron_layer.cuh"
 
 template<typename Fn>
 class NeuronLayer
 	: public SingleInputLayer
 {
+scope_private:
+    std::unique_ptr<ICuNeuronLayer> _cuImpl;
+
 scope_public:
 	typedef std::shared_ptr<NeuronLayer> Ptr;
 
@@ -27,6 +34,8 @@ scope_public:
 scope_protected:
 	virtual Params SCompute(const Params &input, bool isTraining) override;
     virtual Params SBackprop(const Params &lastInput, const Params &lastOutput, const Params &outputErrors) override;
+
+    virtual void OnInitCudaDevice(int deviceId) override;
 };
 
 typedef NeuronLayer<LinearFn> LinearNeuronLayer;
@@ -40,17 +49,56 @@ typedef NeuronLayer<HardTanhFn> HardTanhNeuronLayer;
 template<typename Fn>
 Params NeuronLayer<Fn>::SCompute(const Params &input, bool isTraining)
 {
-	return Params(input, ApplyFunction<Fn>(input.Data));
+    if (_cuImpl)
+        return _cuImpl->Compute(input, isTraining);
+
+    Params ret(input, new CMatrix());
+    CMatrix c = ApplyFunction<Fn>(input.GetHostMatrix());
+    ret.GetHostMatrix().swap(c);
+
+	return ret;
 }
 
 template<typename Fn>
 Params NeuronLayer<Fn>::SBackprop(const Params &lastInput, const Params &lastOutput, const Params &outputErrors)
 {
-	Params ret(lastInput, CMatrix());
+    if (_cuImpl)
+        return _cuImpl->Backprop(lastInput, lastOutput, outputErrors);
 
-	ret.Data = ApplyDerivative<Fn>(lastInput.Data, lastOutput.Data);
+	Params ret(lastInput, new CMatrix());
 
-	ret.Data.noalias() = ret.Data.cwiseProduct(outputErrors.Data);
+	CMatrix c = ApplyDerivative<Fn>(lastInput.GetHostMatrix(), lastOutput.GetHostMatrix());
+	ret.GetHostMatrix().swap(c);
+
+	ret.GetHostMatrix().noalias() = ret.GetHostMatrix().cwiseProduct(outputErrors.GetHostMatrix());
 
 	return std::move(ret);
+}
+
+template<typename Fn>
+void NeuronLayer<Fn>::OnInitCudaDevice(int deviceId)
+{
+    using namespace std;
+
+    CuNeuronType type;
+
+    if (is_same<Fn, LinearFn>::value)
+        type = CuNeuronType::Cut_Linear;
+    else if (is_same<Fn, LogisticFn>::value)
+        type = CuNeuronType::Cut_Logistic;
+    else if (is_same<Fn, RectifierFn>::value)
+        type = CuNeuronType::Cut_Rectifier;
+    else if (is_same<Fn, TanhFn>::value)
+        type = CuNeuronType::Cut_Tanh;
+    else if (is_same<Fn, RampFn>::value)
+        type = CuNeuronType::Cut_Ramp;
+    else if (is_same<Fn, SoftPlusFn>::value)
+        type = CuNeuronType::Cut_SoftPlus;
+    else if (is_same<Fn, HardTanhFn>::value)
+        type = CuNeuronType::Cut_HardTanh;
+    else
+        throw runtime_error("The function type for this neuron layer is not supported "
+                            " on cuda currently.");
+
+    _cuImpl.reset(CreateCuNeuronLayer(deviceId, type));
 }
