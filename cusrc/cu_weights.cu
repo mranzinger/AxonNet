@@ -11,7 +11,7 @@ CuWeights::CuWeights()
     SetDefaults();
 }
 
-CuWeights::CuWeights(cublasHandle_t handle, uint32_t numInputs, uint32_t numOutputs)
+CuWeights::CuWeights(CuContext handle, uint32_t numInputs, uint32_t numOutputs)
     : Weights(handle, numOutputs, numInputs),
       Biases(handle, numOutputs, 1)
 {
@@ -26,7 +26,7 @@ CuWeights::CuWeights(CuMat weights, CuMat bias)
     Init();
 }
 
-CuWeights::CuWeights(cublasHandle_t handle, const CWeights& hWeights)
+CuWeights::CuWeights(CuContext handle, const CWeights& hWeights)
     : Weights(handle, hWeights.Weights),
       Biases(handle, hWeights.Biases),
       WeightsIncrement(handle, hWeights.WeightsIncrement),

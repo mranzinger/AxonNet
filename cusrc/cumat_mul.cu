@@ -87,7 +87,7 @@ void ScaledMultiply(Real mulScale, const CuMat &a, const CuMat &b, Real scaleDes
     }
 
     cublasStatus_t status =
-            cublasSgemm_v2(a._handle, CUBLAS_OP_N, CUBLAS_OP_N,
+            cublasSgemm_v2(a._handle.CublasHandle, CUBLAS_OP_N, CUBLAS_OP_N,
                             a._rows, b._cols, a._cols,
                             &mulScale, a._dMat, a._rows,
                             b._dMat, b._rows,
@@ -119,7 +119,7 @@ void ScaledMultiply(Real mulScale, const CuScopedWeakTranspose &tA,
     }
 
     cublasStatus_t status =
-            cublasSgemm_v2(a._handle, CUBLAS_OP_T, CUBLAS_OP_N,
+            cublasSgemm_v2(a._handle.CublasHandle, CUBLAS_OP_T, CUBLAS_OP_N,
                            a._cols, b._cols, a._rows,
                            &mulScale, a._dMat, a._rows,
                            b._dMat, b._rows,
@@ -151,7 +151,7 @@ void ScaledMultiply(Real mulScale, const CuMat &a,
     }
 
     cublasStatus_t status =
-            cublasSgemm_v2(a._handle, CUBLAS_OP_N, CUBLAS_OP_T,
+            cublasSgemm_v2(a._handle.CublasHandle, CUBLAS_OP_N, CUBLAS_OP_T,
                            a._rows, b._rows, a._cols,
                            &mulScale, a._dMat, a._rows,
                            b._dMat, b._rows,
@@ -187,7 +187,7 @@ void ScaledMultiply(Real mulScale, const CuScopedWeakTranspose &tA,
     }
 
     cublasStatus_t status =
-            cublasSgemm_v2(a._handle, CUBLAS_OP_T, CUBLAS_OP_T,
+            cublasSgemm_v2(a._handle.CublasHandle, CUBLAS_OP_T, CUBLAS_OP_T,
                     a._cols, b._rows, a._rows,
                     &mulScale, a._dMat, a._rows,
                     b._dMat, b._rows,

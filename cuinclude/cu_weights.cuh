@@ -28,10 +28,10 @@ public:
     Real DynamicLearningRate;
 
     CuWeights();
-    CuWeights(cublasHandle_t handle, uint32_t numInputs, uint32_t numOutputs);
+    CuWeights(CuContext handle, uint32_t numInputs, uint32_t numOutputs);
     CuWeights(CuMat weights, CuMat bias);
 
-    CuWeights(cublasHandle_t handle, const CWeights &hWeights);
+    CuWeights(CuContext handle, const CWeights &hWeights);
 
     CWeights ToHost() const;
 

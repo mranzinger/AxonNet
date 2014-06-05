@@ -20,6 +20,8 @@ void CuMat::UnaryExpr(UnaryFn fn)
 template<bool Add, typename UnaryFn>
 void CuMat::UnaryExpr(CuMat& dest, UnaryFn fn) const
 {
+	SetDevice();
+
 	dest.ResizeLike(*this);
 
 	ApplyUnaryFn<Add>(_dMat, dest._dMat, _rows, _cols,
@@ -37,6 +39,8 @@ void CuMat::BinaryExpr(const CuMat& b, CuMat& dest, BinaryFn fn) const
 {
 	// Make sure the other matrix has the same dimensions
 	AssertSameDims(b);
+
+	SetDevice();
 
 	dest.ResizeLike(*this);
 
@@ -57,6 +61,8 @@ void CuMat::TrinaryExpr(const CuMat& b, const CuMat& c, CuMat& dest,
 {
 	AssertSameDims(b);
 	AssertSameDims(c);
+
+	SetDevice();
 
 	dest.ResizeLike(*this);
 

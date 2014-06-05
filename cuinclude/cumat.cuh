@@ -17,6 +17,7 @@
 
 #include "math_defines.h"
 #include "cumath_functions.cuh"
+#include "cusetup_provider.cuh"
 
 class CuScopedWeakTranspose;
 class CuRowwiseOperator;
@@ -31,12 +32,12 @@ class CuMat
 
 public:
 	CuMat();
-	explicit CuMat(cublasHandle_t handle);
-	CuMat(cublasHandle_t handle, uint32_t rows, uint32_t cols,
+	explicit CuMat(CuContext handle);
+	CuMat(CuContext handle, uint32_t rows, uint32_t cols,
 	      CuStorageOrder storageOrder = CuColMajor);
-	CuMat(cublasHandle_t handle, const CMatrix &hMat);
-	CuMat(cublasHandle_t handle, const RMatrix &hMat);
-	CuMat(cublasHandle_t handle, const Vector &hVec);
+	CuMat(CuContext handle, const CMatrix &hMat);
+	CuMat(CuContext handle, const RMatrix &hMat);
+	CuMat(CuContext handle, const Vector &hVec);
 	CuMat(const CuMat &other);
 	~CuMat();
 	CuMat &operator=(CuMat other);
@@ -45,7 +46,7 @@ public:
 	bool Empty() const;
 	bool SingleOwner() const;
 
-	cublasHandle_t Handle() const { return _handle; }
+	CuContext Handle() const { return _handle; }
 	uint32_t Rows() const { return _rows; }
 	uint32_t Cols() const { return _cols; }
 	const Real *Buff() const { return _dMat; }
@@ -131,6 +132,7 @@ public:
 	friend void swap(CuMat &a, CuMat &b);
 	
 private:
+	void SetDevice() const;
 	void PrepareForWrite(bool alloc);
 	void AllocateMatrix();
 	void FreeMatrix();
@@ -142,7 +144,7 @@ private:
 	uint32_t *_refCt;
 	uint32_t _rows, _cols;
 	CuStorageOrder _storageOrder;
-	cublasHandle_t _handle;
+	CuContext _handle;
 };
 
 struct CuMatInfo

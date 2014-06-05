@@ -8,18 +8,18 @@
 using namespace std;
 
 CuMat::CuMat()
-	: _handle(0), _dMat(NULL), _rows(0), _cols(0), _storageOrder(CuColMajor)
+	: _dMat(NULL), _rows(0), _cols(0), _storageOrder(CuColMajor)
 {
 	_refCt = new uint32_t(1);
 }
 
-CuMat::CuMat(cublasHandle_t handle)
+CuMat::CuMat(CuContext handle)
     : _handle(handle), _dMat(NULL), _rows(0), _cols(0), _storageOrder(CuColMajor)
 {
     _refCt = new uint32_t(1);
 }
 
-CuMat::CuMat(cublasHandle_t handle,
+CuMat::CuMat(CuContext handle,
 		     uint32_t rows, uint32_t cols,
 		     CuStorageOrder storageOrder)
 	: _handle(handle), _dMat(NULL), _rows(rows), _cols(cols),
@@ -30,7 +30,7 @@ CuMat::CuMat(cublasHandle_t handle,
 	AllocateMatrix();
 }
 
-CuMat::CuMat(cublasHandle_t handle, const CMatrix& hMat)
+CuMat::CuMat(CuContext handle, const CMatrix& hMat)
     : _handle(handle), _rows(hMat.rows()), _cols(hMat.cols()),
       _storageOrder(CuColMajor)
 {
@@ -41,7 +41,7 @@ CuMat::CuMat(cublasHandle_t handle, const CMatrix& hMat)
     CopyToDevice(hMat);
 }
 
-CuMat::CuMat(cublasHandle_t handle, const RMatrix& hMat)
+CuMat::CuMat(CuContext handle, const RMatrix& hMat)
     : _handle(handle), _rows(hMat.rows()), _cols(hMat.cols()),
       _storageOrder(CuRowMajor)
 {
@@ -52,7 +52,7 @@ CuMat::CuMat(cublasHandle_t handle, const RMatrix& hMat)
     CopyToDevice(hMat);
 }
 
-CuMat::CuMat(cublasHandle_t handle, const Vector& hVec)
+CuMat::CuMat(CuContext handle, const Vector& hVec)
     : _handle(handle), _rows(hVec.rows()), _cols(hVec.cols()),
       _storageOrder(CuRowMajor)
 {
@@ -104,6 +104,8 @@ CuMat CuMat::Copy() const
 	
 	if (_dMat)
 	{
+		SetDevice();
+
 		cudaError_t status = cudaMemcpy(ret._dMat, _dMat, _rows * _cols * sizeof(Real),
 					   cudaMemcpyDeviceToDevice);
 		
@@ -116,6 +118,8 @@ CuMat CuMat::Copy() const
 
 void CuMat::CopyToDevice(const Real *hMatrix)
 {
+	SetDevice();
+
 	cublasStatus_t status = cublasSetMatrix(_rows, _cols, sizeof(Real),
 											hMatrix, _rows, _dMat, _rows);
 	
@@ -168,6 +172,8 @@ void CuMat::CopyToDevice(const Vector &hVector)
 
 void CuMat::CopyToDeviceAsync(const Real *hMatrix, cudaStream_t stream)
 {
+	SetDevice();
+
 	cublasStatus_t status = cublasSetMatrixAsync(_rows, _cols, sizeof(Real),
 								hMatrix, _rows, _dMat, _rows, stream);
 	
@@ -193,6 +199,8 @@ void CuMat::CopyToDeviceAsync(const RMatrix &hMatrix, cudaStream_t stream)
 
 void CuMat::CopyToHost(Real* hMatrix) const
 {
+	SetDevice();
+
 	cublasStatus_t status = cublasGetMatrix(_rows, _cols, sizeof(Real),
 											_dMat, _rows, hMatrix, _rows);
 
@@ -232,6 +240,8 @@ void CuMat::CopyToHost(RMatrix& hMatrix) const
 
 void CuMat::CopyToHostAsync(Real* hMatrix, cudaStream_t stream)
 {
+	SetDevice();
+
 	cublasStatus_t status = cublasGetMatrixAsync(_rows, _cols, sizeof(Real),
 								_dMat, _rows, hMatrix, _rows, stream);
 
@@ -334,6 +344,8 @@ void CuMat::AllocateMatrix()
 	if (_rows == 0 || _cols == 0)
 		return;
 
+	SetDevice();
+
 	cudaError_t cudaStat = cudaMalloc(&_dMat, _rows * _cols * sizeof(Real));
 	if (cudaStat != cudaSuccess)
 		throw runtime_error("Unable to allocate the specified matrix");
@@ -341,6 +353,8 @@ void CuMat::AllocateMatrix()
 
 void CuMat::FreeMatrix()
 {
+	SetDevice();
+
 	// Free the device memory
 	cudaFree(_dMat);
 }
@@ -404,7 +418,10 @@ CuColwiseOperator CuMat::Colwise() const
 	return CuColwiseOperator(*this);
 }
 
-
+void CuMat::SetDevice() const
+{
+	cudaSetDevice(_handle.Device);
+}
 
 CuMatInfo CuMat::ToInfo() const
 {
