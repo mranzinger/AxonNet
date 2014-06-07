@@ -2,14 +2,18 @@
 
 #include "single_input_layer.h"
 
+#include "cu_softmax_layer.cuh"
+
 class NEURAL_NET_API SoftmaxLayer
 	: public SingleInputLayer
 {
-private:
+scope_private:
 	bool _checked;
 	bool _costIsLogLoss;
 
-public:
+	std::unique_ptr<CuSoftmaxLayer> _cuImpl;
+
+scope_public:
 	typedef std::shared_ptr<SoftmaxLayer> Ptr;
 
 	SoftmaxLayer();
@@ -26,6 +30,8 @@ scope_protected:
 	virtual Params SCompute(const Params &input, bool isTraining) override;
     virtual Params SBackprop(const Params &lastInput, const Params &lastOutput, const Params &outputErrors) override;
 
-private:
+    virtual void OnInitCudaDevice(int deviceId) override;
+
+scope_private:
 	void EstablishContext();
 };

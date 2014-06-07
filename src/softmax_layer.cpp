@@ -26,12 +26,18 @@ Params SoftmaxLayer::SCompute(const Params &input, bool isTraining)
 	// Getting the max value and shifting the dimension is a neat trick to prevent overflow
 	// NOTE: Underflow may still occur though, but that is far less dangerous :/
 
-	Params ret(input, CMatrix(input.Data.rows(), input.Data.cols()));
+	if (_cuImpl)
+		return _cuImpl->Compute(input);
 
-	for (int col = 0, cEnd = input.Data.cols(); col < cEnd; ++col)
+	Params ret(input, new CMatrix(input.Rows, input.Cols));
+
+	CMatrix &mOutput = ret.GetHostMatrix();
+	const CMatrix &mInput = input.GetHostMatrix();
+
+	for (int col = 0, cEnd = input.Cols; col < cEnd; ++col)
 	{
-		auto vColInput = input.Data.col(col);
-		auto vColOutput = ret.Data.col(col);
+		auto vColInput = mInput.col(col);
+		auto vColOutput = mOutput.col(col);
 
 		Real largest = vColInput.maxCoeff();
 
@@ -65,20 +71,25 @@ Params SoftmaxLayer::SBackprop(const Params &lastInput, const Params &lastOutput
 {
 	EstablishContext();
 
+	if (_cuImpl)
+		return _cuImpl->Backprop(lastInput, lastOutput, outputErrors);
+
 	// If the cost function is negative log loss, then it already computed
 	// the gradient of it times the gradient of this layer, so just pass it
 	// through
 	if (_costIsLogLoss)
-		return Params(lastInput, outputErrors.Data);
+		return outputErrors;
 
-	Params inputErrors(lastInput, CMatrix(lastInput.Data.rows(), lastInput.Data.cols()));
+	Params inputErrors = Params::CreateLike(lastInput);
+
+	const CMatrix &mLastOp = lastOutput.GetHostMatrix();
 
 	// Compute the full Jacobian for each of the output error vectors
-	RMatrix m(lastOutput.Data.rows(), lastOutput.Data.rows());
+	RMatrix m(lastOutput.Rows, lastOutput.Rows);
 
-	for (int col = 0, cEnd = lastOutput.Data.cols(); col < cEnd; ++col)
+	for (int col = 0, cEnd = lastOutput.Cols; col < cEnd; ++col)
 	{
-		auto vLastOutput = lastOutput.Data.col(col);
+		auto vLastOutput = mLastOp.col(col);
 
 		for (int y = 0; y < m.outerSize(); ++y)
 		{
@@ -88,8 +99,8 @@ Params SoftmaxLayer::SBackprop(const Params &lastInput, const Params &lastOutput
 			}
 		}
 
-		auto vOutputError = outputErrors.Data.col(col);
-		auto vInputError = inputErrors.Data.col(col);
+		auto vOutputError = outputErrors.GetHostMatrix().col(col);
+		auto vInputError = inputErrors.GetHostMatrix().col(col);
 
 		vInputError = m * vOutputError;
 	}
@@ -117,6 +128,14 @@ void SoftmaxLayer::EstablishContext()
 	// in the network to be able to use the shortcut
 	_costIsLogLoss = ll != nullptr &&
 					 _net->GetLayer(_net->NumLayers() - 1).get() == this;
+
+	if (_cuImpl)
+		_cuImpl->SetCostIsLogreg(_costIsLogLoss);
+}
+
+void SoftmaxLayer::OnInitCudaDevice(int deviceId)
+{
+	_cuImpl.reset(new CuSoftmaxLayer(deviceId));
 }
 
 void BindStruct(const CStructBinder &binder, SoftmaxLayer &layer)

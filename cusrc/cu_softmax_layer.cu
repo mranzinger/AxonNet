@@ -66,6 +66,9 @@ Params CuSoftmaxLayer::Compute(const Params& input) const
 	// Now divide all of the elements by the columnar sums
 	mSoftmax.UnaryExpr(CuSoftmaxDiv(mExpMatSum));
 
+	// Need to synchronize since streams are allocated
+	cudaDeviceSynchronize();
+
 	return ret;
 }
 
@@ -86,6 +89,8 @@ Params CuSoftmaxLayer::Backprop(const Params& lastInput,
 
 	MultiplyTrans3D(mDiff, lastOutput.Rows, lastOutput.Rows,
 				    outputErrors.GetCudaMatrix(_handle), inputErrors);
+
+	cudaDeviceSynchronize();
 
 	return ret;
 }
