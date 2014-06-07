@@ -22,6 +22,7 @@
 class CuScopedWeakTranspose;
 class CuRowwiseOperator;
 class CuColwiseOperator;
+class CuMat3D;
 struct CuMatInfo;
 
 class CuMat
@@ -68,6 +69,9 @@ public:
 	friend void ScaledMultiply(Real mulScale, const CuScopedWeakTranspose &tA, const CuMat &b, Real scaleDest, CuMat &dest);
 	friend void ScaledMultiply(Real mulScale, const CuMat &a, const CuScopedWeakTranspose &tB, Real scaleDest, CuMat &dest);
 	friend void ScaledMultiply(Real mulScale, const CuScopedWeakTranspose &tA, const CuScopedWeakTranspose &tB, Real scaleDest, CuMat &dest);
+
+	friend CuMat MultiplyTrans3D(const CuMat &a, uint32_t rows, uint32_t cols, const CuMat &b);
+    friend void MultiplyTrans3D(const CuMat &a, uint32_t rows, uint32_t cols, const CuMat &b, CuMat &dest);
 
 	friend CuMat &operator+=(CuMat &a, const CuMat &b);
 	friend CuMat &operator-=(CuMat &a, const CuMat &b);
@@ -238,5 +242,9 @@ void ScaledMultiply(Real mulScale, const CuMat &a, const CuScopedWeakTranspose &
 void ScaledMultiply(Real mulScale, const CuScopedWeakTranspose &tA,
 		const CuScopedWeakTranspose &tB, Real scaleDest, CuMat &dest);
 
+CuMat MultiplyTrans3D(const CuMat &a, uint32_t rows, uint32_t cols, const CuMat &b);
+void MultiplyTrans3D(const CuMat &a, uint32_t rows, uint32_t cols, const CuMat &b, CuMat &dest);
+
 #include "cumat_kernels.cuh"
 #include "cumat_temp_agg.cuh"
+#include "cumat3d.cuh"

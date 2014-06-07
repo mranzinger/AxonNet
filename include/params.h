@@ -33,6 +33,9 @@ public:
 	Params(Params &&other);
 #endif
 
+	static Params CreateLike(const Params &other);
+	static Params CreateLike(const Params &other, const CuContext &handle);
+
 	~Params();
 
 	bool IsOnHost() const { return _hostMat != NULL; }

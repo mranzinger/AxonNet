@@ -35,6 +35,8 @@ struct CuSoftmaxDiv
     }
 };
 
+void CalcSoftmaxDiff(CuMat &mDiff, const CuMat &lastOutput);
+
 CuSoftmaxLayer::CuSoftmaxLayer(int deviceId)
 	: _costIsLogreg(false)
 {
@@ -69,18 +71,17 @@ Params CuSoftmaxLayer::Compute(const Params& input) const
 Params CuSoftmaxLayer::Backprop(const Params& lastInput,
 		const Params& lastOutput, const Params& outputErrors) const
 {
-	CuMat *m = new CuMat(_handle, lastInput.Rows, lastInput.Cols);
-
-	Params ret(lastInput, m);
-
 	if (_costIsLogreg)
-	{
-		// The cost function already
-	}
-	else
-	{
+		// The cost function already computed the input error for this guy
+		return outputErrors;
 
-	}
+	Params ret = Params::CreateLike(lastInput, _handle);
+
+	CuMat &inputErrors = ret.GetCudaMatrix(_handle);
+
+	// Create a big jacobian matrix of first derivatives
+	CuMat mDiff(_handle, lastOutput.Rows * lastOutput.Rows, lastOutput.Cols);
+	CalcSoftmaxDiff(mDiff, lastOutput.GetCudaMatrix(_handle));
 
 	return ret;
 }
@@ -89,3 +90,68 @@ void CuSoftmaxLayer::SetCostIsLogreg(bool value)
 {
 	_costIsLogreg = value;
 }
+
+
+__global__ void CuCalcSoftmaxDiff(CuMatInfo mDiffInfo, CuMatInfo mLastOpInfo)
+{
+	uint32_t x = blockIdx.x * blockDim.x + threadIdx.x;
+	uint32_t y = blockIdx.y * blockDim.y + threadIdx.y;
+	uint32_t z = blockIdx.z * blockDim.z + threadIdx.z;
+
+	// Rows both times here is intentional
+	if (x >= mLastOpInfo._rows || y >= mLastOpInfo._rows)
+		return;
+
+	uint32_t opRow = y * mLastOpInfo._rows + x;
+
+	uint32_t opIdx = z * mDiffInfo._rows + opRow;
+
+	uint32_t ipOffset = z * mLastOpInfo._rows;
+
+	Real dX = mLastOpInfo._dMat[ipOffset + x];
+	Real dY = mLastOpInfo._dMat[ipOffset + y];
+
+	Real dXdY = dY * ((x == y) - dX);
+
+	mDiffInfo._dMat[opIdx] = dXdY;
+}
+
+void CalcSoftmaxDiff(CuMat& mDiff, const CuMat& lastOutput)
+{
+	dim3 threads(min(32u, lastOutput.Rows()),
+				 min(32u, lastOutput.Rows()),
+				 1);
+	dim3 blocks = round_up(lastOutput.Rows(), lastOutput.Rows(), lastOutput.Cols(),
+						   threads);
+
+	// TODO: The matrix is symmetric, so a single block could absolutely scatter
+	// its output into the corresponding x,y pairs
+	CuCalcSoftmaxDiff<<<blocks, threads>>>(mDiff, lastOutput);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

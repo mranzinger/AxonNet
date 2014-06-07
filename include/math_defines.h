@@ -43,4 +43,14 @@ struct CuContext
 	cublasHandle_t CublasHandle;
 
 	CuContext() : Device(0), CublasHandle(0) { }
+
+	bool operator==(const CuContext &b) const
+	{
+		return Device == b.Device &&
+			   CublasHandle == b.CublasHandle;
+	}
+	bool operator!=(const CuContext &b) const
+	{
+		return !(*this == b);
+	}
 };

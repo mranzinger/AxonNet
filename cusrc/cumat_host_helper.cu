@@ -51,3 +51,18 @@ void CuMat_CopyToHost(const CuMat &dMat, CMatrix &hMat)
 {
     dMat.CopyToHost(hMat);
 }
+
+CuMat* CuMat_MakeSimilar(const CuMat& m)
+{
+	return CuMat_MakeSimilar(m.Handle(), m);
+}
+
+CuMat* CuMat_MakeSimilar(const CuContext& handle, const CuMat& m)
+{
+	return new CuMat(handle, m.Rows(), m.Cols());
+}
+
+CuMat* CuMat_Make(const CuContext& handle, uint32_t rows, uint32_t cols)
+{
+	return new CuMat(handle, rows, cols);
+}

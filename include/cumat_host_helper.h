@@ -21,3 +21,8 @@ void CuMat_CopyToDevice(const CMatrix &hMat, CuMat &dMat);
 
 CMatrix *CuMat_CopyToHost(const CuMat &dMat);
 void CuMat_CopyToHost(const CuMat &dMat, CMatrix &hMat);
+
+CuMat *CuMat_Make(const CuContext &handle, uint32_t rows, uint32_t cols);
+
+CuMat *CuMat_MakeSimilar(const CuMat &m);
+CuMat *CuMat_MakeSimilar(const CuContext &handle, const CuMat &m);

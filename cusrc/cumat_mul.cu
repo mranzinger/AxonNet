@@ -67,6 +67,15 @@ CuMat ScaledMultiply(Real scale, const CuScopedWeakTranspose &tA, const CuScoped
     return dest;
 }
 
+CuMat MultiplyTrans3D(const CuMat &a, uint32_t rows, uint32_t cols, const CuMat &b)
+{
+	CuMat dest(a._handle);
+
+	MultiplyTrans3D(a, rows, cols, b, dest);
+
+	return dest;
+}
+
 void ScaledMultiply(Real mulScale, const CuMat &a, const CuMat &b, Real scaleDest, CuMat &dest)
 {
     assert(!a.Empty() && !b.Empty());
@@ -98,6 +107,46 @@ void ScaledMultiply(Real mulScale, const CuMat &a, const CuMat &b, Real scaleDes
     if (status != CUBLAS_STATUS_SUCCESS)
         throw runtime_error("The matrix multiplication failed.");
 }
+
+void MultiplyTrans3D(const CuMat &a, uint32_t rows, uint32_t cols, const CuMat &b, CuMat &dest)
+{
+	assert(!a.Empty() && !b.Empty());
+    assert(a._handle == b._handle);
+
+    assert(a._storageOrder == CuColMajor && b._storageOrder == CuColMajor);
+
+    assert(cols == b._rows);
+    assert(a._rows == (rows * cols));
+
+    dest.Resize(rows, b._cols);
+
+    const float alpha = 1.0f, beta = 0.0f;
+
+    const float *aBuffs[b._cols];
+    const float *bBuffs[b._cols];
+    float *cBuffs[b._cols];
+
+    for (uint32_t i = 0; i < b._cols; ++i)
+    {
+    	aBuffs[i] = a._dMat + i * a._rows;
+    	bBuffs[i] = b._dMat + i * b._rows;
+    	cBuffs[i] = dest._dMat + i * rows;
+    }
+
+    cublasStatus_t status =
+    		cublasSgemmBatched(a._handle.CublasHandle, CUBLAS_OP_N, CUBLAS_OP_N,
+    						   rows, 1, cols,
+    						   &alpha,
+    						   aBuffs, rows,
+    						   bBuffs, b._rows,
+    						   &beta,
+    						   cBuffs, dest._rows,
+    						   b._cols);
+
+    if (status != CUBLAS_STATUS_SUCCESS)
+        throw runtime_error("The matrix multiplication failed.");
+}
+
 void ScaledMultiply(Real mulScale, const CuScopedWeakTranspose &tA,
                     const CuMat &b, Real scaleDest, CuMat &dest)
 {
@@ -198,5 +247,7 @@ void ScaledMultiply(Real mulScale, const CuScopedWeakTranspose &tA,
     if (status != CUBLAS_STATUS_SUCCESS)
         throw runtime_error("The matrix multiplication failed.");
 }
+
+
 
 

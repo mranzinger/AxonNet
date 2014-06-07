@@ -27,6 +27,14 @@ inline dim3 round_up(uint32_t x, uint32_t y, uint32_t z, uint32_t base)
 			    round_up(z, base));
 }
 
+inline dim3 round_up(uint32_t x, uint32_t y, uint32_t z,
+					 const dim3 &threads)
+{
+	return dim3(round_up(x, threads.x),
+				round_up(y, threads.y),
+				round_up(z, threads.z));
+}
+
 template<uint32_t base>
 dim3 round_up(uint32_t x, uint32_t y = 1, uint32_t z = 1)
 {

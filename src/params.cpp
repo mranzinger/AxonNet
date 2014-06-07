@@ -151,4 +151,21 @@ void swap(Params &a, Params &b)
     swap(a._cudaMat, b._cudaMat);
 }
 
+Params Params::CreateLike(const Params& other)
+{
+	if (other._hostMat)
+	{
+		return Params(other, new CMatrix(other.Rows, other.Cols));
+	}
+	else if (other._cudaMat)
+	{
+		return Params(other, CuMat_MakeSimilar(*other._cudaMat));
+	}
+	else
+		throw runtime_error("Invalid data buffer");
+}
 
+Params Params::CreateLike(const Params& other, const CuContext& handle)
+{
+	return Params(other, CuMat_Make(handle, other.Rows, other.Cols));
+}
