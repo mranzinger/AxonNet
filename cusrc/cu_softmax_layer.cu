@@ -8,6 +8,7 @@
 #include "cu_softmax_layer.cuh"
 
 #include "cusetup_provider.cuh"
+#include "cumat.cuh"
 
 struct CuSoftmaxExpr
 {
@@ -82,6 +83,9 @@ Params CuSoftmaxLayer::Backprop(const Params& lastInput,
 	// Create a big jacobian matrix of first derivatives
 	CuMat mDiff(_handle, lastOutput.Rows * lastOutput.Rows, lastOutput.Cols);
 	CalcSoftmaxDiff(mDiff, lastOutput.GetCudaMatrix(_handle));
+
+	MultiplyTrans3D(mDiff, lastOutput.Rows, lastOutput.Rows,
+				    outputErrors.GetCudaMatrix(_handle), inputErrors);
 
 	return ret;
 }
