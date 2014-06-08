@@ -39,3 +39,37 @@ Params* CostBase::FindParams(ParamMap &input, const std::string& name,
 
     return nullptr;
 }
+
+void CostBase::SetDevicePreference(IDevicePreference::Ptr pref)
+{
+	_devicePref = move(pref);
+
+	OnInitialized();
+}
+
+void CostBase::OnInitialized()
+{
+	assert(_devicePref);
+
+    switch (_devicePref->Type())
+    {
+    default:
+        throw runtime_error("Unsupported device preference.");
+    case DevicePreference::CPU:
+        OnInitCPUDevice();
+        break;
+    case DevicePreference::Cuda:
+        OnInitCudaDevice(dynamic_cast<CudaDevicePreference*>(_devicePref.get())->DeviceId);
+        break;
+    }
+}
+
+void BindStruct(const aser::CStructBinder &binder, CostBase &cost)
+{
+	binder("device", cost._devicePref);
+
+	if (binder.IsRead())
+	{
+		cost.OnInitialized();
+	}
+}

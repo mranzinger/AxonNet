@@ -428,4 +428,20 @@ CuMatInfo CuMat::ToInfo() const
     return CuMatInfo(*this);
 }
 
+Real CuMat::Sum() const
+{
+	if (Empty())
+		return 0.0f;
 
+	Real ret;
+	cublasStatus_t status = cublasSasum_v2(_handle.CublasHandle,
+											Size(),
+											_dMat,
+											1,
+											&ret);
+
+	if (status != CUBLAS_STATUS_SUCCESS)
+		throw runtime_error("An error occurred while attempting to compute the sum of this matrix.");
+
+	return ret;
+}

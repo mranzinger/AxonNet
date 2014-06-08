@@ -71,7 +71,8 @@ CUDA_INCLUDES = -I$(CUDA_INCLUDE_PATH) \
 				-I$(EIGEN_PATH) \
 				-I$(CUDA_INC_ROOT) \
 				-I$(INC_ROOT) \
-				-I$(GTEST_PATH)/include
+				-I$(GTEST_PATH)/include \
+                -I$(BOOST_PATH)/include
 
 LIBS_BASE=-L$(BOOST_PATH)/lib \
 		  -L$(AXON_PATH)/lib \

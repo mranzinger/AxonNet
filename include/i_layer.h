@@ -6,6 +6,7 @@
 #include <serialization/master.h>
 
 #include "params.h"
+#include "device_preference.h"
 
 namespace aser = axon::serialization;
 
@@ -49,6 +50,8 @@ public:
 	virtual void ApplyGradient() = 0;
 
 	virtual void SetNet(NeuralNet *net) = 0;
+
+	virtual void SetDevicePreference(IDevicePreference::Ptr pref) = 0;
 };
 
 AXON_SERIALIZE_BASE_TYPE(ILayer)

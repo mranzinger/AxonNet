@@ -5,7 +5,7 @@
 
 using namespace std;
 
-static const Real s_epss = 0.0000001;
+static const Real s_epss = 0.000000001;
 
 LogLossCost::LogLossCost()
     : LogLossCost("", "")
@@ -25,12 +25,18 @@ LogLossCost::LogLossCost(std::string inputName, std::string labelName)
 
 CostMap LogLossCost::SCompute(const Params &preds, const Params &labels)
 {
+	if (_cuImpl)
+		return _cuImpl->Compute(preds, labels);
+
 	Real logLoss = 0.0f;
 
-	for (int col = 0, cEnd = preds.Data.cols(); col < cEnd; ++col)
+	const CMatrix &mPreds = preds.GetHostMatrix();
+	const CMatrix &mLabels = labels.GetHostMatrix();
+
+	for (int col = 0, cEnd = preds.Cols; col < cEnd; ++col)
 	{
-		auto vPred = preds.Data.col(col);
-		auto vLabel = labels.Data.col(col);
+		auto vPred = mPreds.col(col);
+		auto vLabel = mLabels.col(col);
 
 		// Pull the prediction away from 0 and 1
 		auto safe = vPred.unaryExpr(
@@ -48,10 +54,10 @@ CostMap LogLossCost::SCompute(const Params &preds, const Params &labels)
 		logLoss += cVal;
 	}
 
-	CMatrix binPreds = preds.Data;
+	CMatrix binPreds = mPreds;
 	MaxBinarize(binPreds);
 
-	Real numCorr = EqCount(binPreds, labels.Data);
+	Real numCorr = EqCount(binPreds, mLabels);
 
 	return CostMap{ { CostMap::PRIMARY_NAME, logLoss },
 	                { string("correct"), numCorr } };
@@ -69,17 +75,25 @@ Params LogLossCost::SComputeGrad(const Params &pred, const Params &labels)
 	//
 	// Also, this works with mini-batch too!
 
+	if (_cuImpl)
+		return _cuImpl->ComputeGrad(pred, labels);
+
+	const CMatrix &mPreds = pred.GetHostMatrix();
+	const CMatrix &mLabels = labels.GetHostMatrix();
+
 	if (_outputIsSoftmax)
-		return Params(pred, (pred.Data - labels.Data) / pred.Data.cols());
+		return Params(pred, (mPreds - mLabels) / pred.Cols);
 
-	Params ret(pred, CMatrix(pred.Data.rows(), pred.Data.cols()));
+	Params ret(pred, new CMatrix(pred.Rows, pred.Cols));
 
-	float errFactor = 1.0f / pred.Data.cols();
+	CMatrix &mRet = ret.GetHostMatrix();
 
-	for (int col = 0, cEnd = pred.Data.cols(); col < cEnd; ++col)
+	float errFactor = 1.0f / pred.Cols;
+
+	for (int col = 0, cEnd = pred.Cols; col < cEnd; ++col)
 	{
-		auto vPredCol = pred.Data.col(col);
-		auto vLabelCol = labels.Data.col(col);
+		auto vPredCol = mPreds.col(col);
+		auto vLabelCol = mLabels.col(col);
 
 		auto safe = vPredCol.unaryExpr(
 			[](Real val)
@@ -87,7 +101,7 @@ Params LogLossCost::SComputeGrad(const Params &pred, const Params &labels)
 				return min(max(val, s_epss), 1 - s_epss);
 			});
 
-		auto vRetCol = ret.Data.col(col);
+		auto vRetCol = mRet.col(col);
 
 		vRetCol = vLabelCol.binaryExpr(safe,
 				[errFactor] (Real label, Real pred)
@@ -118,6 +132,14 @@ void LogLossCost::EstablishContext()
 	auto sl = dynamic_cast<SoftmaxLayer*>(opLayer.get());
 
 	_outputIsSoftmax = sl != nullptr;
+
+	if (_cuImpl)
+		_cuImpl->SetOpIsSoftmax(_outputIsSoftmax);
+}
+
+void LogLossCost::OnInitCudaDevice(int deviceId)
+{
+	_cuImpl.reset(new CuLoglossCost(deviceId));
 }
 
 void BindStruct(const aser::CStructBinder &binder, LogLossCost &cost)

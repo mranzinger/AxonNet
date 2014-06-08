@@ -63,6 +63,13 @@ void BindStruct(const aser::CStructBinder &binder, LayerBase &layer)
     }
 }
 
+void LayerBase::SetDevicePreference(IDevicePreference::Ptr pref)
+{
+	_devicePref = move(pref);
+
+	OnInitialized();
+}
+
 void LayerBase::OnInitialized()
 {
     assert(_devicePref);

@@ -50,7 +50,9 @@ public:
 	CuContext Handle() const { return _handle; }
 	uint32_t Rows() const { return _rows; }
 	uint32_t Cols() const { return _cols; }
+	uint32_t Size() const { return _rows * _cols; }
 	const Real *Buff() const { return _dMat; }
+	CuStorageOrder Order() const { return _storageOrder; }
 
 	friend CuMat operator+(const CuMat &a, const CuMat &b);
 	friend CuMat operator-(const CuMat &a, const CuMat &b);
@@ -133,6 +135,8 @@ public:
 	CuRowwiseOperator Rowwise() const;
 	CuColwiseOperator Colwise() const;
 
+	Real Sum() const;
+
 	friend void swap(CuMat &a, CuMat &b);
 	
 private:
@@ -190,9 +194,13 @@ public:
     template<typename ElemFn>
     CuMat Max(ElemFn fn) const;
 
+    CuMat MaxIdx() const;
+
     CuMat Min() const;
     template<typename ElemFn>
     CuMat Min(ElemFn fn) const;
+
+    CuMat MinIdx() const;
 
     template<typename Aggregator, typename ElemFn>
     CuMat Agg(Aggregator agg, ElemFn fn) const;
@@ -213,9 +221,13 @@ public:
     template<typename ElemFn>
     CuMat Max(ElemFn fn) const;
 
+    CuMat MaxIdx() const;
+
     CuMat Min() const;
     template<typename ElemFn>
     CuMat Min(ElemFn fn) const;
+
+    CuMat MinIdx() const;
 
     template<typename Aggregator, typename ElemFn>
     CuMat Agg(Aggregator agg, ElemFn fn) const;

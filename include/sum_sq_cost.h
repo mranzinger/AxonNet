@@ -2,6 +2,8 @@
 
 #include "simple_cost.h"
 
+#include "cu_sum_sq_cost.cuh"
+
 class NEURAL_NET_API SumSqCost
 	: public SimpleCost
 {
@@ -21,5 +23,10 @@ scope_public:
 scope_protected:
 	virtual CostMap SCompute(const Params &pred, const Params &labels) override;
 	virtual Params SComputeGrad(const Params &pred, const Params &labels) override;
+
+	virtual void OnInitCudaDevice(int deviceId) override;
+
+scope_private:
+	std::unique_ptr<CuSumSqCost> _cuImpl;
 };
 

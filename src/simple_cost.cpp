@@ -74,5 +74,7 @@ void BindStruct(const aser::CStructBinder &binder, SimpleCost &cost)
 {
     binder("inputName", cost._inputName)
           ("labelName", cost._labelName);
+
+    BindStruct(binder, (CostBase&)cost);
 }
 

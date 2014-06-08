@@ -2,6 +2,8 @@
 
 #include "simple_cost.h"
 
+#include "cu_logloss_cost.cuh"
+
 class NEURAL_NET_API LogLossCost
 	: public SimpleCost
 {
@@ -26,6 +28,10 @@ scope_protected:
     virtual CostMap SCompute(const Params &pred, const Params &labels) override;
     virtual Params SComputeGrad(const Params &pred, const Params &labels) override;
 
+    virtual void OnInitCudaDevice(int deviceId) override;
+
 scope_private:
 	void EstablishContext();
+
+	std::unique_ptr<CuLoglossCost> _cuImpl;
 };

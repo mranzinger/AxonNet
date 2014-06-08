@@ -1,7 +1,7 @@
 #pragma once
 
 #include "i_layer.h"
-#include "device_preference.h"
+
 
 class NEURAL_NET_API LayerBase
 	: public virtual ILayer
@@ -33,6 +33,8 @@ scope_public:
 	virtual void ApplyGradient() override { }
 
 	virtual void SetNet(NeuralNet *net) override { _net = net; }
+
+	virtual void SetDevicePreference(IDevicePreference::Ptr pref) override;
 
 #ifdef _UNIT_TESTS_
 	void UTBackprop(ParamMap &computeMap, ParamMap &inputErrorMap)

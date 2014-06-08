@@ -10,6 +10,8 @@
 #include "math_util.h"
 #include "params.h"
 
+#include "device_preference.h"
+
 class NeuralNet;
 
 namespace aser = axon::serialization;
@@ -45,6 +47,8 @@ public:
 	virtual bool IsBetter(const CostMap &a, const CostMap &b) const = 0;
 
 	virtual void SetNet(NeuralNet *net) = 0;
+
+	virtual void SetDevicePreference(IDevicePreference::Ptr pref) = 0;
 };
 
 // Default for most cost functions
