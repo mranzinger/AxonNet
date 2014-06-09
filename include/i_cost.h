@@ -11,26 +11,9 @@
 #include "params.h"
 
 #include "device_preference.h"
+#include "cost_map.h"
 
 class NeuralNet;
-
-namespace aser = axon::serialization;
-
-class CostMap
-    : public std::map<std::string, Real>
-{
-public:
-    static const std::string PRIMARY_NAME;
-
-    CostMap() = default;
-    CostMap(std::initializer_list<value_type> initList);
-
-    CostMap &operator+=(const CostMap &mp);
-    CostMap &operator*=(Real val);
-    CostMap &operator/=(Real val);
-
-    friend void BindStruct(const aser::CStructBinder &binder, CostMap &mp);
-};
 
 class NEURAL_NET_API ICost
 {

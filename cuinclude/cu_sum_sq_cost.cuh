@@ -9,6 +9,7 @@
 #pragma once
 
 #include "params.h"
+#include "cost_map.h"
 
 class CuSumSqCost
 {
