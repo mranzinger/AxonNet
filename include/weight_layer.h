@@ -11,7 +11,7 @@
 
 #include "weights.h"
 
-#include "i_cu_weight_layer.cuh"
+#include "i_cu_weight_layer.h"
 
 class NEURAL_NET_API WeightLayerConfig
 	: public LayerConfig

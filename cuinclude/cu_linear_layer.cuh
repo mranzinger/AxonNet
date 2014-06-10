@@ -11,10 +11,10 @@
 #include "params.h"
 #include "weights.h"
 
-#include "i_cu_weight_layer.cuh"
+#include "i_cu_weight_layer.h"
 
 class CuLinearLayer
-	: public virtual ICuWeightLayer
+	: public ICuWeightLayer
 {
 scope_public:
 	CuLinearLayer(int deviceId);

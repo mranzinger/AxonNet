@@ -184,13 +184,13 @@ void HandwrittenLoader::Get(const vector<size_t>& idxs, ParamMap &inputMap,
 		bool deform) const
 {
     Params vals(_numCols, _numRows, 1,
-                CMatrix(_imgSize, idxs.size()));
-    Params labels(1, 10, 1, CMatrix::Zero(10, idxs.size()));
+                new CMatrix(_imgSize, idxs.size()));
+    Params labels(1, 10, 1, new CMatrix(CMatrix::Zero(10, idxs.size())));
 
 	// Since the data is stored column major, it means that each image
 	// is stored in contiguous memory.
-	Real *pVals = vals.Data.data();
-	Real *pLabels = labels.Data.data();
+	Real *pVals = vals.GetHostMatrix().data();
+	Real *pLabels = labels.GetHostMatrix().data();
 
 	std::random_device device;
 	std::uniform_int_distribution<> dist(0, 3);
