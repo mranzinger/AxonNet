@@ -115,6 +115,65 @@ __global__ void CuMaxPoolLayer_Compute(const Real *pFullInput, Real *pFullOutput
 	pOutput[opY * opWidth * depth + blockX] = max;
 }
 
+__global__ void CuMaxPoolLayer_Backprop(const Real *pFullInput, const Real *pFullOutput,
+										const Real *pFullOutputErrors,
+										Real *pFullInputErrors,
+										uint32_t ipWidth, uint32_t ipHeight,
+										uint32_t opWidth, uint32_t opHeight,
+										uint32_t depth,
+										uint32_t windowSizeX, uint32_t windowSizeY,
+										uint32_t stepX, uint32_t stepY)
+{
+	uint32_t layer = blockIdx.z * blockDim.z + threadIdx.z;
+
+	const Real *pInput = pFullInput + layer * (ipWidth * ipHeight * depth);
+	const Real *pOutput = pFullOutput + layer * (opWidth * opHeight * depth);
+	const Real *pOutputErrors = pFullOutputErrors + layer * (opWidth * opHeight * depth);
+	Real *pInputErrors = pFullInputErrors + layer * (ipWidth * ipHeight * depth);
+
+	uint32_t blockX = blockIdx.x * blockDim.x + threadIdx.x;
+
+	uint32_t opX = blockX / depth;
+
+	if (opX >= opWidth)
+		return;
+
+	uint32_t opY = blockIdx.y * blockDim.y + threadIdx.y;
+
+	if (opY >= opHeight)
+		return;
+
+	uint32_t dOff = blockX % depth;
+
+	uint32_t ipX = opX * stepX;
+	uint32_t ipY = opY * stepY;
+
+	uint32_t xEnd = min(ipX + windowSizeX, ipWidth);
+	uint32_t yEnd = min(ipY + windowSizeY, ipHeight);
+
+	const uint32_t opIdx = opY * opWidth * depth + blockX;
+
+	const Real opVal = pOutput[opIdx];
+	const Real opErrVal = pOutputErrors[opIdx];
+
+	for (uint32_t y = ipY; y < yEnd; ++y)
+	{
+		for (uint32_t x = ipX; x < xEnd; ++x)
+		{
+			const uint32_t ipIdx = y * ipWidth * depth + x * depth + dOff;
+
+			Real ipVal = pInput[ipIdx];
+
+			if (ipVal == opVal)
+			{
+				Real &ipErrVal = pInputErrors[ipIdx];
+
+				ipErrVal = opErrVal;
+			}
+		}
+	}
+}
+
 Params CuMaxPoolLayer::Compute(const Params& input)
 {
 	EnsureStep();
@@ -156,7 +215,36 @@ Params CuMaxPoolLayer::Backprop(const Params& input, const Params& lastOutput,
 	if (!_windowSizeX || !_windowSizeY)
 		return outputErrors;
 
-	return Params();
+	Params inputErrors = Params::CreateLike(input, _handle);
+
+	const CuMat &mInput = input.GetCudaMatrix(_handle);
+	const CuMat &mOutput = lastOutput.GetCudaMatrix(_handle);
+	const CuMat &mOutputErrors = outputErrors.GetCudaMatrix(_handle);
+	CuMat &mInputErrors = inputErrors.GetCudaMatrix(_handle);
+
+	const uint32_t ipWidth = input.Width;
+	const uint32_t ipHeight = input.Height;
+	const uint32_t depth = input.Depth;
+
+	const uint32_t opWidth = lastOutput.Width;
+	const uint32_t opHeight = lastOutput.Height;
+
+	dim3 threads(32, 32, 1);
+	dim3 blocks = round_up(opWidth * depth, opHeight, input.Cols, threads);
+
+	CuMaxPoolLayer_Backprop
+#ifdef _CUDA_COMPILE_
+		<<<blocks, threads>>>
+#endif
+		(mInput.Buff(), mOutput.Buff(), mOutputErrors.Buff(),
+		 mInputErrors.Buff(),
+		 ipWidth, ipHeight,
+		 opWidth, opHeight,
+		 depth,
+		 _windowSizeX, _windowSizeY,
+		 _stepX, _stepY);
+
+	return inputErrors;
 }
 
 
