@@ -74,6 +74,8 @@ public:
 	           size_t testFreq,
 		       const std::string &chkRoot);
 
+	void SetDevicePreference(const IDevicePreference::Ptr &pref);
+
 	friend void WriteStruct(const aser::CStructWriter &writer, const NeuralNet &net);
 	friend void ReadStruct(const aser::CStructReader &reader, NeuralNet &net);
 

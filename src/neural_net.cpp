@@ -275,6 +275,12 @@ void NeuralNet::SaveCheckpoint(const std::string &chkRoot)
 	CAxonSerializer().SerializeToFile(savePath.string(), chk);
 }
 
+void NeuralNet::SetDevicePreference(const IDevicePreference::Ptr& pref)
+{
+	for (const ILayer::Ptr &layer : _layers)
+		layer->SetDevicePreference(pref);
+}
+
 void BindStruct(const CStructBinder &binder, NetworkConfig &config)
 {
 	binder("layers", config.Configs)
