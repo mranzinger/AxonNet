@@ -3,6 +3,7 @@
 #include "single_input_layer.h"
 #include "weight_layer.h"
 
+#include "cu_linear_layer.cuh"
 
 class NEURAL_NET_API LinearLayer
 	: public SingleInputLayer,
@@ -34,5 +35,10 @@ scope_public:
 scope_protected:
 	virtual Params SCompute(const Params &input, bool isTraining) override;
 	virtual Params SBackprop(const Params &lastInput, const Params &lastOutput, const Params &outputErrors) override;
+
+	virtual void OnInitCudaDevice(int deviceId) override;
+
+scope_private:
+	std::unique_ptr<CuLinearLayer> _cuImpl;
 
 };

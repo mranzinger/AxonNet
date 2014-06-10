@@ -50,6 +50,9 @@ void LinearLayer::SetWeightDecay(Real rate)
 
 Params LinearLayer::SCompute(const Params &input, bool isTraining)
 {
+	if (_cuImpl)
+		return _cuImpl->Compute(input);
+
 	const uint32_t batchSize = input.Cols;
 	const uint32_t outputSize = _weights.Biases.size();
 	const uint32_t inputSize = input.Rows;
@@ -77,6 +80,9 @@ Params LinearLayer::SCompute(const Params &input, bool isTraining)
 Params LinearLayer::SBackprop(const Params &lastInput, const Params &lastOutput,
 							 const Params &outputErrors)
 {
+	if (_cuImpl)
+		return _cuImpl->Backprop(lastInput, lastOutput, outputErrors);
+
 	const uint32_t batchSize = lastInput.Cols;
 	const uint32_t outputSize = _weights.Biases.size();
 	const uint32_t inputSize = lastInput.Rows;
@@ -115,15 +121,23 @@ void LinearLayer::ApplyGradient()
     WeightLayer::ApplyGradient();
 }
 
+void LinearLayer::OnInitCudaDevice(int deviceId)
+{
+	_cuImpl.reset(new CuLinearLayer(deviceId));
+
+	// Inform the weight layer that a cuda implementation is present
+	SetCudaImplementation(_cuImpl.get());
+}
+
 void WriteStruct(const aser::CStructWriter &writer, const LinearLayer &layer)
 {
+	WriteStruct(writer, (const WeightLayer &)layer);
     WriteStruct(writer, (const SingleInputLayer &)layer);
-    WriteStruct(writer, (const WeightLayer &)layer);
 }
 void ReadStruct(const aser::CStructReader &reader, LinearLayer &layer)
 {
+	ReadStruct(reader, (WeightLayer &)layer);
     ReadStruct(reader, (SingleInputLayer &)layer);
-    ReadStruct(reader, (WeightLayer &)layer);
 }
 
 AXON_SERIALIZE_DERIVED_TYPE(ILayer, LinearLayer, LinearLayer);
