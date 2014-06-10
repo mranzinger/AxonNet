@@ -13,6 +13,7 @@ using namespace std;
 CostBase::CostBase()
     : _net(nullptr)
 {
+    _devicePref = CPUDevicePreference::Instance;
 }
 
 void CostBase::SetNet(NeuralNet* net)

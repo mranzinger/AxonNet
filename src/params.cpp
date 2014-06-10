@@ -146,6 +146,8 @@ void swap(Params &a, Params &b)
     swap(a.Width, b.Width);
     swap(a.Height, b.Height);
     swap(a.Depth, b.Depth);
+    swap(a.Rows, b.Rows);
+    swap(a.Cols, b.Cols);
     swap(a._refCt, b._refCt);
     swap(a._hostMat, b._hostMat);
     swap(a._cudaMat, b._cudaMat);

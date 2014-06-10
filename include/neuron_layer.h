@@ -52,9 +52,7 @@ Params NeuronLayer<Fn>::SCompute(const Params &input, bool isTraining)
     if (_cuImpl)
         return _cuImpl->Compute(input, isTraining);
 
-    Params ret(input, new CMatrix());
-    CMatrix c = ApplyFunction<Fn>(input.GetHostMatrix());
-    ret.GetHostMatrix().swap(c);
+    Params ret(input, ApplyFunction<Fn>(input.GetHostMatrix()));
 
 	return ret;
 }
@@ -65,12 +63,11 @@ Params NeuronLayer<Fn>::SBackprop(const Params &lastInput, const Params &lastOut
     if (_cuImpl)
         return _cuImpl->Backprop(lastInput, lastOutput, outputErrors);
 
-	Params ret(lastInput, new CMatrix());
+	CMatrix *c = ApplyDerivative<Fn>(lastInput.GetHostMatrix(), lastOutput.GetHostMatrix());
 
-	CMatrix c = ApplyDerivative<Fn>(lastInput.GetHostMatrix(), lastOutput.GetHostMatrix());
-	ret.GetHostMatrix().swap(c);
+	c->noalias() = c->cwiseProduct(outputErrors.GetHostMatrix());
 
-	ret.GetHostMatrix().noalias() = ret.GetHostMatrix().cwiseProduct(outputErrors.GetHostMatrix());
+	Params ret(lastInput, c);
 
 	return std::move(ret);
 }
