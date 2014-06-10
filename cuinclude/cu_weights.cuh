@@ -37,8 +37,8 @@ public:
 
     void SetHandle(const CuContext &handle);
 
-    void CopyToDevice(const CWeights &hWeights);
-    void CopyToHost(CWeights &hWeights) const;
+    void CopyToDevice(const CWeights &hWeights, bool gradToo = false);
+    void CopyToHost(CWeights &hWeights, bool gradToo = false) const;
 
     void RandInit();
     void Init();

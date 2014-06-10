@@ -24,9 +24,11 @@ void AssertEquivalence(const MatTypeA &a, const MatTypeB &b, Real precision)
 
     if (!eq)
     {
-        cout << "Matrix A:" << endl << a << endl << endl
-             << "Matrix B:" << endl << b << endl << endl;
-
+        if (a.size() < 20 && b.size() < 20)
+        {
+            cout << "Matrix A:" << endl << a << endl << endl
+                 << "Matrix B:" << endl << b << endl << endl;
+        }
         // Obviously, this is false... do it for the debug statement
         ASSERT_TRUE(a.isApprox(b, precision));
     }

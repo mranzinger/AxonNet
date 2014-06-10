@@ -31,8 +31,8 @@ public:
 
 	void ApplyGradient();
 
-	void SyncToDevice(const CWeights &hWeights);
-	void SyncToHost(CWeights &hWeights) const;
+	void SyncToDevice(const CWeights &hWeights, bool gradToo);
+	void SyncToHost(CWeights &hWeights, bool gradToo) const;
 
 	void SetLearningRate(Real rate);
 	void SetMomentum(Real rate);
@@ -66,14 +66,14 @@ void CuLinearLayer::ApplyGradient()
 	_impl->ApplyGradient();
 }
 
-void CuLinearLayer::SyncToDevice(const CWeights& hWeights)
+void CuLinearLayer::SyncToDevice(const CWeights& hWeights, bool gradToo)
 {
-	_impl->SyncToDevice(hWeights);
+	_impl->SyncToDevice(hWeights, gradToo);
 }
 
-void CuLinearLayer::SyncToHost(CWeights& hWeights) const
+void CuLinearLayer::SyncToHost(CWeights& hWeights, bool gradToo) const
 {
-	_impl->SyncToHost(hWeights);
+	_impl->SyncToHost(hWeights, gradToo);
 }
 
 void CuLinearLayer::SetLearningRate(Real rate)
@@ -152,14 +152,14 @@ void CuLinearLayer::Impl::ApplyGradient()
 	_weights.ApplyGradient();
 }
 
-void CuLinearLayer::Impl::SyncToDevice(const CWeights& hWeights)
+void CuLinearLayer::Impl::SyncToDevice(const CWeights& hWeights, bool gradToo)
 {
-	_weights.CopyToDevice(hWeights);
+	_weights.CopyToDevice(hWeights, gradToo);
 }
 
-void CuLinearLayer::Impl::SyncToHost(CWeights& hWeights) const
+void CuLinearLayer::Impl::SyncToHost(CWeights& hWeights, bool gradToo) const
 {
-	_weights.CopyToHost(hWeights);
+	_weights.CopyToHost(hWeights, gradToo);
 }
 
 void CuLinearLayer::Impl::SetLearningRate(Real rate)

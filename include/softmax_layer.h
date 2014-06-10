@@ -17,7 +17,7 @@ scope_public:
 	typedef std::shared_ptr<SoftmaxLayer> Ptr;
 
 	SoftmaxLayer();
-	SoftmaxLayer(std::string name);
+	explicit SoftmaxLayer(std::string name);
 	SoftmaxLayer(std::string name, std::string inputName);
 
 	virtual std::string GetLayerType() const override {

@@ -111,6 +111,18 @@ void WeightLayer::SetCudaImplementation(ICuWeightLayer* impl)
 	_cuImpl->SetWeightDecay(_weights.WeightDecay);
 }
 
+void WeightLayer::SyncToHost(bool gradToo)
+{
+    if (_cuImpl)
+        _cuImpl->SyncToHost(_weights, gradToo);
+}
+
+void WeightLayer::SyncToDevice(bool gradToo)
+{
+    if (_cuImpl)
+        _cuImpl->SyncToDevice(_weights, gradToo);
+}
+
 void BindStruct(const aser::CStructBinder &binder, WeightLayerConfig &config)
 {
     BindStruct(binder, (LayerConfig&)config);

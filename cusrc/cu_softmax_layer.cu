@@ -90,7 +90,7 @@ Params CuSoftmaxLayer::Backprop(const Params& lastInput,
 	MultiplyTrans3D(mDiff, lastOutput.Rows, lastOutput.Rows,
 				    outputErrors.GetCudaMatrix(_handle), inputErrors);
 
-	cudaDeviceSynchronize();
+	cudaError_t err = cudaDeviceSynchronize();
 
 	return ret;
 }

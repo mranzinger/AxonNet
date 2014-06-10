@@ -63,6 +63,9 @@ scope_public:
 	virtual void InitializeFromConfig(const LayerConfig::Ptr &config) override;
 	virtual LayerConfig::Ptr GetConfig() const override;
 
+	void SyncToHost(bool gradToo = false);
+	void SyncToDevice(bool gradToo = false);
+
 	friend void WriteStruct(const aser::CStructWriter &writer, const WeightLayer &layer);
 	friend void ReadStruct(const aser::CStructReader &reader, WeightLayer &layer);
 

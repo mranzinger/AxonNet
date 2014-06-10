@@ -17,8 +17,8 @@ public:
 
 	virtual void ApplyGradient() = 0;
 
-	virtual void SyncToDevice(const CWeights &hWeights) = 0;
-	virtual void SyncToHost(CWeights &hWeights) const = 0;
+	virtual void SyncToDevice(const CWeights &hWeights, bool gradToo = false) = 0;
+	virtual void SyncToHost(CWeights &hWeights, bool gradToo = false) const = 0;
 
 	virtual void SetLearningRate(Real rate) = 0;
 	virtual void SetMomentum(Real rate) = 0;

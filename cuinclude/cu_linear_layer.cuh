@@ -26,8 +26,8 @@ scope_public:
 
 	virtual void ApplyGradient();
 
-	virtual void SyncToDevice(const CWeights &hWeights);
-	virtual void SyncToHost(CWeights &hWeights) const;
+	virtual void SyncToDevice(const CWeights &hWeights, bool gradToo = false);
+	virtual void SyncToHost(CWeights &hWeights, bool gradToo = false) const;
 
 	virtual void SetLearningRate(Real rate);
 	virtual void SetMomentum(Real rate);

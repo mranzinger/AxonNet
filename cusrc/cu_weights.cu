@@ -94,7 +94,7 @@ void CuWeights::SetDefaults()
     DynamicLearningRate = 1.0f;
 }
 
-void CuWeights::CopyToDevice(const CWeights& hWeights)
+void CuWeights::CopyToDevice(const CWeights& hWeights, bool gradToo)
 {
     Weights.CopyToDevice(hWeights.Weights);
     Biases.CopyToDevice(hWeights.Biases);
@@ -102,17 +102,31 @@ void CuWeights::CopyToDevice(const CWeights& hWeights)
     WeightsIncrement.CopyToDevice(hWeights.WeightsIncrement);
     BiasIncrement.CopyToDevice(hWeights.BiasIncrement);
 
-    WeightsGrad.ResizeLike(Weights);
-    BiasGrad.ResizeLike(Biases);
+    if (gradToo)
+    {
+        WeightsGrad.CopyToDevice(hWeights.WeightsGrad);
+        BiasGrad.CopyToDevice(hWeights.BiasGrad);
+    }
+    else
+    {
+        WeightsGrad.ResizeLike(Weights);
+        BiasGrad.ResizeLike(Biases);
+    }
 }
 
-void CuWeights::CopyToHost(CWeights& hWeights) const
+void CuWeights::CopyToHost(CWeights& hWeights, bool gradToo) const
 {
     Weights.CopyToHost(hWeights.Weights);
     Biases.CopyToHost(hWeights.Biases);
 
     WeightsIncrement.CopyToHost(hWeights.WeightsIncrement);
     BiasIncrement.CopyToHost(hWeights.BiasIncrement);
+
+    if (gradToo)
+    {
+        WeightsGrad.CopyToHost(hWeights.WeightsGrad);
+        BiasGrad.CopyToHost(hWeights.BiasGrad);
+    }
 }
 
 void CuWeights::SetHandle(const CuContext& handle)
