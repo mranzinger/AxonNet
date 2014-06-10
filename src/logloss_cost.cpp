@@ -82,7 +82,7 @@ Params LogLossCost::SComputeGrad(const Params &pred, const Params &labels)
 	const CMatrix &mLabels = labels.GetHostMatrix();
 
 	if (_outputIsSoftmax)
-		return Params(pred, (mPreds - mLabels) / pred.Cols);
+		return Params(pred, new CMatrix((mPreds - mLabels) / pred.Cols));
 
 	Params ret(pred, new CMatrix(pred.Rows, pred.Cols));
 
