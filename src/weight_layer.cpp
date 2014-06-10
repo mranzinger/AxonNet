@@ -34,22 +34,36 @@ WeightLayer::WeightLayer(RMatrix weights, Vector bias, bool gradConsumer)
 void WeightLayer::SetLearningRate(Real rate)
 {
     _weights.LearningRate = rate;
+
+    if (_cuImpl)
+    	_cuImpl->SetLearningRate(rate);
 }
 
 void WeightLayer::SetMomentum(Real rate)
 {
     _weights.Momentum = rate;
+
+    if (_cuImpl)
+    	_cuImpl->SetMomentum(rate);
 }
 
 void WeightLayer::SetWeightDecay(Real rate)
 {
     _weights.WeightDecay = rate;
+
+    if (_cuImpl)
+    	_cuImpl->SetWeightDecay(rate);
 }
 
 void WeightLayer::ApplyGradient()
 {
     if (_gradConsumer)
-        _weights.ApplyGradient();
+    {
+    	if (_cuImpl)
+    		_cuImpl->ApplyGradient();
+    	else
+    		_weights.ApplyGradient();
+    }
 }
 
 void WeightLayer::InitializeFromConfig(const LayerConfig::Ptr& config)
@@ -62,6 +76,9 @@ void WeightLayer::InitializeFromConfig(const LayerConfig::Ptr& config)
 	_weights = CWeights(win->Weights, win->Biases);
 	_weights.WeightsIncrement = win->WeightsIncrement;
 	_weights.BiasIncrement = win->BiasesIncrement;
+
+	if (_cuImpl)
+		_cuImpl->SyncToDevice(_weights);
 }
 
 LayerConfig::Ptr WeightLayer::GetConfig() const
@@ -73,10 +90,25 @@ LayerConfig::Ptr WeightLayer::GetConfig() const
 
 void WeightLayer::BuildConfig(WeightLayerConfig& config) const
 {
+	// If the cuda implementation is being used, then the weights
+	// need to be synced back to the host before saving them
+	if (_cuImpl)
+		_cuImpl->SyncToHost(const_cast<CWeights&>(_weights));
+
 	config.Weights = _weights.Weights;
 	config.Biases = _weights.Biases;
 	config.WeightsIncrement = _weights.WeightsIncrement;
 	config.BiasesIncrement = _weights.BiasIncrement;
+}
+
+void WeightLayer::SetCudaImplementation(ICuWeightLayer* impl)
+{
+	_cuImpl = impl;
+
+	_cuImpl->SyncToDevice(_weights);
+	_cuImpl->SetLearningRate(_weights.LearningRate);
+	_cuImpl->SetMomentum(_weights.Momentum);
+	_cuImpl->SetWeightDecay(_weights.WeightDecay);
 }
 
 void BindStruct(const aser::CStructBinder &binder, WeightLayerConfig &config)
@@ -116,4 +148,5 @@ void ReadStruct(const aser::CStructReader &reader, WeightLayer &layer)
 }
 
 AXON_SERIALIZE_DERIVED_TYPE(LayerConfig, WeightLayerConfig, WeightLayerConfig);
+
 

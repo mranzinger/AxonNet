@@ -11,6 +11,8 @@
 
 #include "weights.h"
 
+#include "i_cu_weight_layer.cuh"
+
 class NEURAL_NET_API WeightLayerConfig
 	: public LayerConfig
 {
@@ -66,6 +68,11 @@ scope_public:
 
 scope_protected:
 	void BuildConfig(WeightLayerConfig &config) const;
+
+	void SetCudaImplementation(ICuWeightLayer *impl);
+
+scope_private:
+	ICuWeightLayer *_cuImpl = nullptr;
 };
 
 

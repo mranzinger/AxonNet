@@ -11,7 +11,10 @@
 #include "params.h"
 #include "weights.h"
 
+#include "i_cu_weight_layer.cuh"
+
 class CuLinearLayer
+	: public virtual ICuWeightLayer
 {
 scope_public:
 	CuLinearLayer(int deviceId);
@@ -21,10 +24,14 @@ scope_public:
 	Params Backprop(const Params &lastInput, const Params &lastOutput,
 				   const Params &outputErrors);
 
-	void ApplyGradient();
+	virtual void ApplyGradient();
 
-	void SyncToDevice(const CWeights &hWeights);
-	void SyncToHost(CWeights &hWeights) const;
+	virtual void SyncToDevice(const CWeights &hWeights);
+	virtual void SyncToHost(CWeights &hWeights) const;
+
+	virtual void SetLearningRate(Real rate);
+	virtual void SetMomentum(Real rate);
+	virtual void SetWeightDecay(Real rate);
 
 scope_private:
 	class Impl;

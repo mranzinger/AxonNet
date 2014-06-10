@@ -33,6 +33,10 @@ public:
 
 	void SyncToDevice(const CWeights &hWeights);
 	void SyncToHost(CWeights &hWeights) const;
+
+	void SetLearningRate(Real rate);
+	void SetMomentum(Real rate);
+	void SetWeightDecay(Real rate);
 };
 
 
@@ -70,6 +74,21 @@ void CuLinearLayer::SyncToDevice(const CWeights& hWeights)
 void CuLinearLayer::SyncToHost(CWeights& hWeights) const
 {
 	_impl->SyncToHost(hWeights);
+}
+
+void CuLinearLayer::SetLearningRate(Real rate)
+{
+	_impl->SetLearningRate(rate);
+}
+
+void CuLinearLayer::SetMomentum(Real rate)
+{
+	_impl->SetMomentum(rate);
+}
+
+void CuLinearLayer::SetWeightDecay(Real rate)
+{
+	_impl->SetWeightDecay(rate);
 }
 
 struct CuAddBias
@@ -141,4 +160,19 @@ void CuLinearLayer::Impl::SyncToDevice(const CWeights& hWeights)
 void CuLinearLayer::Impl::SyncToHost(CWeights& hWeights) const
 {
 	_weights.CopyToHost(hWeights);
+}
+
+void CuLinearLayer::Impl::SetLearningRate(Real rate)
+{
+	_weights.LearningRate = rate;
+}
+
+void CuLinearLayer::Impl::SetMomentum(Real rate)
+{
+	_weights.Momentum = rate;
+}
+
+void CuLinearLayer::Impl::SetWeightDecay(Real rate)
+{
+	_weights.WeightDecay = rate;
 }
