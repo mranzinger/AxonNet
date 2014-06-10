@@ -10,8 +10,6 @@
 
 #include <vector>
 
-#include <boost/thread.hpp>
-
 #include "cumat.cuh"
 
 class MatPreserver

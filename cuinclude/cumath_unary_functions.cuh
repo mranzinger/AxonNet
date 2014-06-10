@@ -228,7 +228,7 @@ struct CuScalarAdd
 
     CuScalarAdd(Real val) : _val(val) { }
 
-    __device__ Real operator()(Real val)
+    __device__ Real operator()(Real val) const
     {
         return val + _val;
     }
