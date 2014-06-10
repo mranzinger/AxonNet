@@ -294,12 +294,18 @@ void WriteStruct(const aser::CStructWriter &writer, const NeuralNet &net)
 }
 void ReadStruct(const aser::CStructReader &reader, NeuralNet &net)
 {
+	IDevicePreference::Ptr pref;
+
 	reader("layers", net._layers)
-		  ("cost", net._cost);
+		  ("cost", net._cost)
+		  ("device", pref);
 
 	for (auto layer : net._layers)
 		layer->SetNet(&net);
 	net._cost->SetNet(&net);
+
+	if (pref)
+		net.SetDevicePreference(pref);
 }
 
 
