@@ -76,7 +76,7 @@ CuMat CuRowwiseOperator::MaxIdx() const
 		if (status != CUBLAS_STATUS_SUCCESS)
 			throw runtime_error("Unable to compute the max element for this row.");
 
-		hMat(row, 0) = idx;
+		hMat(row, 0) = idx - 1;
 	}
 
 	ret.CopyToDevice(hMat);
@@ -115,7 +115,7 @@ CuMat CuColwiseOperator::MaxIdx() const
 		if (status != CUBLAS_STATUS_SUCCESS)
 			throw runtime_error("Unable to compute the min element for this row.");
 
-		hMat(0, col) = idx;
+		hMat(0, col) = idx - 1;
 	}
 
 	ret.CopyToDevice(hMat);
@@ -153,7 +153,7 @@ CuMat CuRowwiseOperator::MinIdx() const
 		if (status != CUBLAS_STATUS_SUCCESS)
 			throw runtime_error("Unable to compute the max element for this row.");
 
-		hMat(row) = idx;
+		hMat(row) = idx - 1;
 	}
 
 	ret.CopyToDevice(hMat);
@@ -192,7 +192,7 @@ CuMat CuColwiseOperator::MinIdx() const
 		if (status != CUBLAS_STATUS_SUCCESS)
 			throw runtime_error("Unable to compute the min element for this row.");
 
-		hMat(0, col) = idx;
+		hMat(0, col) = idx - 1;
 	}
 
 	ret.CopyToDevice(hMat);

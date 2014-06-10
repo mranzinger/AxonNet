@@ -17,9 +17,12 @@ CuSumSqCost::CuSumSqCost(int deviceId)
 
 CostMap CuSumSqCost::Compute(const Params& pred, const Params& labels)
 {
-	// Get the differences and square them
-	CuMat diff = pred.GetCudaMatrix(_handle) - labels.GetCudaMatrix(_handle);
-	diff.UnaryExpr(CuSquare());
+    const CuMat &mPreds = pred.GetCudaMatrix(_handle);
+    const CuMat &mLabels = labels.GetCudaMatrix(_handle);
+
+    // Get the differences and square them
+    CuMat diff(_handle);
+    mPreds.BinaryExpr<false>(mLabels, diff, CuSquaredDiff());
 
 	Real cost = diff.Sum();
 
@@ -31,11 +34,12 @@ CostMap CuSumSqCost::Compute(const Params& pred, const Params& labels)
 
 Params CuSumSqCost::ComputeGrad(const Params& pred, const Params& labels)
 {
+	const CuMat &mPreds = pred.GetCudaMatrix(_handle);
+	const CuMat &mLabels = labels.GetCudaMatrix(_handle);
+
 	CuMat *diff = new CuMat(_handle);
 
-	*diff = pred.GetCudaMatrix(_handle) - labels.GetCudaMatrix(_handle);
-
-	(*diff) /= pred.Cols;
+	mPreds.BinaryExpr<false>(mLabels, *diff, CuScaledDiff(1.0f / pred.Cols));
 
 	return Params(pred, diff);
 }

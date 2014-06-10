@@ -101,4 +101,22 @@ struct CuTakeRight
         return b;
     }
 };
+struct CuSquaredDiff
+{
+    __device__ Real operator()(Real a, Real b) const
+    {
+        const Real diff = a - b;
 
+        return diff * diff;
+    }
+};
+struct CuScaledDiff
+{
+    Real _scale;
+    CuScaledDiff(Real scale) : _scale(scale) { }
+
+    __device__ Real operator()(Real a, Real b) const
+    {
+        return _scale * (a - b);
+    }
+};
