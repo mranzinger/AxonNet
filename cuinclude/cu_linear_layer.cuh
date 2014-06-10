@@ -19,7 +19,7 @@ scope_public:
 
 	Params Compute(const Params &input) const;
 	Params Backprop(const Params &lastInput, const Params &lastOutput,
-				   const Params &outputErrors) const;
+				   const Params &outputErrors);
 
 	void ApplyGradient();
 
