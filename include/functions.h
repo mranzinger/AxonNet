@@ -126,7 +126,7 @@ namespace
 	template<typename Fn, bool IsExplicit>
 	struct FnApplicator
 	{
-		static CMatrix *Apply(const Vector &input)
+		static CMatrix *Apply(const CMatrix &input)
 		{
 			return new CMatrix(input.unaryExpr([](Real val) { return Fn::Compute(val); }));
 		}

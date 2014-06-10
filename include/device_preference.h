@@ -51,6 +51,17 @@ public:
 
     CudaDevicePreference()
         : DeviceId(0) { }
+    CudaDevicePreference(int deviceId)
+        : DeviceId(deviceId) { }
+
+    static Ptr Create()
+    {
+        return std::make_shared<CudaDevicePreference>();
+    }
+    static Ptr Create(int deviceId)
+    {
+        return std::make_shared<CudaDevicePreference>(deviceId);
+    }
 
     virtual DevicePreference Type() const
     {
