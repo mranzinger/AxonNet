@@ -10,12 +10,14 @@ DropoutLayer::DropoutLayer(string name, Real dropout)
 
 Params DropoutLayer::SCompute(const Params &input, bool isTraining)
 {
-	Params ret(input, CMatrix());
-	ret.Data.resize(input.Data.rows(), input.Data.cols());
+	Params output(input, new CMatrix(input.Rows, input.Cols));
+
+	const CMatrix &mInput = input.GetHostMatrix();
+	CMatrix &mOutput = output.GetHostMatrix();
 
 	if (isTraining)
 	{
-		ret.Data.noalias() = input.Data.unaryExpr(
+		mOutput.noalias() = mInput.unaryExpr(
 			[this] (Real val)
 			{
 				Real rndVal = _rand.Next();
@@ -29,22 +31,26 @@ Params DropoutLayer::SCompute(const Params &input, bool isTraining)
 	}
 	else
 	{
-		ret.Data.noalias() = input.Data * (1.0f - _dropout);
+		mOutput.noalias() = mInput * (1.0f - _dropout);
 	}
 
-	return move(ret);
+	return move(output);
 }
 
 Params DropoutLayer::SBackprop(const Params &lastInput, const Params &lastOutput, const Params &outputErrors)
 {
-	Params inputErrors(lastInput, CMatrix());
-	inputErrors.Data.resize(lastInput.Data.rows(), lastInput.Data.cols());
+	Params inputErrors(lastInput, new CMatrix(lastInput.Rows, lastInput.Cols));
 
-	const Real *pLastInput = lastInput.Data.data(),
-			   *pLastOutput = lastOutput.Data.data(),
-			   *pOutputErrs = outputErrors.Data.data();
-	Real *pInputErrs = inputErrors.Data.data();
-	Real *pEnd = pInputErrs + inputErrors.Data.size();
+	const CMatrix &mLastInput = lastInput.GetHostMatrix();
+	const CMatrix &mLastOutput = lastOutput.GetHostMatrix();
+	const CMatrix &mOutputErrors = outputErrors.GetHostMatrix();
+	CMatrix &mInputErrors = inputErrors.GetHostMatrix();
+
+	const Real *pLastInput = mLastInput.data(),
+			   *pLastOutput = mLastOutput.data(),
+			   *pOutputErrs = mOutputErrors.data();
+	Real *pInputErrs = mInputErrors.data();
+	Real *pEnd = pInputErrs + mInputErrors.size();
 
 	for (; pInputErrs != pEnd; ++pInputErrs, ++pLastInput, ++pLastOutput, ++pOutputErrs)
 	{
@@ -60,6 +66,8 @@ Params DropoutLayer::SBackprop(const Params &lastInput, const Params &lastOutput
 void BindStruct(const CStructBinder &binder, DropoutLayer &layer)
 {
 	binder("dropout", layer._dropout);
+
+	BindStruct(binder, (SingleInputLayer&)layer);
 }
 
 AXON_SERIALIZE_DERIVED_TYPE(ILayer, DropoutLayer, DropoutLayer);
