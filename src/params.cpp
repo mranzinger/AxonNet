@@ -87,7 +87,7 @@ Params::Params(const Params &like, CuMat *cudaMat)
 
     _refCt = new uint32_t(1);
 }
-Params::Params(Params &&other)
+Params::Params(Params &&other) noexcept
     : Params()
 {
     swap(*this, other);

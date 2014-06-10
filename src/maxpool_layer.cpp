@@ -17,7 +17,7 @@ Params MaxPoolLayer::SCompute(const Params &input, bool isTraining)
 	const int ipWidth = input.Width;
 	const int ipHeight = input.Height;
 	const int depth = input.Depth;
-	const int batchSize = input.BatchSize();
+	const int batchSize = input.Cols;
 
 	const int ipStride = ipWidth * depth;
 
@@ -25,9 +25,12 @@ Params MaxPoolLayer::SCompute(const Params &input, bool isTraining)
 	const int opHeight = (int) ceil(ipHeight / float(_windowSizeY));
 
 	Params output(opWidth, opHeight, depth,
-			CMatrix(opWidth * opHeight * depth, batchSize),
-			Params::Packed);
-	output.Data.setConstant(numeric_limits<Real>::lowest());
+			new CMatrix(opWidth * opHeight * depth, batchSize));
+
+	const CMatrix &mInput = input.GetHostMatrix();
+	CMatrix &mOutput = output.GetHostMatrix();
+
+	mOutput.setConstant(numeric_limits<Real>::lowest());
 
 	const int opStride = opWidth * depth;
 
@@ -53,8 +56,8 @@ Params MaxPoolLayer::SCompute(const Params &input, bool isTraining)
                         int inputIdx = y * ipStride + x * depth + c;
                         int opIdx = opY * opStride + opX * depth + c;
 
-                        const Real ipVal = input.Data(inputIdx, imgIdx);
-                        Real &opVal = output.Data(opIdx, imgIdx);
+                        const Real ipVal = mInput(inputIdx, imgIdx);
+                        Real &opVal = mOutput(opIdx, imgIdx);
 
                         if (ipVal > opVal)
                             opVal = ipVal;
@@ -74,7 +77,7 @@ Params MaxPoolLayer::SBackprop(const Params &lastInput, const Params &lastOutput
 	const int ipWidth = lastInput.Width;
 	const int ipHeight = lastInput.Height;
 	const int depth = lastInput.Depth;
-	const int batchSize = lastInput.BatchSize();
+	const int batchSize = lastInput.Cols;
 
 	const int ipStride = ipWidth * depth;
 
@@ -82,7 +85,14 @@ Params MaxPoolLayer::SBackprop(const Params &lastInput, const Params &lastOutput
 	const int opHeight = lastOutput.Height;
 
 	Params inputErrors(ipWidth, ipHeight, depth,
-			 CMatrix::Zero(lastInput.Data.rows(), lastInput.Data.cols()));
+			 new CMatrix(lastInput.Rows, lastInput.Cols));
+
+	const CMatrix &mLastInput = lastInput.GetHostMatrix();
+	const CMatrix &mLastOutput = lastOutput.GetHostMatrix();
+	const CMatrix &mOutputErrors = outputErrors.GetHostMatrix();
+
+	CMatrix &mInputErrors = inputErrors.GetHostMatrix();
+	mInputErrors.setZero();
 
 	const int opStride = opWidth * depth;
 
@@ -108,15 +118,15 @@ Params MaxPoolLayer::SBackprop(const Params &lastInput, const Params &lastOutput
                         int inputIdx = y * ipStride + x * depth + c;
                         int opIdx = opY * opStride + opX * depth + c;
 
-                        const Real ipVal = lastInput.Data(inputIdx, imgIdx);
-                        const Real opVal = lastOutput.Data(opIdx, imgIdx);
+                        const Real ipVal = mLastInput(inputIdx, imgIdx);
+                        const Real opVal = mLastOutput(opIdx, imgIdx);
 
                         // If this value was the maximum, then backprop
                         // the error
                         if (ipVal == opVal)
                         {
-                            Real &ipErrVal = inputErrors.Data(inputIdx, imgIdx);
-                            const Real opErrVal = outputErrors.Data(opIdx, imgIdx);
+                            Real &ipErrVal = mInputErrors(inputIdx, imgIdx);
+                            const Real opErrVal = mOutputErrors(opIdx, imgIdx);
 
                             ipErrVal = opErrVal;
                         }

@@ -51,6 +51,7 @@ public:
 	uint32_t Rows() const { return _rows; }
 	uint32_t Cols() const { return _cols; }
 	uint32_t Size() const { return _rows * _cols; }
+	Real *Buff() { return _dMat; }
 	const Real *Buff() const { return _dMat; }
 	CuStorageOrder Order() const { return _storageOrder; }
 

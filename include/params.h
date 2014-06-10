@@ -30,7 +30,7 @@ public:
 	Params(const Params &like, CuMat *cudaMat);
 
 #ifndef _CUDA_COMPILE_
-	Params(Params &&other);
+	Params(Params &&other) noexcept;
 #endif
 
 	static Params CreateLike(const Params &other);

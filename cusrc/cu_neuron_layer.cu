@@ -11,6 +11,7 @@
 #include "cumat.cuh"
 #include "cumath_unary_functions.cuh"
 #include "cumath_binary_functions.cuh"
+#include "cusetup_provider.cuh"
 
 using namespace std;
 
