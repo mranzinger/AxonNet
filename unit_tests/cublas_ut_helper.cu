@@ -11,7 +11,7 @@
 
 using namespace std;
 
-cublasHandle_t UTGetCublasHandle()
+CuContext UTGetCublasHandle()
 {
 	static cublasHandle_t s_handle = 0;
 
@@ -27,5 +27,5 @@ cublasHandle_t UTGetCublasHandle()
 			throw runtime_error("Unable to allocate the cublas handle");
 	}
 
-	return s_handle;
+	return CuContext(s_handle);
 }

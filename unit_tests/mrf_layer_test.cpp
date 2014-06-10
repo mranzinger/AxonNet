@@ -50,8 +50,8 @@ TEST(MRFLayerTest, ComputeSingularity)
 	correctOutput << 5, -3,
 			         4,  4;
 
-	Params comp = Compute(Params(3, 3, 1, input), 2, 2);
+	Params comp = Compute(Params(3, 3, 1, new CMatrix(input)), 2, 2);
 
-	AssertMatrixEquivalence(correctOutput, comp.Data);
+	AssertMatrixEquivalence(correctOutput, comp.GetHostMatrix());
 }
 

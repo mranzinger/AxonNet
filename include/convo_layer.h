@@ -24,7 +24,7 @@ scope_public:
 				size_t strideX, size_t strideY, 
 				int padWidth = 0, int padHeight = 0);
 	ConvoLayer(std::string name,
-				RMatrix linWeights, Vector linBias,
+				CMatrix linWeights, Vector linBias,
 				size_t windowSizeX, size_t windowSizeY,
 				size_t strideX, size_t strideY,
 				int padWidth = 0, int padHeight = 0);

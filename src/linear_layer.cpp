@@ -13,7 +13,7 @@ LinearLayer::LinearLayer(string name, size_t numInputs, size_t numOutputs)
 
 }
 
-LinearLayer::LinearLayer(string name, RMatrix weights, Vector biases)
+LinearLayer::LinearLayer(string name, CMatrix weights, Vector biases)
 	: SingleInputLayer(move(name)), WeightLayer(move(weights), move(biases))
 {
 }

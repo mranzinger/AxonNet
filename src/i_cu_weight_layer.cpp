@@ -7,4 +7,6 @@
 
 #include "i_cu_weight_layer.h"
 
-
+ICuWeightLayer::~ICuWeightLayer()
+{
+}

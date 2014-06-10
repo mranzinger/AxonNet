@@ -54,9 +54,9 @@ TEST(MaxPoolLayerTest, Degenerate)
 	CMatrix correctOutput(1, 2);
 	correctOutput << 9, 40;
 
-	Params comp = Compute(Params(3, 3, 1, input), 3, 3);
+	Params comp = Compute(Params(3, 3, 1, new CMatrix(input)), 3, 3);
 
-	AssertMatrixEquivalence(correctOutput, comp.Data);
+	AssertMatrixEquivalence(correctOutput, comp.GetHostMatrix());
 }
 
 TEST(MaxPoolLayerTest, Normal)
@@ -79,9 +79,9 @@ TEST(MaxPoolLayerTest, Normal)
 					  7, 17,  1,
 					 15, 18, 21;
 
-	Params comp = Compute(Params(9, 9, 1, input), 3, 3);
+	Params comp = Compute(Params(9, 9, 1, new CMatrix(input)), 3, 3);
 
-	AssertMatrixEquivalence(correctOutput, comp.Data);
+	AssertMatrixEquivalence(correctOutput, comp.GetHostMatrix());
 
 	CMatrix outputErrors(9, 1);
 	outputErrors << 1, 2, 3,
@@ -101,10 +101,10 @@ TEST(MaxPoolLayerTest, Normal)
 				   0, 0, 0,    0, 0, 0,    0, 0, 0,
 				   0, 0, 7,    0, 0, 8,    0, 0, 9;
 
-	Params bpComp = Backprop(Params(9, 9, 1, input),
-							 Params(3, 3, 1, outputErrors),
+	Params bpComp = Backprop(Params(9, 9, 1, new CMatrix(input)),
+							 Params(3, 3, 1, new CMatrix(outputErrors)),
 							 3, 3);
 
-	AssertMatrixEquivalence(inputErrors, bpComp.Data);
+	AssertMatrixEquivalence(inputErrors, bpComp.GetHostMatrix());
 }
 

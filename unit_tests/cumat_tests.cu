@@ -14,7 +14,7 @@
 
 TEST(CuMatTest, Copy)
 {
-    cublasHandle_t handle = UTGetCublasHandle();
+    CuContext handle = UTGetCublasHandle();
 
     CuMat cMat(handle, 3, 3);
 
@@ -33,7 +33,7 @@ TEST(CuMatTest, Copy)
 
 TEST(CuMatTest, Copy2)
 {
-    cublasHandle_t handle = UTGetCublasHandle();
+    CuContext handle = UTGetCublasHandle();
 
     CuMat dMat(handle, 2, 4);
 
@@ -51,7 +51,7 @@ TEST(CuMatTest, Copy2)
 
 TEST(CuMatTest, SetConstant)
 {
-    cublasHandle_t handle = UTGetCublasHandle();
+    CuContext handle = UTGetCublasHandle();
 
     CuMat a(handle, 3, 3);
 
@@ -76,7 +76,7 @@ TEST(CuMatTest, SetConstant)
 
 TEST(CuMatTest, SetConstant2)
 {
-    cublasHandle_t handle = UTGetCublasHandle();
+    CuContext handle = UTGetCublasHandle();
 
     CuMat dMat(handle, 40, 20);
     dMat = -1;
@@ -92,7 +92,7 @@ TEST(CuMatTest, SetConstant2)
 
 TEST(CuMatTest, Add)
 {
-	cublasHandle_t handle = UTGetCublasHandle();
+	CuContext handle = UTGetCublasHandle();
 
 	CuMat a(handle, 3, 3),
 		  b(handle, 3, 3),
@@ -131,7 +131,7 @@ TEST(CuMatTest, Add)
 
 TEST(CuMatTest, Add2)
 {
-    cublasHandle_t handle = UTGetCublasHandle();
+    CuContext handle = UTGetCublasHandle();
 
     CuMat dA(handle, 10, 5),
           dB(handle, 10, 5);
@@ -151,7 +151,7 @@ TEST(CuMatTest, Add2)
 
 TEST(CuMatTest, Add3)
 {
-    cublasHandle_t handle = UTGetCublasHandle();
+    CuContext handle = UTGetCublasHandle();
 
     CuMat dA(handle, 10, 5),
           dB(handle,  5, 10);
@@ -171,7 +171,7 @@ TEST(CuMatTest, Add3)
 
 TEST(CuMatTest, Mul)
 {
-    cublasHandle_t handle = UTGetCublasHandle();
+    CuContext handle = UTGetCublasHandle();
 
     CuMat dA(handle, 3, 3),
           dB(handle, 3, 3),
@@ -197,7 +197,7 @@ TEST(CuMatTest, Mul)
 
 TEST(CuMatTest, Mul2)
 {
-    cublasHandle_t handle = UTGetCublasHandle();
+    CuContext handle = UTGetCublasHandle();
 
     CuMat dA(handle, 1000, 2000),
           dB(handle, 2000, 128);
@@ -220,7 +220,7 @@ TEST(CuMatTest, Mul2)
 
 TEST(CuMatTest, Mul3)
 {
-    cublasHandle_t handle = UTGetCublasHandle();
+    CuContext handle = UTGetCublasHandle();
 
     CuMat dA(handle, 2000, 1000),
           dB(handle, 2000, 128);
@@ -243,7 +243,7 @@ TEST(CuMatTest, Mul3)
 
 TEST(CuMatTest, Mul4)
 {
-    cublasHandle_t handle = UTGetCublasHandle();
+    CuContext handle = UTGetCublasHandle();
 
     CuMat dA(handle, 1000, 2000),
           dB(handle, 128, 2000);
@@ -266,7 +266,7 @@ TEST(CuMatTest, Mul4)
 
 TEST(CuMatTest, Mul5)
 {
-    cublasHandle_t handle = UTGetCublasHandle();
+    CuContext handle = UTGetCublasHandle();
 
     CuMat dA(handle, 2000, 1000),
           dB(handle, 128, 2000);
@@ -297,7 +297,7 @@ TEST(CuMatTest, MulEigen)
 
 TEST(CuMatTest, MulCuda)
 {
-    cublasHandle_t handle = UTGetCublasHandle();
+    CuContext handle = UTGetCublasHandle();
 
     CuMat dA(handle, 1000, 2000),
           dB(handle, 2000, 128);
@@ -321,7 +321,7 @@ TEST(CuMatTest, MulEigenHuge)
 
 TEST(CuMatTest, MulCudaHuge)
 {
-    cublasHandle_t handle = UTGetCublasHandle();
+    CuContext handle = UTGetCublasHandle();
 
     CuMat dA(handle, 10000, 20000),
           dB(handle, 20000, 128);
@@ -336,7 +336,7 @@ TEST(CuMatTest, MulCudaHuge)
 
 TEST(CuMatTest, AddScaled)
 {
-    cublasHandle_t handle = UTGetCublasHandle();
+    CuContext handle = UTGetCublasHandle();
 
     CuMat dA(handle, 2, 3),
           dB(handle, 2, 3),
@@ -357,7 +357,7 @@ TEST(CuMatTest, AddScaled)
 
 TEST(CuMatTest, SumColumns)
 {
-	cublasHandle_t handle = UTGetCublasHandle();
+	CuContext handle = UTGetCublasHandle();
 
 	CuMat dA(handle, 1000, 128);
 	dA.SetConstant(1);
@@ -382,7 +382,7 @@ struct HExp
 
 TEST(CuMatTest, SumRows)
 {
-	cublasHandle_t handle = UTGetCublasHandle();
+	CuContext handle = UTGetCublasHandle();
 
 	CuMat dA(handle, 1000, 128);
 	dA.SetConstant(0.95f);
@@ -445,7 +445,7 @@ struct CuSoftmaxDiv
 
 TEST(CuMatTest, Softmax)
 {
-	cublasHandle_t handle = UTGetCublasHandle();
+	CuContext handle = UTGetCublasHandle();
 
 	CuMat dInput(handle, 1000, 128);
 

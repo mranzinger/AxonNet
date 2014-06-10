@@ -13,11 +13,11 @@
 class ICuWeightLayer
 {
 public:
-	virtual ~ICuWeightLayer() { }
+	virtual ~ICuWeightLayer();
 
 	virtual void ApplyGradient() = 0;
 
-	virtual void SyncToDevice(const CWeights &hWeights);
+	virtual void SyncToDevice(const CWeights &hWeights) = 0;
 	virtual void SyncToHost(CWeights &hWeights) const = 0;
 
 	virtual void SetLearningRate(Real rate) = 0;

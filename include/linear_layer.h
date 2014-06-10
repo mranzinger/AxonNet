@@ -14,7 +14,7 @@ scope_public:
 
 	LinearLayer() = default;
 	LinearLayer(std::string name, size_t numInputs, size_t numOutputs);
-	LinearLayer(std::string name, RMatrix weights, Vector biases);
+	LinearLayer(std::string name, CMatrix weights, Vector biases);
 
 	virtual std::string GetLayerType() const override {
 		return "Linear Layer";

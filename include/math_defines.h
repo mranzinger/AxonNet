@@ -43,6 +43,8 @@ struct CuContext
 	cublasHandle_t CublasHandle;
 
 	CuContext() : Device(0), CublasHandle(0) { }
+	explicit CuContext(cublasHandle_t handle) : Device(0), CublasHandle(handle) { }
+	CuContext(int device, cublasHandle_t handle) : Device(device), CublasHandle(handle) { }
 
 	bool operator==(const CuContext &b) const
 	{

@@ -26,7 +26,7 @@ WeightLayer::WeightLayer(CWeights weights, bool gradConsumer)
 {
 }
 
-WeightLayer::WeightLayer(RMatrix weights, Vector bias, bool gradConsumer)
+WeightLayer::WeightLayer(CMatrix weights, Vector bias, bool gradConsumer)
 	: _weights(move(weights), move(bias)), _gradConsumer(gradConsumer)
 {
 }

@@ -42,7 +42,7 @@ scope_public:
 	WeightLayer();
 	WeightLayer(size_t numInputs, size_t numOutputs);
 	WeightLayer(CWeights weights, bool gradConsumer = true);
-	WeightLayer(RMatrix weights, Vector bias, bool gradConsumer = true);
+	WeightLayer(CMatrix weights, Vector bias, bool gradConsumer = true);
 
 	size_t InputSize() const {
 		return _weights.Weights.cols();

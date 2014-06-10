@@ -11,5 +11,7 @@
 #include <cuda.h>
 #include <cublas_v2.h>
 
-cublasHandle_t UTGetCublasHandle();
+#include "math_defines.h"
+
+CuContext UTGetCublasHandle();
 

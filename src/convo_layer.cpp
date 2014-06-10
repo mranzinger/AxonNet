@@ -21,7 +21,7 @@ ConvoLayer::ConvoLayer(string name,
 }
 
 ConvoLayer::ConvoLayer(std::string name,
-						RMatrix linWeights, Vector linBias,
+						CMatrix linWeights, Vector linBias,
 						size_t windowSizeX, size_t windowSizeY,
 						size_t strideX, size_t strideY,
 						int padWidth, int padHeight)

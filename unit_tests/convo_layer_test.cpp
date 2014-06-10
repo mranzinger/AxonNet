@@ -17,7 +17,7 @@
 
 using namespace std;
 
-Params Compute(const RMatrix &kernel, const Vector &bias,
+Params Compute(const CMatrix &kernel, const Vector &bias,
 			   const Params &input,
 			   size_t windowSizeX, size_t windowSizeY,
 			   size_t strideX, size_t strideY,
@@ -32,12 +32,12 @@ Params Compute(const RMatrix &kernel, const Vector &bias,
 			.SCompute(input, isTraining);
 }
 
-Params Backprop(const RMatrix &kernel, const Vector &bias,
+Params Backprop(const CMatrix &kernel, const Vector &bias,
 			    const Params &lastInput, const Params &outputErrors,
 			    size_t windowSizeX, size_t windowSizeY,
 			    size_t strideX, size_t strideY,
 			    size_t padWidth, size_t padHeight,
-			    RMatrix &weightsGrad, Vector &biasGrad,
+			    CMatrix &weightsGrad, Vector &biasGrad,
 			    const Params *pLastOutput = nullptr)
 {
 	ConvoLayer layer("", kernel, bias,
@@ -60,7 +60,7 @@ Params Backprop(const RMatrix &kernel, const Vector &bias,
 
 TEST(ConvoLayerTest, SimpleConvo)
 {
-	RMatrix kernel(1, 9); // 1 Filter, 9 inputs
+	CMatrix kernel(1, 9); // 1 Filter, 9 inputs
 	kernel << -1, 0, 1,
 			  -2, 0, 2,
 			  -1, 0, 1;
@@ -81,17 +81,17 @@ TEST(ConvoLayerTest, SimpleConvo)
 	CMatrix correctOutput(1, 2);
 	correctOutput << 9, -7;
 
-	Params comp = Compute(kernel, bias, Params(3, 3, 1, input),
+	Params comp = Compute(kernel, bias, Params(3, 3, 1, new CMatrix(input)),
 						  3, 3,
 						  1, 1,
 						  0, 0);
 
-	AssertMatrixEquivalence(correctOutput, comp.Data);
+	AssertMatrixEquivalence(correctOutput, comp.GetHostMatrix());
 }
 
 TEST(ConvoLayerTest, ConvoMultiFilter)
 {
-	RMatrix kernel(2, 4); // 2 Filters, 4 inputs
+	CMatrix kernel(2, 4); // 2 Filters, 4 inputs
 	kernel << 1, 1, 1, 1,
 			  1, 2, 3, 4;
 	Vector bias(2);
@@ -115,17 +115,17 @@ TEST(ConvoLayerTest, ConvoMultiFilter)
 					  2,  6,     17, 25,
 					  6,  2,     27, 15;
 
-	Params comp = Compute(kernel, bias, Params(3, 3, 1, input),
+	Params comp = Compute(kernel, bias, Params(3, 3, 1, new CMatrix(input)),
 						  2, 2,
 						  1, 1,
 						  0, 0);
 
-	AssertMatrixEquivalence(correctOutput, comp.Data);
+	AssertMatrixEquivalence(correctOutput, comp.GetHostMatrix());
 }
 
 TEST(ConvoLayerTest, ConvoPaddedSimple)
 {
-	RMatrix kernel(1, 9);
+	CMatrix kernel(1, 9);
 	kernel << 1, 1, 1,
 			  1, 1, 1,
 			  1, 1, 1;
@@ -138,17 +138,17 @@ TEST(ConvoLayerTest, ConvoPaddedSimple)
 	CMatrix correctOutput(1, 2);
 	correctOutput << 0, 1;
 
-	Params comp = Compute(kernel, bias, Params(1, 1, 1, input),
+	Params comp = Compute(kernel, bias, Params(1, 1, 1, new CMatrix(input)),
 						  3, 3,
 						  1, 1,
 						  1, 1);
 
-	AssertMatrixEquivalence(correctOutput, comp.Data);
+	AssertMatrixEquivalence(correctOutput, comp.GetHostMatrix());
 }
 
 TEST(ConvoLayerTest, ConvoPaddedHarder)
 {
-	RMatrix kernel(1, 9);
+	CMatrix kernel(1, 9);
 	kernel << 1, 2, 3,
 			  4, 5, 6,
 			  7, 8, 9;
@@ -164,17 +164,17 @@ TEST(ConvoLayerTest, ConvoPaddedHarder)
 	correctOutput << (5*1 + 6*2 + 8*4 + 9*5), (4*2 + 5*3 + 7*5 + 8*6),
 			         (2*4 + 3*5 + 5*7 + 6*8), (1*5 + 2*6 + 4*8 + 5*9);
 
-	Params comp = Compute(kernel, bias, Params(3, 3, 1, input),
+	Params comp = Compute(kernel, bias, Params(3, 3, 1, new CMatrix(input)),
 						  3, 3,
 						  2, 2,
 						  1, 1);
 
-	AssertMatrixEquivalence(correctOutput, comp.Data);
+	AssertMatrixEquivalence(correctOutput, comp.GetHostMatrix());
 }
 
 TEST(ConvoLayerTest, SimpleBackprop)
 {
-	RMatrix kernel(1, 9);
+	CMatrix kernel(1, 9);
 	kernel << 1, 1, 1,
 			  1, 1, 1,
 			  1, 1, 1;
@@ -189,12 +189,12 @@ TEST(ConvoLayerTest, SimpleBackprop)
 	CMatrix outputErrors(1, 1);
 	outputErrors << -5;
 
-	RMatrix weightsGrad;
+	CMatrix weightsGrad;
 	Vector biasGrad;
 
 	Params inputErrors = Backprop(kernel, bias,
-								  Params(3, 3, 1, input),
-								  Params(1, 1, 1, outputErrors),
+								  Params(3, 3, 1, new CMatrix(input)),
+								  Params(1, 1, 1, new CMatrix(outputErrors)),
 								  3, 3,
 								  1, 1,
 								  0, 0,
@@ -205,10 +205,10 @@ TEST(ConvoLayerTest, SimpleBackprop)
 	// as what the linear layer computes
 	LinearLayer validator("", kernel, bias);
 
-	Params linInputErrors = validator.UTBackprop(input,
-											     outputErrors);
+	Params linInputErrors = validator.UTBackprop(Params(new CMatrix(input)),
+											     Params(new CMatrix(outputErrors)));
 
-	AssertMatrixEquivalence(inputErrors.Data, linInputErrors.Data);
+	AssertMatrixEquivalence(inputErrors.GetHostMatrix(), linInputErrors.GetHostMatrix());
 
 	AssertMatrixEquivalence(validator._weights.WeightsGrad,
 							weightsGrad);
@@ -219,7 +219,7 @@ TEST(ConvoLayerTest, SimpleBackprop)
 
 TEST(ConvoLayerTest, HarderBackprop)
 {
-	RMatrix kernel(1, 9);
+	CMatrix kernel(1, 9);
 	kernel << 1, 1, 1,
 			  1, 1, 1,
 			  1, 1, 1;
@@ -238,12 +238,12 @@ TEST(ConvoLayerTest, HarderBackprop)
 					1, -3, 1,
 					1, 1, 1;
 
-	RMatrix weightsGrad;
+	CMatrix weightsGrad;
 	Vector biasGrad;
 
 	Params inputErrors = Backprop(kernel, bias,
-								  Params(5, 5, 1, input),
-								  Params(3, 3, 1, outputErrors),
+								  Params(5, 5, 1, new CMatrix(input)),
+								  Params(3, 3, 1, new CMatrix(outputErrors)),
 								  3, 3,
 								  1, 1,
 								  0, 0,
@@ -267,21 +267,21 @@ TEST(ConvoLayerTest, HarderBackprop)
 
 			CMatrix opErrWindow = outputErrors.block(y * 3 + x, 0, 1, 1);
 
-			Params linInputErrors = validator.UTBackprop(inWindow,
-													     opErrWindow);
+			Params linInputErrors = validator.UTBackprop(Params(new CMatrix(inWindow)),
+													     Params(new CMatrix(opErrWindow)));
 
-			CMatrix linErrWindow = RMap(linInputErrors.Data.data(), 3, 3);
+			CMatrix linErrWindow = RMap(linInputErrors.GetHostMatrix().data(), 3, 3);
 
 			cMapInputErrors.block(y, x, 3, 3) += linErrWindow;
 		}
 	}
 
-	AssertMatrixEquivalence(inputErrors.Data, cInputErrors);
+	AssertMatrixEquivalence(inputErrors.GetHostMatrix(), cInputErrors);
 }
 
 TEST(ConvoLayerTest, HarderBackpropStride)
 {
-	RMatrix kernel(1, 9);
+	CMatrix kernel(1, 9);
 	kernel << 1, 1, 1,
 			  1, 1, 1,
 			  1, 1, 1;
@@ -300,12 +300,12 @@ TEST(ConvoLayerTest, HarderBackpropStride)
 					1, -3, 1,
 					1, 1, 1;
 
-	RMatrix weightsGrad;
+	CMatrix weightsGrad;
 	Vector biasGrad;
 
 	Params inputErrors = Backprop(kernel, bias,
-								  Params(5, 5, 1, input),
-								  Params(3, 3, 1, outputErrors),
+								  Params(5, 5, 1, new CMatrix(input)),
+								  Params(3, 3, 1, new CMatrix(outputErrors)),
 								  3, 3,
 								  2, 2,
 								  0, 0,
@@ -329,21 +329,21 @@ TEST(ConvoLayerTest, HarderBackpropStride)
 
 			CMatrix opErrWindow = outputErrors.block(y * 3 + x, 0, 1, 1);
 
-			Params linInputErrors = validator.UTBackprop(inWindow,
-													     opErrWindow);
+			Params linInputErrors = validator.UTBackprop(Params(new CMatrix(inWindow)),
+													     Params(new CMatrix(opErrWindow)));
 
-			CMatrix linErrWindow = RMap(linInputErrors.Data.data(), 3, 3);
+			CMatrix linErrWindow = RMap(linInputErrors.GetHostMatrix().data(), 3, 3);
 
 			cMapInputErrors.block(y, x, 3, 3) += linErrWindow;
 		}
 	}
 
-	AssertMatrixEquivalence(inputErrors.Data, cInputErrors);
+	AssertMatrixEquivalence(inputErrors.GetHostMatrix(), cInputErrors);
 }
 
 TEST(ConvoLayerTest, PaddedBackprop)
 {
-	RMatrix kernel(1, 9);
+	CMatrix kernel(1, 9);
 	kernel << 1, 1, 1,
 			  1, 1, 1,
 			  1, 1, 1;
@@ -356,12 +356,12 @@ TEST(ConvoLayerTest, PaddedBackprop)
 	CMatrix outputErrors(1, 1);
 	outputErrors << 4;
 
-	RMatrix weightsGrad;
+	CMatrix weightsGrad;
 	Vector biasGrad;
 
 	Params inputErrors = Backprop(kernel, bias,
-								  Params(1, 1, 1, input),
-								  Params(1, 1, 1, outputErrors),
+								  Params(1, 1, 1, new CMatrix(input)),
+								  Params(1, 1, 1, new CMatrix(outputErrors)),
 								  3, 3,
 								  1, 1,
 								  1, 1,
@@ -374,11 +374,11 @@ TEST(ConvoLayerTest, PaddedBackprop)
 			  0, 4, 0,
 			  0, 0, 0;
 
-	Params linInputErrors = validator.UTBackprop(linput,
-											     outputErrors);
+	Params linInputErrors = validator.UTBackprop(Params(new CMatrix(linput)),
+											     Params(new CMatrix(outputErrors)));
 
-	AssertMatrixEquivalence(inputErrors.Data,
-							linInputErrors.Data.block(5, 0, 1, 1));
+	AssertMatrixEquivalence(inputErrors.GetHostMatrix(),
+							linInputErrors.GetHostMatrix().block(5, 0, 1, 1));
 
 	AssertMatrixEquivalence(validator._weights.WeightsGrad,
 							weightsGrad);
@@ -389,7 +389,7 @@ TEST(ConvoLayerTest, PaddedBackprop)
 
 TEST(ConvoLayerTest, PaddedBackpropHarder)
 {
-	RMatrix kernel(1, 9);
+	CMatrix kernel(1, 9);
 	kernel << 1, 1, 1,
 			  1, -1, 1,
 			  1, 1, 1;
@@ -405,12 +405,12 @@ TEST(ConvoLayerTest, PaddedBackpropHarder)
 	outputErrors << 1, 1, -1, -1,
 			       -1, -1,  1, 1;
 
-	RMatrix weightsGrad;
+	CMatrix weightsGrad;
 	Vector biasGrad;
 
 	Params inputErrors = Backprop(kernel, bias,
-								  Params(3, 3, 1, input),
-								  Params(2, 2, 1, outputErrors),
+								  Params(3, 3, 1, new CMatrix(input)),
+								  Params(2, 2, 1, new CMatrix(outputErrors)),
 								  3, 3,
 								  2, 2,
 								  1, 1,
@@ -437,10 +437,10 @@ TEST(ConvoLayerTest, PaddedBackpropHarder)
 
 			CMatrix opErrWindow = outputErrors.block((y/2) * 2 + (x/2), 0, 1, 1);
 
-			Params linInputErrors = validator.UTBackprop(inWindow,
-													     opErrWindow);
+			Params linInputErrors = validator.UTBackprop(Params(new CMatrix(inWindow)),
+													     Params(new CMatrix(opErrWindow)));
 
-			CMatrix linErrWindow = RMap(linInputErrors.Data.data(), 3, 3);
+			CMatrix linErrWindow = RMap(linInputErrors.GetHostMatrix().data(), 3, 3);
 
 			cInputErrors.block(y, x, 3, 3) += linErrWindow;
 		}
@@ -453,7 +453,7 @@ TEST(ConvoLayerTest, PaddedBackpropHarder)
 	CMatrix cTrueInputErr(9, 2);
 	cTrueInputErr << cInputErrWndCol, cInputErrWndCol;
 
-	AssertMatrixEquivalence(inputErrors.Data,
+	AssertMatrixEquivalence(inputErrors.GetHostMatrix(),
 							cTrueInputErr );
 }
 
