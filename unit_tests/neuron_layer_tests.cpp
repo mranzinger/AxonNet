@@ -29,6 +29,28 @@ void TestNeuronCompute()
                             0.001);
 }
 
+template<typename Fn>
+void TestNeuronDerivative()
+{
+    Params input(new CMatrix(CMatrix::Random(10, 10)));
+    Params outputErrors(new CMatrix(CMatrix::Random(10, 10)));
+
+    NeuronLayer<Fn> layer("");
+
+    Params hOutput = layer.SCompute(input, true);
+
+    Params hInputErrors = layer.SBackprop(input, hOutput, outputErrors);
+
+    layer.SetDevicePreference(CudaDevicePreference::Create(0));
+
+    Params dOutput = layer.SCompute(input, true);
+
+    Params dInputErrors = layer.SBackprop(input, dOutput, outputErrors);
+
+    AssertMatrixEquivalence(hOutput.GetHostMatrix(), dOutput.GetHostMatrix(), 0.001);
+    AssertMatrixEquivalence(hInputErrors.GetHostMatrix(), dInputErrors.GetHostMatrix(), 0.001);
+}
+
 TEST(NeuronLayerTest, CudaCompute)
 {
     TestNeuronCompute<LinearFn>();
@@ -40,4 +62,13 @@ TEST(NeuronLayerTest, CudaCompute)
     TestNeuronCompute<HardTanhFn>();
 }
 
-
+TEST(NeuronLayerTest, CudaBackprop)
+{
+    TestNeuronDerivative<LinearFn>();
+    TestNeuronDerivative<LogisticFn>();
+    TestNeuronDerivative<RectifierFn>();
+    TestNeuronDerivative<TanhFn>();
+    TestNeuronDerivative<RampFn>();
+    TestNeuronDerivative<SoftPlusFn>();
+    TestNeuronDerivative<HardTanhFn>();
+}
