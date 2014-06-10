@@ -8,12 +8,16 @@ using namespace std;
 using namespace axon::serialization;
 
 MaxPoolLayer::MaxPoolLayer(string name, size_t windowSizeX, size_t windowSizeY)
-	: SingleInputLayer(move(name)), _windowSizeX(windowSizeX), _windowSizeY(windowSizeY)
+	: SingleInputLayer(move(name)), _windowSizeX(windowSizeX), _windowSizeY(windowSizeY),
+	  _stepX(0), _stepY(0)
 {
 }
 
 Params MaxPoolLayer::SCompute(const Params &input, bool isTraining)
 {
+	if (_cuImpl)
+		return _cuImpl->Compute(input);
+
 	const int ipWidth = input.Width;
 	const int ipHeight = input.Height;
 	const int depth = input.Depth;
@@ -74,6 +78,9 @@ Params MaxPoolLayer::SCompute(const Params &input, bool isTraining)
 Params MaxPoolLayer::SBackprop(const Params &lastInput, const Params &lastOutput,
                              const Params &outputErrors)
 {
+	if (_cuImpl)
+		return _cuImpl->Backprop(lastInput, lastOutput, outputErrors);
+
 	const int ipWidth = lastInput.Width;
 	const int ipHeight = lastInput.Height;
 	const int depth = lastInput.Depth;
@@ -140,13 +147,22 @@ Params MaxPoolLayer::SBackprop(const Params &lastInput, const Params &lastOutput
 	return move(inputErrors);
 }
 
+void MaxPoolLayer::OnInitCudaDevice(int deviceId)
+{
+	_cuImpl.reset(new CuMaxPoolLayer(deviceId, _windowSizeX, _windowSizeY,
+									 _stepX, _stepY));
+}
+
 void BindStruct(const CStructBinder &binder, MaxPoolLayer &layer)
 {
-    BindStruct(binder, (SingleInputLayer &)layer);
-
 	binder("windowSizeX", layer._windowSizeX)
-		  ("windowSizeY", layer._windowSizeY);
+		  ("windowSizeY", layer._windowSizeY)
+		  ("stepX", layer._stepX)
+		  ("stepY", layer._stepY);
+
+	BindStruct(binder, (SingleInputLayer &)layer);
 }
 
 AXON_SERIALIZE_DERIVED_TYPE(ILayer, MaxPoolLayer, MaxPoolLayer);
+
 
