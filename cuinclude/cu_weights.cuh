@@ -35,6 +35,8 @@ public:
 
     CWeights ToHost() const;
 
+    void SetHandle(const CuContext &handle);
+
     void CopyToDevice(const CWeights &hWeights);
     void CopyToHost(CWeights &hWeights) const;
 

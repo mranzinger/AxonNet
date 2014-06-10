@@ -39,7 +39,7 @@ CWeights::CWeights(const CWeights& other)
 {
 }
 
-CWeights::CWeights(CWeights&& other)
+CWeights::CWeights(CWeights&& other) noexcept
 {
 	swap(*this, other);
 }

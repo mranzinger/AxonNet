@@ -33,7 +33,7 @@ public:
 	CWeights(const CWeights &other);
 
 #ifndef _CUDA_COMPILE_
-	CWeights(CWeights &&other);
+	CWeights(CWeights &&other) noexcept;
 #endif
 
 	CWeights &operator=(CWeights other);

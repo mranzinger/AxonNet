@@ -101,6 +101,9 @@ void CuWeights::CopyToDevice(const CWeights& hWeights)
 
     WeightsIncrement.CopyToDevice(hWeights.WeightsIncrement);
     BiasIncrement.CopyToDevice(hWeights.BiasIncrement);
+
+    WeightsGrad.ResizeLike(Weights);
+    BiasGrad.ResizeLike(Biases);
 }
 
 void CuWeights::CopyToHost(CWeights& hWeights) const
@@ -110,6 +113,18 @@ void CuWeights::CopyToHost(CWeights& hWeights) const
 
     WeightsIncrement.CopyToHost(hWeights.WeightsIncrement);
     BiasIncrement.CopyToHost(hWeights.BiasIncrement);
+}
+
+void CuWeights::SetHandle(const CuContext& handle)
+{
+	Weights.SetHandle(handle);
+	Biases.SetHandle(handle);
+
+	WeightsGrad.SetHandle(handle);
+	BiasGrad.SetHandle(handle);
+
+	WeightsIncrement.SetHandle(handle);
+	BiasIncrement.SetHandle(handle);
 }
 
 void CuWeights::ApplyGradient()

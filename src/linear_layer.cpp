@@ -50,19 +50,22 @@ void LinearLayer::SetWeightDecay(Real rate)
 
 Params LinearLayer::SCompute(const Params &input, bool isTraining)
 {
-	int batchSize = input.BatchSize();
-	int outputSize = _weights.Biases.size();
-	int inputSize = input.size();
+	const uint32_t batchSize = input.Cols;
+	const uint32_t outputSize = _weights.Biases.size();
+	const uint32_t inputSize = input.Rows;
 
 	Params ret(outputSize, 1, 1,
-			   CMatrix(outputSize, batchSize));
+			   new CMatrix(outputSize, batchSize));
 
-	FastFor(GetThreadPool(), 0, batchSize, 1,
+	const CMatrix &mInput = input.GetHostMatrix();
+	CMatrix &mOutput = ret.GetHostMatrix();
+
+	FastFor(GetThreadPool(), 0u, batchSize, 1u,
 		[&, this] (int imageIdx)
 	{
-		UMapVector vecIpImage(const_cast<Real*>(input.Data.data()) + imageIdx * inputSize,
+		UMapVector vecIpImage(const_cast<Real*>(mInput.data()) + imageIdx * inputSize,
 							  inputSize);
-		UMapVector vecOpImage(ret.Data.data() + imageIdx * outputSize,
+		UMapVector vecOpImage(mOutput.data() + imageIdx * outputSize,
 							  outputSize);
 
 		vecOpImage.noalias() = _weights.Weights * vecIpImage + _weights.Biases;
@@ -74,29 +77,34 @@ Params LinearLayer::SCompute(const Params &input, bool isTraining)
 Params LinearLayer::SBackprop(const Params &lastInput, const Params &lastOutput,
 							 const Params &outputErrors)
 {
-	int batchSize = lastInput.BatchSize();
-	int outputSize = _weights.Biases.size();
-	int inputSize = lastInput.size();
+	const uint32_t batchSize = lastInput.Cols;
+	const uint32_t outputSize = _weights.Biases.size();
+	const uint32_t inputSize = lastInput.Rows;
 
-	RMatrix transWeights = _weights.Weights.transpose();
+	CMatrix transWeights = _weights.Weights.transpose();
 
 	Params inputErrors(lastInput,
-					   CMatrix(lastInput.Data.rows(), lastInput.Data.cols()));
+					   new CMatrix(lastInput.Rows, lastInput.Cols));
 
-	FastFor(GetThreadPool(), 0, batchSize, 1,
+	const CMatrix &mInput = lastInput.GetHostMatrix();
+	const CMatrix &mOutputErrors = outputErrors.GetHostMatrix();
+
+	CMatrix &mInputErrors = inputErrors.GetHostMatrix();
+
+	FastFor(GetThreadPool(), 0u, batchSize, 1u,
 			[&, this] (int imageIdx)
 	{
-		UMapVector vecOutputErrs(const_cast<Real*>(outputErrors.Data.data()) + imageIdx * outputSize,
+		UMapVector vecOutputErrs(const_cast<Real*>(mOutputErrors.data()) + imageIdx * outputSize,
 								 outputSize);
 
-		UMapVector vecInputErrs(inputErrors.Data.data() + imageIdx * inputSize, inputSize);
+		UMapVector vecInputErrs(mInputErrors.data() + imageIdx * inputSize, inputSize);
 
 		// Calculate the input error
 		vecInputErrs.noalias() = transWeights * vecOutputErrs;
 	});
 
-	_weights.WeightsGrad.noalias() = outputErrors.Data * lastInput.Data.transpose();
-	_weights.BiasGrad = outputErrors.Data.rowwise().sum();
+	_weights.WeightsGrad.noalias() = mOutputErrors * mInput.transpose();
+	_weights.BiasGrad = mOutputErrors.rowwise().sum();
 
 	return move(inputErrors);
 }

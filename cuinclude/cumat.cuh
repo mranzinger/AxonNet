@@ -138,6 +138,8 @@ public:
 
 	Real Sum() const;
 
+	void SetHandle(const CuContext &handle) { _handle = handle; }
+
 	friend void swap(CuMat &a, CuMat &b);
 	
 private:
