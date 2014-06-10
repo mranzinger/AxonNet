@@ -32,7 +32,7 @@ Params SumSqCost::SComputeGrad(const Params &pred, const Params &labels)
 	if (_cuImpl)
 		return _cuImpl->ComputeGrad(pred, labels);
 
-	return Params(pred, (pred.GetHostMatrix() - labels.GetHostMatrix())  / pred.Cols);
+	return Params(pred, new CMatrix((pred.GetHostMatrix() - labels.GetHostMatrix())  / pred.Cols));
 }
 
 void SumSqCost::OnInitCudaDevice(int deviceId)

@@ -48,34 +48,21 @@ void ConvoLayer::SetWeightDecay(Real rate)
     WeightLayer::SetWeightDecay(rate);
 }
 
-Params ConvoLayer::SCompute(const Params &unpaddedInput, bool isTraining)
+Params ConvoLayer::SCompute(const Params &input, bool isTraining)
 {
-	if (InputSize() != unpaddedInput.Depth * _windowSizeX * _windowSizeY)
+	if (InputSize() != input.Depth * _windowSizeX * _windowSizeY)
 	{
 		assert(false);
 		throw runtime_error("The underlying linear layer doesn't take the correct input dimensions.");
 	}
 
-	switch (unpaddedInput.Layout)
-	{
-	case Params::Packed:
-		return ComputePacked(unpaddedInput, isTraining);
-	case Params::Planar:
-		return ComputePlanar(unpaddedInput, isTraining);
-	default:
-		throw runtime_error("Unsupported parameter layout.");
-	}
-}
-
-Params ConvoLayer::ComputePacked(const Params &input, bool isTraining)
-{
 	const CMatrix weights = _weights.Weights;
 	const Vector &biases = _weights.Biases;
 
 	const int ipWidth = input.Width;
 	const int ipHeight = input.Height;
 	const int ipDepth = input.Depth;
-	const int batchSize = input.BatchSize();
+	const int batchSize = input.Cols;
 
 	const int ipStride = ipWidth * ipDepth;
 
@@ -92,13 +79,15 @@ Params ConvoLayer::ComputePacked(const Params &input, bool isTraining)
 	const auto IpRow = [ipWidth] (int y) { return y * ipWidth; };
 
 	Params output(opWidth, opHeight, opDepth,
-			CMatrix(opWidth * opHeight * opDepth, batchSize),
-			Params::Packed);
+			new CMatrix(opWidth * opHeight * opDepth, batchSize));
 
 	int xMax = ipWidth + _padWidth,
 		yMax = ipHeight + _padHeight;
 
 	const int dfMiniBatchSize = 1;
+
+	const CMatrix &mInput = input.GetHostMatrix();
+	CMatrix &mOutput = output.GetHostMatrix();
 
 	FastFor(GetThreadPool(), 0, batchSize, dfMiniBatchSize,
 	        [&] (int imageIdx)
@@ -109,9 +98,9 @@ Params ConvoLayer::ComputePacked(const Params &input, bool isTraining)
 	    // application
 	    Vector convoPartialSum(opDepth);
 
-	    UMapVector vecIpImage(const_cast<Real*>(input.Data.data()) + imageIdx * (ipStride * ipHeight),
+	    UMapVector vecIpImage(const_cast<Real*>(mInput.data()) + imageIdx * (ipStride * ipHeight),
 	                       ipStride * ipHeight);
-	    UMapVector vecOpImage(output.Data.data() + imageIdx * (opStride * opHeight),
+	    UMapVector vecOpImage(mOutput.data() + imageIdx * (opStride * opHeight),
 	                       opStride * opHeight);
 
 		int yOpCurr = 0;
@@ -174,11 +163,6 @@ Params ConvoLayer::ComputePacked(const Params &input, bool isTraining)
 	return move(output);
 }
 
-Params ConvoLayer::ComputePlanar(const Params &unpaddedInput, bool isTraining)
-{
-	throw runtime_error("Planar input data is not currently supported.");
-}
-
 Params ConvoLayer::SBackprop(const Params &lastInput, const Params &lastOutput, const Params &pOutputErrors)
 {
 	const RMatrix &weights = _weights.Weights;
@@ -189,7 +173,7 @@ Params ConvoLayer::SBackprop(const Params &lastInput, const Params &lastOutput, 
 	const int ipWidth = lastInput.Width;
 	const int ipHeight = lastInput.Height;
 	const int ipDepth = lastInput.Depth;
-	const int batchSize = lastInput.BatchSize();
+	const int batchSize = lastInput.Cols;
 
 	const int ipStride = ipWidth * ipDepth;
 
@@ -209,10 +193,11 @@ Params ConvoLayer::SBackprop(const Params &lastInput, const Params &lastOutput, 
 		yMax = ipHeight + _padHeight;
 
 	Params pInputErrors(lastInput,
-				CMatrix::Zero(lastInput.Data.rows(), lastInput.Data.cols()));
+				new CMatrix(CMatrix::Zero(lastInput.Rows, lastInput.Cols)));
 
-	const CMatrix &outputErrors = pOutputErrors.Data;
-	CMatrix &inputErrors = pInputErrors.Data;
+	const CMatrix &mOutputErrors = pOutputErrors.GetHostMatrix();
+	const CMatrix &mLastInput = lastInput.GetHostMatrix();
+	CMatrix &mInputErrors = pInputErrors.GetHostMatrix();
 
 	// Initialize the gradient matrices
 	_weights.BiasGrad.resize(_weights.Biases.size());
@@ -226,11 +211,11 @@ Params ConvoLayer::SBackprop(const Params &lastInput, const Params &lastOutput, 
 	    Vector threadBiasGrad = Vector::Zero(_weights.BiasGrad.size());
 	    CMatrix threadWeightsGrad = CMatrix::Zero(cWeightsGrad.rows(), cWeightsGrad.cols());
 
-        UMapVector vecIpErrs(inputErrors.data() + (imageIdx * ipStride * ipHeight),
+        UMapVector vecIpErrs(mInputErrors.data() + (imageIdx * ipStride * ipHeight),
                              ipStride * ipHeight);
-        UMapVector vecOpErrs(const_cast<Real*>(outputErrors.data()) + (imageIdx * opStride * opHeight),
+        UMapVector vecOpErrs(const_cast<Real*>(mOutputErrors.data()) + (imageIdx * opStride * opHeight),
                              opStride * opHeight);
-        UMapRowVector vecLastInput(const_cast<Real*>(lastInput.Data.data()) + (imageIdx * ipStride * ipHeight),
+        UMapRowVector vecLastInput(const_cast<Real*>(mLastInput.data()) + (imageIdx * ipStride * ipHeight),
                              ipStride * ipHeight);
 
         int yOpCurr = 0;
@@ -363,11 +348,6 @@ void WriteStruct(const CStructWriter &writer, const ConvoLayer &layer)
 
 void ReadStruct(const CStructReader &reader, ConvoLayer &layer)
 {
-	// Don't use WeightLayer's read function because this
-	// read already grabs all of the necessary information
-	// for it
-	ReadStruct(reader, (SingleInputLayer&)layer);
-
 	size_t outputDepth, inputDepth;
 
 	reader("windowSizeX", layer._windowSizeX)
@@ -383,6 +363,11 @@ void ReadStruct(const CStructReader &reader, ConvoLayer &layer)
 
 	layer._weights = CWeights(layer._windowSizeX * layer._windowSizeY * inputDepth,
 							  outputDepth);
+
+	// Don't use WeightLayer's read function because this
+	// read already grabs all of the necessary information
+	// for it
+	ReadStruct(reader, (SingleInputLayer&)layer);
 }
 
 AXON_SERIALIZE_DERIVED_TYPE(ILayer, ConvoLayer, ConvoLayer);

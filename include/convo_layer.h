@@ -50,9 +50,6 @@ scope_protected:
 	virtual Params SBackprop(const Params &lastInput, const Params &lastOutput, const Params &outputErrors) override;
 
 scope_private:
-	Params ComputePacked(const Params &input, bool isTraining);
-	Params ComputePlanar(const Params &input, bool isTraining);
-
 	size_t GetInputDepth() const;
 };
 
