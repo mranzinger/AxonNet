@@ -279,6 +279,7 @@ void NeuralNet::SetDevicePreference(const IDevicePreference::Ptr& pref)
 {
 	for (const ILayer::Ptr &layer : _layers)
 		layer->SetDevicePreference(pref);
+	_cost->SetDevicePreference(pref);
 }
 
 void BindStruct(const CStructBinder &binder, NetworkConfig &config)

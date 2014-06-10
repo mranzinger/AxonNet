@@ -1,0 +1,75 @@
+{
+    "layers": [
+        {
+            "_realType": "LinearLayer",
+            "name": "l1",
+            "momentum": 0.9,
+            "weightDecay": 0.0005,
+            "numInputs": 784,
+            "numOutputs": 300
+        },
+        {
+            "_realType": "TanhNeuronLayer",
+            "name": "r1"
+        },
+        {
+            "_realType": "LinearLayer",
+            "name": "l2",
+            "momentum": 0.9,
+            "weightDecay": 0.0005,
+            "numInputs": 300,
+            "numOutputs": 500
+        },
+        {
+            "_realType": "TanhNeuronLayer",
+            "name": "r2"
+        },
+        {
+            "_realType": "LinearLayer",
+            "name": "l3",
+            "momentum": 0.9,
+            "weightDecay": 0.0005,
+            "numInputs": 500,
+            "numOutputs": 200
+        },
+        {
+            "_realType": "DropoutLayer",
+            "name": "d"
+        },
+        {
+            "_realType": "TanhNeuronLayer",
+            "name": "r3"
+        },
+        {
+            "_realType": "LinearLayer",
+            "name": "lt",
+            "momentum": 0.9,
+            "weightDecay": 0.0005,
+            "numInputs": 200,
+            "numOutputs": 50
+        },
+        {
+            "_realType": "TanhNeuronLayer",
+            "name": "rt"
+        },
+        {
+            "_realType": "LinearLayer",
+            "name": "l4",
+            "momentum": 0.9,
+            "weightDecay": 0.0005,
+            "numInputs": 50,
+            "numOutputs": 10
+        },
+        {
+            "_realType": "SoftmaxLayer",
+            "name": "soft"
+        }
+    ],
+    "cost": {
+        "_realType": "LogLossCost"
+    },
+    "device": {
+        "_realType": "cuda",
+        "deviceId": 0
+    }
+}
