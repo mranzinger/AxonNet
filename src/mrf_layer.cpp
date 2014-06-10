@@ -13,13 +13,13 @@
 using namespace std;
 
 MRFLayer::MRFLayer(std::string name,
-				   size_t width, size_t height)
+				   uint32_t width, uint32_t height)
 	: MRFLayer(move(name), "", width, height)
 {
 }
 
 MRFLayer::MRFLayer(std::string name, std::string inputName,
-		size_t width, size_t height)
+		uint32_t width, uint32_t height)
 	: LayerBase(move(name)), _inputName(move(inputName)),
 	  _width(width), _height(height)
 {
@@ -192,7 +192,7 @@ void MRFLayer::Backprop(const ParamMap& computeMap, ParamMap& inputErrorMap)
 }
 
 template<typename Function>
-void CalcSATFn(const RMap &inputField, RMatrix &sumAreaTable, int depth, Function fn)
+void CalcSATFn(const RMap &inputField, RMatrix &sumAreaTable, uint32_t depth, Function fn)
 {
 	// The good news is that computing this is a separable problem. I just
 	// don't feel like doing that right now
@@ -215,7 +215,7 @@ void CalcSATFn(const RMap &inputField, RMatrix &sumAreaTable, int depth, Functio
 	}
 }
 
-void MRFLayer::CalcSAT(const RMap& inputField, RMatrix& sumAreaTable, int depth) const
+void MRFLayer::CalcSAT(const RMap& inputField, RMatrix& sumAreaTable, uint32_t depth) const
 {
 	switch (_function)
 	{

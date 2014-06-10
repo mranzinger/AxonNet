@@ -26,17 +26,17 @@ class NEURAL_NET_API MRFLayer
 	: public LayerBase
 {
 scope_private:
-	int _width, _height;
-	MRFFunction _function;
+	uint32_t _width, _height;
+	MRFFunction _function = MRFFunction::Default;
 
 	std::string _inputName;
 
 scope_public:
 	MRFLayer() = default;
 	MRFLayer(std::string name,
-			 size_t width, size_t height);
+			 uint32_t width, uint32_t height);
 	MRFLayer(std::string name, std::string inputName,
-			 size_t width, size_t height);
+			 uint32_t width, uint32_t height);
 
 	virtual std::string GetLayerType() const override {
 		return "Max Response Field Layer";
@@ -48,7 +48,7 @@ scope_public:
 	friend void BindStruct(const aser::CStructBinder &binder, MRFLayer &layer);
 
 scope_private:
-	void CalcSAT(const RMap &inputField, RMatrix &sumAreaTable, int depth) const;
+	void CalcSAT(const RMap &inputField, RMatrix &sumAreaTable, uint32_t depth) const;
 
 	const std::string &GetInputName();
 };
