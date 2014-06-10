@@ -34,21 +34,26 @@ void MRFLayer::Compute(ParamMap& inputMap, bool isTraining)
 		   input.Height >= _height);
 
 	Params output(_width, _height, input.Depth,
-			      CMatrix(_width * _height * input.Depth, input.BatchSize()));
+			      new CMatrix(_width * _height * input.Depth, input.Cols));
 
 	Params coordsOut(1, 2, input.Depth,
-					 CMatrix(2 * input.Depth, input.BatchSize()));
+					 new CMatrix(2 * input.Depth, input.Cols));
 
-	FastFor(GetThreadPool(), 0, (int)input.BatchSize(), 1,
+	const CMatrix &mInput = input.GetHostMatrix();
+
+	CMatrix &mOutput = output.GetHostMatrix();
+	CMatrix &mCoords = coordsOut.GetHostMatrix();
+
+	FastFor(GetThreadPool(), 0u, input.Cols, 1u,
 		[&, this] (int imageIdx)
 	{
-		RMap outputField(output.Data.data() + imageIdx * output.size(),
+		RMap outputField(mOutput.data() + imageIdx * mOutput.size(),
 						 _height, _width * input.Depth);
 
-		const RMap inputField(const_cast<Real*>(input.Data.data()) + imageIdx * input.size(),
+		const RMap inputField(const_cast<Real*>(mInput.data()) + imageIdx * mInput.size(),
 						input.Height, input.Width * input.Depth);
 
-		UMapVector vecCoords(coordsOut.Data.data() + imageIdx * 2 * input.Depth,
+		UMapVector vecCoords(mCoords.data() + imageIdx * 2 * input.Depth,
 							 2 * input.Depth);
 
 		// A summed area table is the most efficient way to compute the
@@ -139,17 +144,23 @@ void MRFLayer::Backprop(const ParamMap& computeMap, ParamMap& inputErrorMap)
 	const Params &outputCoords = *GetData(computeMap, _name + "-coords");
 
 	Params inputErrors(lastInput,
-			  CMatrix::Zero(lastInput.size(), lastInput.BatchSize()));
+			  new CMatrix(CMatrix::Zero(lastInput.Rows, lastInput.Cols)));
 
-	FastFor(GetThreadPool(), 0, (int)lastInput.BatchSize(), 1,
+	const CMatrix &mLastInput = lastInput.GetHostMatrix();
+	const CMatrix &mOutputErrs = outputErrs.GetHostMatrix();
+	const CMatrix &mOutputCoords = outputCoords.GetHostMatrix();
+
+	CMatrix &mInputErrors = inputErrors.GetHostMatrix();
+
+	FastFor(GetThreadPool(), 0u, lastInput.Cols, 1u,
 		[&, this] (int imageIdx)
 	{
-		const RMap imgOutputErrs(const_cast<Real*>(outputErrs.Data.data()) + imageIdx * outputErrs.size(),
+		const RMap imgOutputErrs(const_cast<Real*>(mOutputErrs.data()) + imageIdx * mOutputErrs.size(),
 						   outputErrs.Height, outputErrs.Width * outputErrs.Depth);
-		const UMapVector imgOutputCoords(const_cast<Real*>(outputCoords.Data.data()) + imageIdx * outputCoords.size(),
-						   outputCoords.size());
+		const UMapVector imgOutputCoords(const_cast<Real*>(mOutputCoords.data()) + imageIdx * mOutputCoords.size(),
+						   mOutputCoords.size());
 
-		RMap imgInputErrs(inputErrors.Data.data() + imageIdx * inputErrors.size(),
+		RMap imgInputErrs(mInputErrors.data() + imageIdx * mInputErrors.size(),
 						  inputErrors.Height, inputErrors.Width * inputErrors.Depth);
 
 		vector<pair<int,int>> iCoords(lastInput.Depth);
@@ -258,12 +269,12 @@ ENUM_IO_MAP(MRFFunction)
 
 void BindStruct(const aser::CStructBinder &binder, MRFLayer &layer)
 {
-	BindStruct(binder, (LayerBase&)layer);
-
 	binder("width", layer._width)
 		  ("height", layer._height)
 		  ("function", layer._function)
 		  ("inputName", layer._inputName);
+
+	BindStruct(binder, (LayerBase&)layer);
 }
 
 AXON_SERIALIZE_DERIVED_TYPE(ILayer, MRFLayer, MRFLayer);
