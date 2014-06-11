@@ -17,15 +17,22 @@ private:
 
 	CuWeights _weights;
 
+	CuMat _computeCache;
+	CuMat _backpropCache;
+
 public:
 	Impl(int deviceId)
 	{
 		_handle = CuSetupProvider::GetHandle(deviceId);
 
 		_weights.SetHandle(_handle);
+		_computeCache.SetHandle(_handle);
+		_computeCache.SetSharedModify(true);
+		_backpropCache.SetHandle(_handle);
+		_backpropCache.SetSharedModify(true);
 	}
 
-	Params Compute(const Params &input) const;
+	Params Compute(const Params &input);
 	Params Backprop(const Params &lastInput, const Params &lastOutput,
 					const Params &outputErrors);
 
@@ -104,14 +111,16 @@ struct CuAddBias
 	}
 };
 
-Params CuLinearLayer::Impl::Compute(const Params& input) const
+Params CuLinearLayer::Impl::Compute(const Params& input)
 {
 	const uint32_t batchSize = input.Cols;
 	const uint32_t outputSize = _weights.Biases.Rows();
 	const uint32_t inputSize = input.Rows;
 
+	_computeCache.Resize(outputSize, batchSize);
+
 	Params output(outputSize, 1, 1,
-				new CuMat(_handle, outputSize, batchSize));
+				new CuMat(_computeCache));
 
 	const CuMat &mInput = input.GetCudaMatrix(_handle);
 	CuMat &mOutput = output.GetCudaMatrix(_handle);
@@ -128,7 +137,9 @@ Params CuLinearLayer::Impl::Compute(const Params& input) const
 Params CuLinearLayer::Impl::Backprop(const Params& lastInput,
 		const Params& lastOutput, const Params& outputErrors)
 {
-	Params inputErrors = Params::CreateLike(lastInput, _handle);
+	_backpropCache.Resize(lastInput.Rows, lastInput.Cols);
+
+	Params inputErrors(lastInput, new CuMat(_backpropCache));
 
 	const CuMat &mInput = lastInput.GetCudaMatrix(_handle);
 	const CuMat &mOutputErrors = outputErrors.GetCudaMatrix(_handle);

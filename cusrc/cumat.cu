@@ -8,13 +8,13 @@
 using namespace std;
 
 CuMat::CuMat()
-	: _dMat(NULL), _rows(0), _cols(0), _storageOrder(CuColMajor)
+	: _dMat(NULL), _rows(0), _cols(0), _storageOrder(CuColMajor), _sharedMod(false)
 {
 	_refCt = new uint32_t(1);
 }
 
 CuMat::CuMat(CuContext handle)
-    : _handle(handle), _dMat(NULL), _rows(0), _cols(0), _storageOrder(CuColMajor)
+    : _handle(handle), _dMat(NULL), _rows(0), _cols(0), _storageOrder(CuColMajor), _sharedMod(false)
 {
     _refCt = new uint32_t(1);
 }
@@ -23,7 +23,7 @@ CuMat::CuMat(CuContext handle,
 		     uint32_t rows, uint32_t cols,
 		     CuStorageOrder storageOrder)
 	: _handle(handle), _dMat(NULL), _rows(rows), _cols(cols),
-	  _storageOrder(storageOrder)
+	  _storageOrder(storageOrder), _sharedMod(false)
 {
 	_refCt = new uint32_t(1);
 	
@@ -32,7 +32,7 @@ CuMat::CuMat(CuContext handle,
 
 CuMat::CuMat(CuContext handle, const CMatrix& hMat)
     : _handle(handle), _rows(hMat.rows()), _cols(hMat.cols()),
-      _storageOrder(CuColMajor)
+      _storageOrder(CuColMajor), _sharedMod(false)
 {
     _refCt = new uint32_t(1);
 
@@ -43,7 +43,7 @@ CuMat::CuMat(CuContext handle, const CMatrix& hMat)
 
 CuMat::CuMat(CuContext handle, const RMatrix& hMat)
     : _handle(handle), _rows(hMat.rows()), _cols(hMat.cols()),
-      _storageOrder(CuRowMajor)
+      _storageOrder(CuRowMajor), _sharedMod(false)
 {
     _refCt = new uint32_t(1);
 
@@ -54,7 +54,7 @@ CuMat::CuMat(CuContext handle, const RMatrix& hMat)
 
 CuMat::CuMat(CuContext handle, const Vector& hVec)
     : _handle(handle), _rows(hVec.rows()), _cols(hVec.cols()),
-      _storageOrder(CuRowMajor)
+      _storageOrder(CuRowMajor), _sharedMod(false)
 {
     _refCt = new uint32_t(1);
 
@@ -65,7 +65,7 @@ CuMat::CuMat(CuContext handle, const Vector& hVec)
 
 CuMat::CuMat(const CuMat &other)
 	: _handle(other._handle), _dMat(other._dMat), _rows(other._rows), _cols(other._cols),
-	  _refCt(other._refCt), _storageOrder(other._storageOrder)
+	  _refCt(other._refCt), _storageOrder(other._storageOrder), _sharedMod(other._sharedMod)
 {
 	// Increment the ref count
 	++(*_refCt);
@@ -294,7 +294,7 @@ void CuMat::SetConstant(Real val)
 void CuMat::Resize(uint32_t rows, uint32_t cols)
 {
 	// Test for a no-op
-	if (SingleOwner() && _rows == rows && _cols == cols)
+	if ((SingleOwner() || _sharedMod) && _rows == rows && _cols == cols)
 		return;
 
 	// Ensure exclusive ownership of the matrix before
@@ -326,7 +326,7 @@ void CuMat::PrepareForWrite(bool alloc)
 	// This is a copy on modify paradigm,
 	// so if this instance is a sole owner of the data,
 	// then nothing needs to be done
-	if (*_refCt == 1)
+	if (*_refCt == 1 || _sharedMod)
 		return;
 
 	_refCt = new uint32_t(1);
@@ -401,6 +401,7 @@ void swap(CuMat &a, CuMat &b)
 	swap(a._rows, b._rows);
 	swap(a._cols, b._cols);
 	swap(a._refCt, b._refCt);
+	swap(a._sharedMod, b._sharedMod);
 }
 
 CuScopedWeakTranspose::CuScopedWeakTranspose(const CuMat& mat)

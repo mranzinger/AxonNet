@@ -140,6 +140,8 @@ public:
 
 	void SetHandle(const CuContext &handle) { _handle = handle; }
 
+	void SetSharedModify(bool val) { _sharedMod = val; }
+
 	friend void swap(CuMat &a, CuMat &b);
 	
 private:
@@ -156,6 +158,7 @@ private:
 	uint32_t _rows, _cols;
 	CuStorageOrder _storageOrder;
 	CuContext _handle;
+	bool _sharedMod;
 };
 
 struct CuMatInfo

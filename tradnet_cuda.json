@@ -33,10 +33,6 @@
             "numOutputs": 200
         },
         {
-            "_realType": "DropoutLayer",
-            "name": "d"
-        },
-        {
             "_realType": "TanhNeuronLayer",
             "name": "r3"
         },
