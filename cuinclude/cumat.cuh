@@ -63,15 +63,15 @@ public:
 	friend CuMat operator*(const CuMat &a, const CuScopedWeakTranspose &b);
 	friend CuMat operator*(const CuScopedWeakTranspose &a, const CuScopedWeakTranspose &b);
 
-	friend CuMat ScaledMultiply(Real scale, const CuMat &a, const CuMat &b);
-	friend CuMat ScaledMultiply(Real scale, const CuScopedWeakTranspose &tA, const CuMat &b);
-	friend CuMat ScaledMultiply(Real scale, const CuMat &a, const CuScopedWeakTranspose &tB);
-	friend CuMat ScaledMultiply(Real scale, const CuScopedWeakTranspose &tA, const CuScopedWeakTranspose &tB);
+	friend CuMat ScaledMultiply(Real scale, const CuMat &a, const CuMat &b, cublasHandle_t cublasHandle = 0);
+	friend CuMat ScaledMultiply(Real scale, const CuScopedWeakTranspose &tA, const CuMat &b, cublasHandle_t cublasHandle = 0);
+	friend CuMat ScaledMultiply(Real scale, const CuMat &a, const CuScopedWeakTranspose &tB, cublasHandle_t cublasHandle = 0);
+	friend CuMat ScaledMultiply(Real scale, const CuScopedWeakTranspose &tA, const CuScopedWeakTranspose &tB, cublasHandle_t cublasHandle = 0);
 
-	friend void ScaledMultiply(Real mulScale, const CuMat &a, const CuMat &b, Real scaleDest, CuMat &dest);
-	friend void ScaledMultiply(Real mulScale, const CuScopedWeakTranspose &tA, const CuMat &b, Real scaleDest, CuMat &dest);
-	friend void ScaledMultiply(Real mulScale, const CuMat &a, const CuScopedWeakTranspose &tB, Real scaleDest, CuMat &dest);
-	friend void ScaledMultiply(Real mulScale, const CuScopedWeakTranspose &tA, const CuScopedWeakTranspose &tB, Real scaleDest, CuMat &dest);
+	friend void ScaledMultiply(Real mulScale, const CuMat &a, const CuMat &b, Real scaleDest, CuMat &dest, cublasHandle_t cublasHandle = 0);
+	friend void ScaledMultiply(Real mulScale, const CuScopedWeakTranspose &tA, const CuMat &b, Real scaleDest, CuMat &dest, cublasHandle_t cublasHandle = 0);
+	friend void ScaledMultiply(Real mulScale, const CuMat &a, const CuScopedWeakTranspose &tB, Real scaleDest, CuMat &dest, cublasHandle_t cublasHandle = 0);
+	friend void ScaledMultiply(Real mulScale, const CuScopedWeakTranspose &tA, const CuScopedWeakTranspose &tB, Real scaleDest, CuMat &dest, cublasHandle_t cublasHandle = 0);
 
 	friend CuMat MultiplyTrans3D(const CuMat &a, uint32_t rows, uint32_t cols, const CuMat &b);
     friend void MultiplyTrans3D(const CuMat &a, uint32_t rows, uint32_t cols, const CuMat &b, CuMat &dest);
@@ -196,6 +196,10 @@ public:
     template<typename ElemFn>
     CuMat Sum(ElemFn fn) const;
 
+    void Sum(CuMat &dest, cublasHandle_t cublasHandle = 0) const;
+    template<typename ElemFn>
+    void Sum(CuMat &dest, ElemFn fn, cublasHandle_t cublasHandle = 0) const;
+
     CuMat Max() const;
     template<typename ElemFn>
     CuMat Max(ElemFn fn) const;
@@ -210,6 +214,9 @@ public:
 
     template<typename Aggregator, typename ElemFn>
     CuMat Agg(Aggregator agg, ElemFn fn) const;
+
+    template<typename Aggregator, typename ElemFn>
+    void Agg(CuMat &dest, Aggregator agg, ElemFn fn, cublasHandle_t cublasHandle = 0) const;
 };
 
 class CuColwiseOperator
@@ -223,6 +230,10 @@ public:
     template<typename ElemFn>
     CuMat Sum(ElemFn fn) const;
 
+    void Sum(CuMat &dest, cublasHandle_t cublasHandle = 0) const;
+    template<typename ElemFn>
+    void Sum(CuMat &dest, ElemFn fn, cublasHandle_t cublasHandle = 0) const;
+
     CuMat Max() const;
     template<typename ElemFn>
     CuMat Max(ElemFn fn) const;
@@ -237,6 +248,9 @@ public:
 
     template<typename Aggregator, typename ElemFn>
     CuMat Agg(Aggregator agg, ElemFn fn) const;
+
+    template<typename Aggregator, typename ElemFn>
+    void Agg(CuMat &dest, Aggregator agg, ElemFn fn, cublasHandle_t cublasHandle = 0) const;
 };
 
 CuMat operator*(const CuMat &m, Real scale);
@@ -249,16 +263,16 @@ CuMat operator-(Real val, const CuMat &m);
 
 CuMat operator*(const CuScopedWeakTranspose &a, const CuScopedWeakTranspose &b);
 
-CuMat ScaledMultiply(Real scale, const CuMat &a, const CuMat &b);
-CuMat ScaledMultiply(Real scale, const CuScopedWeakTranspose &tA, const CuMat &b);
-CuMat ScaledMultiply(Real scale, const CuMat &a, const CuScopedWeakTranspose &tB);
-CuMat ScaledMultiply(Real scale, const CuScopedWeakTranspose &tA, const CuScopedWeakTranspose &tB);
+CuMat ScaledMultiply(Real scale, const CuMat &a, const CuMat &b, cublasHandle_t cublasHandle);
+CuMat ScaledMultiply(Real scale, const CuScopedWeakTranspose &tA, const CuMat &b, cublasHandle_t cublasHandle);
+CuMat ScaledMultiply(Real scale, const CuMat &a, const CuScopedWeakTranspose &tB, cublasHandle_t cublasHandle);
+CuMat ScaledMultiply(Real scale, const CuScopedWeakTranspose &tA, const CuScopedWeakTranspose &tB, cublasHandle_t cublasHandle);
 
-void ScaledMultiply(Real mulScale, const CuMat &a, const CuMat &b, Real scaleDest, CuMat &dest);
-void ScaledMultiply(Real mulScale, const CuScopedWeakTranspose &tA, const CuMat &b, Real scaleDest, CuMat &dest);
-void ScaledMultiply(Real mulScale, const CuMat &a, const CuScopedWeakTranspose &tB, Real scaleDest, CuMat &dest);
+void ScaledMultiply(Real mulScale, const CuMat &a, const CuMat &b, Real scaleDest, CuMat &dest, cublasHandle_t cublasHandle);
+void ScaledMultiply(Real mulScale, const CuScopedWeakTranspose &tA, const CuMat &b, Real scaleDest, CuMat &dest, cublasHandle_t cublasHandle);
+void ScaledMultiply(Real mulScale, const CuMat &a, const CuScopedWeakTranspose &tB, Real scaleDest, CuMat &dest, cublasHandle_t cublasHandle);
 void ScaledMultiply(Real mulScale, const CuScopedWeakTranspose &tA,
-		const CuScopedWeakTranspose &tB, Real scaleDest, CuMat &dest);
+		const CuScopedWeakTranspose &tB, Real scaleDest, CuMat &dest, cublasHandle_t cublasHandle);
 
 CuMat MultiplyTrans3D(const CuMat &a, uint32_t rows, uint32_t cols, const CuMat &b);
 void MultiplyTrans3D(const CuMat &a, uint32_t rows, uint32_t cols, const CuMat &b, CuMat &dest);

@@ -287,7 +287,7 @@ TEST(CuMatTest, Mul5)
     AssertMatrixEquivalence(hComp, hC);
 }
 
-TEST(CuMatTest, MulEigen)
+/*TEST(CuMatTest, MulEigen)
 {
     CMatrix hA = CMatrix::Random(1000, 2000),
             hB = CMatrix::Random(2000, 128);
@@ -309,9 +309,9 @@ TEST(CuMatTest, MulCuda)
     dB.CopyToDevice(hB);
 
     CuMat dC = dA * dB;
-}
+}*/
 
-TEST(CuMatTest, MulEigenHuge)
+/*TEST(CuMatTest, MulEigenHuge)
 {
     CMatrix hA = CMatrix::Constant(10000, 20000, 2),
             hB = CMatrix::Constant(20000, 128, 4);
@@ -332,7 +332,7 @@ TEST(CuMatTest, MulCudaHuge)
     CuMat dC = dA * dB;
 
     cudaDeviceSynchronize();
-}
+}*/
 
 TEST(CuMatTest, AddScaled)
 {
@@ -469,7 +469,7 @@ TEST(CuMatTest, Softmax)
 	// Device Computation
 	CuMat dIpMax = dInput.Colwise().Max();
 
-	CuMat dSoftmax;
+	CuMat dSoftmax(handle);
 	dInput.UnaryExpr<false>(dSoftmax, CuSoftmaxExpr(dIpMax));
 
 	// Sum the columns, and also take their inverse to make the

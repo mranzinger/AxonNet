@@ -20,8 +20,12 @@ private:
 	CuMat _computeCache;
 	CuMat _backpropCache;
 
+	CuContext _secondHandle;
+	cudaStream_t _secondStream;
+
 public:
 	Impl(int deviceId)
+		: _secondHandle(deviceId, 0)
 	{
 		_handle = CuSetupProvider::GetHandle(deviceId);
 
@@ -30,6 +34,17 @@ public:
 		_computeCache.SetSharedModify(true);
 		_backpropCache.SetHandle(_handle);
 		_backpropCache.SetSharedModify(true);
+
+		cudaSetDevice(deviceId);
+		cublasCreate_v2(&_secondHandle.CublasHandle);
+
+		cudaStreamCreate(&_secondStream);
+		cublasSetStream_v2(_secondHandle.CublasHandle, _secondStream);
+	}
+	~Impl()
+	{
+		cudaStreamDestroy(_secondStream);
+		cublasDestroy_v2(_secondHandle.CublasHandle);
 	}
 
 	Params Compute(const Params &input);
@@ -146,20 +161,26 @@ Params CuLinearLayer::Impl::Backprop(const Params& lastInput,
 
 	CuMat &mInputErrors = inputErrors.GetCudaMatrix(_handle);
 
+	// Wait for the default stream to ready. This allows the secondary stream to wrap up
+	cudaStreamSynchronize(0);
+
 	// Calculate the input error
 	ScaledMultiply(1.0f, _weights.Weights.WeakTranspose(), mOutputErrors,
 				   0.0f, mInputErrors);
 
+	// Calculate the update gradient
 	ScaledMultiply(1.0f, mOutputErrors, mInput.WeakTranspose(),
-				   0.0f, _weights.WeightsGrad);
+				   0.0f, _weights.WeightsGrad, _secondHandle.CublasHandle);
 
-	_weights.BiasGrad = mOutputErrors.Rowwise().Sum();
+	mOutputErrors.Rowwise().Sum(_weights.BiasGrad, _secondHandle.CublasHandle);
 
 	return inputErrors;
 }
 
 void CuLinearLayer::Impl::ApplyGradient()
 {
+	cudaStreamSynchronize(_secondStream);
+
 	_weights.ApplyGradient();
 }
 

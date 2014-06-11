@@ -80,29 +80,47 @@ __global__ void CuDeviceAggSimple(const CuMatInfo inputMat, CuMatInfo outputMat,
 }
 
 template<typename Inc, typename Aggregator, typename ElemFn>
-CuMat CuMatAggregate(const CuMat &mat,
-                     CuMatInfo matInfo, Inc inc, Aggregator agg, ElemFn fn)
+void CuMatAggregate(const CuMat &mat, CuMat &dest,
+				    Inc inc, Aggregator agg, ElemFn fn,
+				    cublasHandle_t cublasHandle)
 {
+	if (!cublasHandle)
+		cublasHandle = mat.Handle().CublasHandle;
+
+	cudaStream_t stream;
+	cublasGetStream_v2(cublasHandle, &stream);
+
 	// This will probably be the simplest (and slowest) way to implement this
-	uint32_t xDim = Inc::XDim(matInfo._cols),
-			 yDim = Inc::YDim(matInfo._rows);
+	uint32_t xDim = Inc::XDim(mat.Cols()),
+			 yDim = Inc::YDim(mat.Rows());
 
 	dim3 blockSize = round_up<32>(xDim, yDim);
 	dim3 threadSize(min(32u, xDim), min(32u, yDim));
 
-	CuMat ret(mat.Handle(), yDim, xDim, matInfo._storageOrder);
+	dest.Resize(yDim, xDim);
 
-	if (matInfo._storageOrder == CuColMajor)
+	if (mat.Order() == CuColMajor)
 	{
-		CuDeviceAggSimple<CuColMajor><<<blockSize, threadSize>>>(matInfo, ret, inc, agg, fn);
+		CuDeviceAggSimple<CuColMajor><<<blockSize, threadSize, 0, stream>>>(mat, dest, inc, agg, fn);
 	}
 	else
 	{
-		CuDeviceAggSimple<CuRowMajor><<<blockSize, threadSize>>>(matInfo, ret, inc, agg, fn);
+		CuDeviceAggSimple<CuRowMajor><<<blockSize, threadSize, 0, stream>>>(mat, dest, inc, agg, fn);
 	}
+}
+
+template<typename Inc, typename Aggregator, typename ElemFn>
+CuMat CuMatAggregate(const CuMat &mat,
+                     Inc inc, Aggregator agg, ElemFn fn)
+{
+	CuMat ret(mat.Handle());
+
+	CuMatAggregate(mat, ret, inc, agg, fn, mat.Handle().CublasHandle);
 
 	return ret;
 }
+
+
 
 }
 
@@ -113,9 +131,21 @@ CuMat CuRowwiseOperator::Sum(ElemFn fn) const
 }
 
 template<typename ElemFn>
+void CuRowwiseOperator::Sum(CuMat &dest, ElemFn fn, cublasHandle_t cublasHandle) const
+{
+	Agg(dest, CuPlus(), fn, cublasHandle);
+}
+
+template<typename ElemFn>
 CuMat CuColwiseOperator::Sum(ElemFn fn) const
 {
     return Agg(CuPlus(), fn);
+}
+
+template<typename ElemFn>
+void CuColwiseOperator::Sum(CuMat &dest, ElemFn fn, cublasHandle_t cublasHandle) const
+{
+	Agg(dest, CuPlus(), fn, cublasHandle);
 }
 
 template<typename ElemFn>
@@ -145,17 +175,33 @@ CuMat CuColwiseOperator::Min(ElemFn fn) const
 template<typename Aggregator, typename ElemFn>
 CuMat CuRowwiseOperator::Agg(Aggregator agg, ElemFn fn) const
 {
-    return CuMatAggregate(Mat, Mat.ToInfo(),
+    return CuMatAggregate(Mat,
                           Incrementer<0, 1>(),
                           agg, fn);
 }
 
 template<typename Aggregator, typename ElemFn>
+void CuRowwiseOperator::Agg(CuMat &dest, Aggregator agg, ElemFn fn,
+							cublasHandle_t cublasHandle) const
+{
+	CuMatAggregate(Mat, dest, Incrementer<0, 1>(),
+				   agg, fn, cublasHandle);
+}
+
+template<typename Aggregator, typename ElemFn>
 CuMat CuColwiseOperator::Agg(Aggregator agg, ElemFn fn) const
 {
-    return CuMatAggregate(Mat, Mat.ToInfo(),
+    return CuMatAggregate(Mat,
                           Incrementer<1, 0>(),
                           agg, fn);
+}
+
+template<typename Aggregator, typename ElemFn>
+void CuColwiseOperator::Agg(CuMat &dest, Aggregator agg, ElemFn fn,
+							cublasHandle_t cublasHandle) const
+{
+	CuMatAggregate(Mat, dest, Incrementer<1, 0>(),
+				   agg, fn, cublasHandle);
 }
 
 

@@ -21,9 +21,19 @@ CuMat CuRowwiseOperator::Sum() const
     return Sum(CuIdentity());
 }
 
+void CuRowwiseOperator::Sum(CuMat &dest, cublasHandle_t cublasHandle) const
+{
+	Sum(dest, CuIdentity(), cublasHandle);
+}
+
 CuMat CuColwiseOperator::Sum() const
 {
     return Sum(CuIdentity());
+}
+
+void CuColwiseOperator::Sum(CuMat &dest, cublasHandle_t cublasHandle) const
+{
+	Sum(dest, CuIdentity(), cublasHandle);
 }
 
 CuMat CuRowwiseOperator::Max() const

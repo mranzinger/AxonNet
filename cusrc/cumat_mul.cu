@@ -15,54 +15,54 @@ using namespace std;
 
 CuMat operator*(const CuMat &a, const CuMat &b)
 {
-    return ScaledMultiply(1.0f, a, b);
+    return ScaledMultiply(1.0f, a, b, 0);
 }
 
 CuMat operator*(const CuScopedWeakTranspose &tA, const CuMat &b)
 {
-    return ScaledMultiply(1.0f, tA, b);
+    return ScaledMultiply(1.0f, tA, b, 0);
 }
 
 CuMat operator*(const CuMat &a, const CuScopedWeakTranspose &tB)
 {
-    return ScaledMultiply(1.0f, a, tB);
+    return ScaledMultiply(1.0f, a, tB, 0);
 }
 
 CuMat operator*(const CuScopedWeakTranspose &tA, const CuScopedWeakTranspose &tB)
 {
-    return ScaledMultiply(1.0f, tA, tB);
+    return ScaledMultiply(1.0f, tA, tB, 0);
 }
 
 
-CuMat ScaledMultiply(Real scale, const CuMat &a, const CuMat &b)
+CuMat ScaledMultiply(Real scale, const CuMat &a, const CuMat &b, cublasHandle_t cublasHandle)
 {
     CuMat dest(a._handle);
 
-    ScaledMultiply(scale, a, b, 0.0f, dest);
+    ScaledMultiply(scale, a, b, 0.0f, dest, cublasHandle);
 
     return dest;
 }
-CuMat ScaledMultiply(Real scale, const CuScopedWeakTranspose &tA, const CuMat &b)
+CuMat ScaledMultiply(Real scale, const CuScopedWeakTranspose &tA, const CuMat &b, cublasHandle_t cublasHandle)
 {
     CuMat dest(b._handle);
 
-    ScaledMultiply(scale, tA, b, 0.0f, dest);
+    ScaledMultiply(scale, tA, b, 0.0f, dest, cublasHandle);
 
     return dest;
 }
-CuMat ScaledMultiply(Real scale, const CuMat &a, const CuScopedWeakTranspose &tB)
+CuMat ScaledMultiply(Real scale, const CuMat &a, const CuScopedWeakTranspose &tB, cublasHandle_t cublasHandle)
 {
     CuMat dest(a._handle);
 
-    ScaledMultiply(scale, a, tB, 0.0f, dest);
+    ScaledMultiply(scale, a, tB, 0.0f, dest, cublasHandle);
 
     return dest;
 }
-CuMat ScaledMultiply(Real scale, const CuScopedWeakTranspose &tA, const CuScopedWeakTranspose &tB)
+CuMat ScaledMultiply(Real scale, const CuScopedWeakTranspose &tA, const CuScopedWeakTranspose &tB, cublasHandle_t cublasHandle)
 {
     CuMat dest(tA.Mat._handle);
 
-    ScaledMultiply(scale, tA, tB, 0.0f, dest);
+    ScaledMultiply(scale, tA, tB, 0.0f, dest, cublasHandle);
 
     return dest;
 }
@@ -76,15 +76,17 @@ CuMat MultiplyTrans3D(const CuMat &a, uint32_t rows, uint32_t cols, const CuMat 
 	return dest;
 }
 
-void ScaledMultiply(Real mulScale, const CuMat &a, const CuMat &b, Real scaleDest, CuMat &dest)
+void ScaledMultiply(Real mulScale, const CuMat &a, const CuMat &b, Real scaleDest, CuMat &dest, cublasHandle_t cublasHandle)
 {
     assert(!a.Empty() && !b.Empty());
-    assert(a._handle == b._handle);
     // Make sure the matrices are valid
     assert(a._cols == b._rows);
 
     // TODO: Support these other cases
     assert(a._storageOrder == CuColMajor && b._storageOrder == CuColMajor);
+
+    if (!cublasHandle)
+    	cublasHandle = a._handle.CublasHandle;
 
     if (scaleDest == 0.0f)
     {
@@ -96,7 +98,7 @@ void ScaledMultiply(Real mulScale, const CuMat &a, const CuMat &b, Real scaleDes
     }
 
     cublasStatus_t status =
-            cublasSgemm_v2(a._handle.CublasHandle, CUBLAS_OP_N, CUBLAS_OP_N,
+            cublasSgemm_v2(cublasHandle, CUBLAS_OP_N, CUBLAS_OP_N,
                             a._rows, b._cols, a._cols,
                             &mulScale, a._dMat, a._rows,
                             b._dMat, b._rows,
@@ -111,7 +113,6 @@ void ScaledMultiply(Real mulScale, const CuMat &a, const CuMat &b, Real scaleDes
 void MultiplyTrans3D(const CuMat &a, uint32_t rows, uint32_t cols, const CuMat &b, CuMat &dest)
 {
 	assert(!a.Empty() && !b.Empty());
-    assert(a._handle == b._handle);
 
     assert(a._storageOrder == CuColMajor && b._storageOrder == CuColMajor);
 
@@ -139,42 +140,20 @@ void MultiplyTrans3D(const CuMat &a, uint32_t rows, uint32_t cols, const CuMat &
         if (status != CUBLAS_STATUS_SUCCESS)
             throw runtime_error("The matrix multiplication failed.");
     }
-
-    /*const float *aBuffs[b._cols];
-    const float *bBuffs[b._cols];
-    float *cBuffs[b._cols];
-
-    for (uint32_t i = 0; i < b._cols; ++i)
-    {
-    	aBuffs[i] = a._dMat + i * a._rows;
-    	bBuffs[i] = b._dMat + i * b._rows;
-    	cBuffs[i] = dest._dMat + i * rows;
-    }
-
-    cublasStatus_t status =
-    		cublasSgemmBatched(a._handle.CublasHandle, CUBLAS_OP_N, CUBLAS_OP_N,
-    						   rows, 1, cols,
-    						   &alpha,
-    						   aBuffs, rows,
-    						   bBuffs, b._rows,
-    						   &beta,
-    						   cBuffs, dest._rows,
-    						   b._cols);
-
-    if (status != CUBLAS_STATUS_SUCCESS)
-        throw runtime_error("The matrix multiplication failed.");*/
 }
 
 void ScaledMultiply(Real mulScale, const CuScopedWeakTranspose &tA,
-                    const CuMat &b, Real scaleDest, CuMat &dest)
+                    const CuMat &b, Real scaleDest, CuMat &dest, cublasHandle_t cublasHandle)
 {
     const CuMat &a = tA.Mat;
 
     assert(a._rows == b._rows);
     assert(!a.Empty() && !b.Empty());
-    assert(a._handle == b._handle);
 
     assert(a._storageOrder == CuColMajor && b._storageOrder == CuColMajor);
+
+    if (!cublasHandle)
+    	cublasHandle = a._handle.CublasHandle;
 
     if (scaleDest == 0.0f)
     {
@@ -186,7 +165,7 @@ void ScaledMultiply(Real mulScale, const CuScopedWeakTranspose &tA,
     }
 
     cublasStatus_t status =
-            cublasSgemm_v2(a._handle.CublasHandle, CUBLAS_OP_T, CUBLAS_OP_N,
+            cublasSgemm_v2(cublasHandle, CUBLAS_OP_T, CUBLAS_OP_N,
                            a._cols, b._cols, a._rows,
                            &mulScale, a._dMat, a._rows,
                            b._dMat, b._rows,
@@ -198,15 +177,17 @@ void ScaledMultiply(Real mulScale, const CuScopedWeakTranspose &tA,
         throw runtime_error("The matrix multiplication failed.");
 }
 void ScaledMultiply(Real mulScale, const CuMat &a,
-                    const CuScopedWeakTranspose &tB, Real scaleDest, CuMat &dest)
+                    const CuScopedWeakTranspose &tB, Real scaleDest, CuMat &dest, cublasHandle_t cublasHandle)
 {
     const CuMat &b = tB.Mat;
 
     assert(a._cols == b._cols);
     assert(!a.Empty() && !b.Empty());
-    assert(a._handle == b._handle);
 
     assert(a._storageOrder == CuColMajor && b._storageOrder == CuColMajor);
+
+    if (!cublasHandle)
+    	cublasHandle = a._handle.CublasHandle;
 
     if (scaleDest == 0.0f)
     {
@@ -218,7 +199,7 @@ void ScaledMultiply(Real mulScale, const CuMat &a,
     }
 
     cublasStatus_t status =
-            cublasSgemm_v2(a._handle.CublasHandle, CUBLAS_OP_N, CUBLAS_OP_T,
+            cublasSgemm_v2(cublasHandle, CUBLAS_OP_N, CUBLAS_OP_T,
                            a._rows, b._rows, a._cols,
                            &mulScale, a._dMat, a._rows,
                            b._dMat, b._rows,
@@ -233,16 +214,18 @@ void ScaledMultiply(Real mulScale, const CuMat &a,
 
 
 void ScaledMultiply(Real mulScale, const CuScopedWeakTranspose &tA,
-                    const CuScopedWeakTranspose &tB, Real scaleDest, CuMat &dest)
+                    const CuScopedWeakTranspose &tB, Real scaleDest, CuMat &dest, cublasHandle_t cublasHandle)
 {
     const CuMat &a = tA.Mat;
     const CuMat &b = tB.Mat;
 
     assert(a._rows == b._cols);
     assert(!a.Empty() && !b.Empty());
-    assert(a._handle == b._handle);
 
     assert(a._storageOrder == CuColMajor && b._storageOrder == CuColMajor);
+
+    if (!cublasHandle)
+    	cublasHandle = a._handle.CublasHandle;
 
     if (scaleDest == 0.0f)
     {
@@ -254,7 +237,7 @@ void ScaledMultiply(Real mulScale, const CuScopedWeakTranspose &tA,
     }
 
     cublasStatus_t status =
-            cublasSgemm_v2(a._handle.CublasHandle, CUBLAS_OP_T, CUBLAS_OP_T,
+            cublasSgemm_v2(cublasHandle, CUBLAS_OP_T, CUBLAS_OP_T,
                     a._cols, b._rows, a._rows,
                     &mulScale, a._dMat, a._rows,
                     b._dMat, b._rows,
