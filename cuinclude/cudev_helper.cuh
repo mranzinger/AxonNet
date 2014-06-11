@@ -19,6 +19,8 @@ struct cuVec_t
 {
 	unsigned int x, y, z;
 } blockIdx, blockDim, threadIdx;
+
+#define __syncthreads()
 #endif
 
 

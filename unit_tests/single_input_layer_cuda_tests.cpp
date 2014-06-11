@@ -9,6 +9,7 @@
 #include "softmax_layer.h"
 #include "linear_layer.h"
 #include "convo_layer.h"
+#include "maxpool_layer.h"
 
 #include "test_helper.h"
 
@@ -45,11 +46,24 @@ void TTestCompute(Params ...prms)
     TestCompute(layer);
 }
 
-TEST(SingleInputCuda, Compute)
+TEST(SingleInputCuda, ComputeSoftmax)
 {
     TTestCompute<SoftmaxLayer>("");
+}
+
+TEST(SingleInputCuda, ComputeLinearLayer)
+{
     TTestCompute<LinearLayer>("", 32 * 32 * 5, 100);
+}
+
+TEST(SingleInputCuda, ComputeConvoLayer)
+{
     TTestCompute<ConvoLayer>("", 5, 20, 4, 4, 1, 1);
+}
+
+TEST(SingleInputCuda, ComputeMaxPool)
+{
+    TTestCompute<MaxPoolLayer>("", 8, 8);
 }
 
 void TestBackprop(SingleInputLayer &layer)
@@ -109,10 +123,22 @@ void TTestBackprop(Params ...prms)
     TestBackprop(layer);
 }
 
-TEST(SingleInputCuda, Backprop)
+TEST(SingleInputCuda, BackpropSoftmax)
 {
     TTestBackprop<SoftmaxLayer>("");
+}
+
+TEST(SingleInputCuda, BackpropLinear)
+{
     TTestBackprop<LinearLayer>("", 32 * 32 * 5, 100);
+}
+
+TEST(SingleInputCuda, BackpropConvo)
+{
     TTestBackprop<ConvoLayer>("", 5, 20, 4, 4, 1, 1);
 }
 
+TEST(SingleInputCuda, BackpropMaxPool)
+{
+    TTestBackprop<MaxPoolLayer>("", 8, 8);
+}

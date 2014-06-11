@@ -82,18 +82,26 @@ class CuNeuronLayer
 private:
     CuContext _handle;
 
+    CuMat _cacheCompute;
+    CuMat _cacheBackprop;
+
 public:
     CuNeuronLayer(int deviceId)
     {
     	// TODO: Thread?
         _handle = CuSetupProvider::GetHandle(deviceId);
+        _cacheCompute.SetHandle(_handle);
+        _cacheCompute.SetSharedModify(true);
+        _cacheBackprop.SetHandle(_handle);
+        _cacheBackprop.SetSharedModify(true);
     }
 
     virtual Params Compute(const Params &input, bool isTraining)
     {
-        CuMat *m = new CuMat(_handle, input.Rows, input.Cols);
+        //CuMat *m = new CuMat(_handle, input.Rows, input.Cols);
+        _cacheCompute.Resize(input.Rows, input.Cols);
 
-        Params ret(input, m);
+        Params ret(input, new CuMat(_cacheCompute));
 
         NCompute(input, ret, CalcFn(), _handle);
 
@@ -102,13 +110,14 @@ public:
     virtual Params Backprop(const Params &input, const Params &lastOutput,
                             const Params &outputErrors)
     {
-        CuMat *inputErrs = new CuMat(_handle, input.Rows, input.Cols);
+        //CuMat *inputErrs = new CuMat(_handle, input.Rows, input.Cols);
+        _cacheBackprop.Resize(input.Rows, input.Cols);
 
-        Params ret(input, inputErrs);
+        Params ret(input, new CuMat(_cacheBackprop));
 
         NBackprop(input, lastOutput, ret, CalcFn(), _handle);
 
-        inputErrs->CoeffMultiply(outputErrors.GetCudaMatrix(_handle));
+        _cacheBackprop.CoeffMultiply(outputErrors.GetCudaMatrix(_handle));
 
         return ret;
     }

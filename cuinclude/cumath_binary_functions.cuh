@@ -9,9 +9,15 @@
 #pragma once
 
 #include "cumath_traits.cuh"
+#include <float.h>
 
 struct CuPlus
 {
+    __device__ Real NullValue() const
+    {
+        return 0.0f;
+    }
+
 	__device__ Real operator()(Real a, Real b) const
 	{
 		return a + b;
@@ -26,6 +32,11 @@ struct CuMinus
 };
 struct CuMultiply
 {
+    __device__ Real NullValue() const
+    {
+        return 1.0f;
+    }
+
 	__device__ Real operator()(Real a, Real b) const
 	{
 		return a * b;
@@ -47,6 +58,10 @@ struct CuPow
 };
 struct CuMax
 {
+    __device__ Real NullValue() const
+    {
+        return -FLT_MAX;
+    }
 	__device__ Real operator()(Real a, Real b) const
 	{
 		return max(a, b);
@@ -54,6 +69,10 @@ struct CuMax
 };
 struct CuMin
 {
+    __device__ Real NullValue() const
+    {
+        return FLT_MAX;
+    }
 	__device__ Real operator()(Real a, Real b) const
 	{
 		return min(a, b);

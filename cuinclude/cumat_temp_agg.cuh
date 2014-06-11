@@ -22,10 +22,10 @@ public:
 	static const bool IsHorizontal = ColInc >= 1;
 	static const bool IsVertical = RowInc >= 1;
 
-    __device__ __host__ void operator()(uint32_t &row, uint32_t &col) const
+    __device__ __host__ void operator()(uint32_t &row, uint32_t &col, uint32_t stride = 1) const
     {
-        row += RowInc;
-        col += ColInc;
+        row += RowInc * stride;
+        col += ColInc * stride;
     }
 
     static uint32_t XDim(uint32_t cols)
@@ -79,11 +79,78 @@ __global__ void CuDeviceAggSimple(const CuMatInfo inputMat, CuMatInfo outputMat,
 	outputMat._dMat[opIdx] = accum;
 }
 
+template<CuStorageOrder storageOrder, typename Inc, typename Aggregator, typename ElemFn>
+__global__ void CuDeviceAgg(const CuMatInfo inputMat, CuMatInfo outputMat, Inc inc, Aggregator agg, ElemFn fn)
+{
+    // Use shared memory to store the intermediate results for each thread
+    extern __shared__ Real s_results[];
+
+    const uint32_t startRow = blockIdx.y * blockDim.y + threadIdx.y;
+    const uint32_t startCol = blockIdx.x * blockDim.x + threadIdx.x;
+    const uint32_t rows = inputMat._rows;
+    const uint32_t cols = inputMat._cols;
+
+    uint32_t row = startRow;
+    uint32_t col = startCol;
+
+    uint32_t tid = threadIdx.y * blockDim.x + threadIdx.x;
+
+    s_results[tid] = agg.NullValue();
+
+    if (row >= inputMat._rows || col >= inputMat._cols)
+        return;
+
+    uint32_t blockSize = blockDim.x * blockDim.y;
+
+    const Real *ipBuff = inputMat._dMat;
+
+    // First stage: Accumulate locally into the shared memory
+    Real accum = fn(ipBuff[ElementIdx<storageOrder>(row, col, rows, cols)]);
+    inc(row, col, blockSize);
+
+    for (; (Inc::IsHorizontal && col < cols) || (Inc::IsVertical && row < rows);
+         inc(row, col, blockSize))
+    {
+        Real comp = fn(ipBuff[ElementIdx<storageOrder>(row, col, rows, cols)]);
+
+        accum = agg(accum, comp);
+    }
+
+    // Store the intermediate result in the allocated shared memory spot.
+    s_results[tid] = accum;
+
+    // Wait for all of the threads to finish their initial aggregation
+    __syncthreads();
+
+    // Now accumulate the shared values into a single value
+    for (uint32_t s = blockSize / 2; s > 0; s >>= 1)
+    {
+        if (tid < s)
+        {
+            s_results[tid] = agg(s_results[tid], s_results[tid + s]);
+        }
+        __syncthreads();
+    }
+
+    if (tid == 0)
+    {
+        // Store the value
+        uint32_t opIdx = ElementIdx<storageOrder>(startRow, startCol, outputMat._rows, outputMat._cols);
+
+        outputMat._dMat[opIdx] = s_results[0];
+    }
+}
+
 template<typename Inc, typename Aggregator, typename ElemFn>
 void CuMatAggregate(const CuMat &mat, CuMat &dest,
 				    Inc inc, Aggregator agg, ElemFn fn,
 				    cublasHandle_t cublasHandle)
 {
+    static const uint32_t s_assumedCompute = 1024;
+
+    if (mat.Empty())
+        return;
+
 	if (!cublasHandle)
 		cublasHandle = mat.Handle().CublasHandle;
 
@@ -94,10 +161,49 @@ void CuMatAggregate(const CuMat &mat, CuMat &dest,
 	uint32_t xDim = Inc::XDim(mat.Cols()),
 			 yDim = Inc::YDim(mat.Rows());
 
-	dim3 blockSize = round_up<32>(xDim, yDim);
-	dim3 threadSize(min(32u, xDim), min(32u, yDim));
+	// Compute the number of elements that each thread block will need to process
+	uint32_t elsPerThreadBlock = mat.Size() / (xDim * yDim);
+	// Estimate the number of threads that are likely available to do this processing
+	uint32_t threadsPerBlock = min(max(s_assumedCompute / (xDim * yDim), 1u), 512u);
+
+	// Now compute the number of elements that each thread should process
+	//uint32_t elsPerThread = round_up(elsPerThreadBlock, threadsPerBlock);
+
+	dim3 blockSize, gridSize;
+	if (Inc::IsHorizontal)
+	{
+	    blockSize = dim3(threadsPerBlock, 1);
+	    gridSize = dim3(1, yDim);
+	}
+	else
+	{
+	    blockSize = dim3(1, threadsPerBlock);
+	    gridSize = dim3(xDim, 1);
+	}
+
+	uint32_t smemSize = threadsPerBlock * sizeof(Real);
 
 	dest.Resize(yDim, xDim);
+
+	if (mat.Order() == CuColMajor)
+	{
+	    CuDeviceAgg<CuColMajor>
+#ifdef _CUDA_COMPILE_
+	        <<<gridSize, blockSize, smemSize, stream>>>
+#endif
+	        (mat, dest, inc, agg, fn);
+	}
+	else
+	{
+        CuDeviceAgg<CuRowMajor>
+#ifdef _CUDA_COMPILE_
+            <<<gridSize, blockSize, smemSize, stream>>>
+#endif
+            (mat, dest, inc, agg, fn);
+	}
+
+	/*dim3 blockSize = round_up<32>(xDim, yDim);
+	dim3 threadSize(min(32u, xDim), min(32u, yDim));
 
 	if (mat.Order() == CuColMajor)
 	{
@@ -106,7 +212,7 @@ void CuMatAggregate(const CuMat &mat, CuMat &dest,
 	else
 	{
 		CuDeviceAggSimple<CuRowMajor><<<blockSize, threadSize, 0, stream>>>(mat, dest, inc, agg, fn);
-	}
+	}*/
 }
 
 template<typename Inc, typename Aggregator, typename ElemFn>
