@@ -157,8 +157,8 @@ void CuWeights::ApplyGradient()
     if (WeightDecay)
     {
         Real wdFactor = WeightDecay * LearningRate;
-        AddScaled(WeightsIncrement, 1.0f, Weights, -wdFactor, WeightsIncrement);
-        AddScaled(BiasIncrement, 1.0f, Biases, -wdFactor, BiasIncrement);
+        WeightsIncrement.BinaryExpr(Weights, CuScaledDiff(wdFactor));
+        BiasIncrement.BinaryExpr(Biases, CuScaledDiff(wdFactor));
     }
 
     Real learnRate = LearningRate * DynamicLearningRate;

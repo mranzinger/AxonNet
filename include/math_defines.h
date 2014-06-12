@@ -36,6 +36,8 @@ typedef Eigen::Map<RMatrix, 0, Eigen::OuterStride<> > RStrideMap;
 
 struct cublasContext;
 typedef struct cublasContext *cublasHandle_t;
+struct CUstream_st;
+typedef struct CUstream_st *cudaStream_t;
 
 struct CuContext
 {

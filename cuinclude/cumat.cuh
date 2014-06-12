@@ -185,10 +185,12 @@ public:
     const CuMat &Mat;
 };
 
-class CuRowwiseOperator
+template<typename Inc>
+class CuMatAgg_t
 {
 public:
-    CuRowwiseOperator(const CuMat &mat);
+    CuMatAgg_t(const CuMat &mat)
+        : Mat(mat) { }
 
     const CuMat &Mat;
 
@@ -204,53 +206,85 @@ public:
     template<typename ElemFn>
     CuMat Max(ElemFn fn) const;
 
+    void Max(CuMat &dest, cublasHandle_t cublasHandle = 0) const;
+    template<typename ElemFn>
+    void Max(CuMat &dest, ElemFn fn, cublasHandle_t cublasHandle = 0) const;
+
     CuMat MaxIdx() const;
+    template<typename ElemFn>
+    CuMat MaxIdx(ElemFn fn) const;
+
+    void MaxIdx(CuMat &dest, cublasHandle_t cublasHandle = 0) const;
+    template<typename ElemFn>
+    void MaxIdx(CuMat &dest, ElemFn fn, cublasHandle_t cublasHandle = 0) const;
 
     CuMat Min() const;
     template<typename ElemFn>
     CuMat Min(ElemFn fn) const;
 
-    CuMat MinIdx() const;
+    void Min(CuMat &dest, cublasHandle_t cublasHandle = 0) const;
+    template<typename ElemFn>
+    void Min(CuMat &dest, ElemFn fn, cublasHandle_t cublasHandle = 0) const;
 
-    template<typename Aggregator, typename ElemFn>
+    CuMat MinIdx() const;
+    template<typename ElemFn>
+    CuMat MinIdx(ElemFn fn) const;
+
+    void MinIdx(CuMat &dest, cublasHandle_t cublasHandle = 0) const;
+    template<typename ElemFn>
+    void MinIdx(CuMat &dest, ElemFn fn, cublasHandle_t cublasHandle = 0) const;
+
+    template<bool Vals, typename Aggregator, typename ElemFn>
     CuMat Agg(Aggregator agg, ElemFn fn) const;
 
-    template<typename Aggregator, typename ElemFn>
+    template<bool Vals, typename Aggregator, typename ElemFn>
     void Agg(CuMat &dest, Aggregator agg, ElemFn fn, cublasHandle_t cublasHandle = 0) const;
 };
 
-class CuColwiseOperator
+template<uint32_t RowInc, uint32_t ColInc>
+class Incrementer
 {
 public:
-    CuColwiseOperator(const CuMat &mat);
+    static const bool IsHorizontal = ColInc >= 1;
+    static const bool IsVertical = RowInc >= 1;
 
-    const CuMat &Mat;
+    __device__ __host__ void operator()(uint32_t &row, uint32_t &col, uint32_t stride = 1) const
+    {
+        row += RowInc * stride;
+        col += ColInc * stride;
+    }
 
-    CuMat Sum() const;
-    template<typename ElemFn>
-    CuMat Sum(ElemFn fn) const;
+    static uint32_t XDim(uint32_t cols)
+    {
+        if (IsHorizontal)
+            return 1;
+        else
+            return cols;
+    }
+    static uint32_t YDim(uint32_t rows)
+    {
+        if (IsVertical)
+            return 1;
+        else
+            return rows;
+    }
+};
 
-    void Sum(CuMat &dest, cublasHandle_t cublasHandle = 0) const;
-    template<typename ElemFn>
-    void Sum(CuMat &dest, ElemFn fn, cublasHandle_t cublasHandle = 0) const;
+class CuRowwiseOperator
+    : public CuMatAgg_t<Incrementer<0, 1> >
+{
+public:
+    CuRowwiseOperator(const CuMat &mat)
+        : CuMatAgg_t(mat) { }
 
-    CuMat Max() const;
-    template<typename ElemFn>
-    CuMat Max(ElemFn fn) const;
+};
 
-    CuMat MaxIdx() const;
-
-    CuMat Min() const;
-    template<typename ElemFn>
-    CuMat Min(ElemFn fn) const;
-
-    CuMat MinIdx() const;
-
-    template<typename Aggregator, typename ElemFn>
-    CuMat Agg(Aggregator agg, ElemFn fn) const;
-
-    template<typename Aggregator, typename ElemFn>
-    void Agg(CuMat &dest, Aggregator agg, ElemFn fn, cublasHandle_t cublasHandle = 0) const;
+class CuColwiseOperator
+    : public CuMatAgg_t<Incrementer<1, 0> >
+{
+public:
+    CuColwiseOperator(const CuMat &mat)
+        : CuMatAgg_t(mat) { }
 };
 
 CuMat operator*(const CuMat &m, Real scale);
@@ -275,7 +309,10 @@ void ScaledMultiply(Real mulScale, const CuScopedWeakTranspose &tA,
 		const CuScopedWeakTranspose &tB, Real scaleDest, CuMat &dest, cublasHandle_t cublasHandle);
 
 CuMat MultiplyTrans3D(const CuMat &a, uint32_t rows, uint32_t cols, const CuMat &b);
-void MultiplyTrans3D(const CuMat &a, uint32_t rows, uint32_t cols, const CuMat &b, CuMat &dest);
+void MultiplyTrans3D(const CuMat &a, uint32_t rows, uint32_t cols,
+        const CuMat &b, CuMat &dest);
+
+
 
 #include "cumat_kernels.cuh"
 #include "cumat_temp_agg.cuh"

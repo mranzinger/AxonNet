@@ -14,14 +14,21 @@ class CuSoftmaxLayer
 {
 scope_public:
 	CuSoftmaxLayer(int deviceId);
+	~CuSoftmaxLayer();
 
-	Params Compute(const Params &input) const;
+	Params Compute(const Params &input);
 	Params Backprop(const Params &lastInput, const Params &lastOutput,
-					const Params &outputErrors) const;
+					const Params &outputErrors);
 
 	void SetCostIsLogreg(bool value);
 
 scope_private:
 	bool _costIsLogreg;
 	CuContext _handle;
+
+	CuMat *_cacheCompute;
+	CuMat *_cacheBackprop;
+	CuMat *_cacheIpMax;
+	CuMat *_cacheExpSum;
+	CuMat *_cacheJacobian;
 };

@@ -42,55 +42,74 @@ CuSoftmaxLayer::CuSoftmaxLayer(int deviceId)
 	: _costIsLogreg(false)
 {
 	_handle = CuSetupProvider::GetHandle(deviceId);
+
+	_cacheCompute = new CuMat(_handle);
+	_cacheCompute->SetSharedModify(true);
+
+	_cacheBackprop = new CuMat(_handle);
+	_cacheBackprop->SetSharedModify(true);
+
+	_cacheIpMax = new CuMat(_handle);
+	_cacheExpSum = new CuMat(_handle);
+	_cacheJacobian = new CuMat(_handle);
 }
 
-Params CuSoftmaxLayer::Compute(const Params& input) const
+CuSoftmaxLayer::~CuSoftmaxLayer()
 {
-	CuMat *m = new CuMat(_handle, input.Rows, input.Cols);
+    delete _cacheCompute;
+    delete _cacheBackprop;
+    delete _cacheIpMax;
+    delete _cacheExpSum;
+    delete _cacheJacobian;
+}
+
+Params CuSoftmaxLayer::Compute(const Params& input)
+{
+	//CuMat *m = new CuMat(_handle, input.Rows, input.Cols);
+    _cacheCompute->Resize(input.Rows, input.Cols);
+    CuMat *m = new CuMat(*_cacheCompute);
 
 	Params ret(input, m);
 
 	const CuMat &mInput = input.GetCudaMatrix(_handle);
 
 	// Get the maximum value in each column
-	CuMat ipMax = mInput.Colwise().Max();
+	mInput.Colwise().Max(*_cacheIpMax);
 
 	CuMat &mSoftmax = *m;
-	mInput.UnaryExpr<false>(mSoftmax, CuSoftmaxExpr(ipMax));
+	mInput.UnaryExpr<false>(mSoftmax, CuSoftmaxExpr(*_cacheIpMax));
 
 	// Sum the columns, and also take their inverse to make the
 	// subsequent operations faster
-	CuMat mExpMatSum = mSoftmax.Colwise().Sum();
-	mExpMatSum.UnaryExpr(CuInverse());
+	mSoftmax.Colwise().Sum(*_cacheExpSum);
+	_cacheExpSum->UnaryExpr(CuInverse());
 
 	// Now divide all of the elements by the columnar sums
-	mSoftmax.UnaryExpr(CuSoftmaxDiv(mExpMatSum));
-
-	// Need to synchronize since streams are allocated
-	cudaDeviceSynchronize();
+	mSoftmax.UnaryExpr(CuSoftmaxDiv(*_cacheExpSum));
 
 	return ret;
 }
 
 Params CuSoftmaxLayer::Backprop(const Params& lastInput,
-		const Params& lastOutput, const Params& outputErrors) const
+		const Params& lastOutput, const Params& outputErrors)
 {
 	if (_costIsLogreg)
 		// The cost function already computed the input error for this guy
 		return outputErrors;
 
-	Params ret = Params::CreateLike(lastInput, _handle);
+	_cacheBackprop->Resize(lastInput.Rows, lastInput.Cols);
+	CuMat *m = new CuMat(*_cacheBackprop);
+
+	Params ret(lastInput, m);
 
 	CuMat &inputErrors = ret.GetCudaMatrix(_handle);
 
 	// Create a big jacobian matrix of first derivatives
-	CuMat mDiff(_handle, lastOutput.Rows * lastOutput.Rows, lastOutput.Cols);
-	CalcSoftmaxDiff(mDiff, lastOutput.GetCudaMatrix(_handle));
+	_cacheJacobian->Resize(lastOutput.Rows * lastOutput.Rows, lastOutput.Cols);
+	CalcSoftmaxDiff(*_cacheJacobian, lastOutput.GetCudaMatrix(_handle));
 
-	MultiplyTrans3D(mDiff, lastOutput.Rows, lastOutput.Rows,
+	MultiplyTrans3D(*_cacheJacobian, lastOutput.Rows, lastOutput.Rows,
 				    outputErrors.GetCudaMatrix(_handle), inputErrors);
-
-	cudaError_t err = cudaDeviceSynchronize();
 
 	return ret;
 }

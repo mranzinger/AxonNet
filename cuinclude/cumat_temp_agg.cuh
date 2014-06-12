@@ -15,35 +15,6 @@
 
 namespace {
 
-template<uint32_t RowInc, uint32_t ColInc>
-class Incrementer
-{
-public:
-	static const bool IsHorizontal = ColInc >= 1;
-	static const bool IsVertical = RowInc >= 1;
-
-    __device__ __host__ void operator()(uint32_t &row, uint32_t &col, uint32_t stride = 1) const
-    {
-        row += RowInc * stride;
-        col += ColInc * stride;
-    }
-
-    static uint32_t XDim(uint32_t cols)
-    {
-    	if (IsHorizontal)
-    		return 1;
-    	else
-    		return cols;
-    }
-    static uint32_t YDim(uint32_t rows)
-    {
-    	if (IsVertical)
-    		return 1;
-    	else
-    		return rows;
-    }
-};
-
 template<CuStorageOrder storageOrder, typename Inc, typename Aggregator, typename ElemFn>
 __global__ void CuDeviceAggSimple(const CuMatInfo inputMat, CuMatInfo outputMat, Inc inc, Aggregator agg, ElemFn fn)
 {
@@ -83,7 +54,7 @@ template<CuStorageOrder storageOrder, typename Inc, typename Aggregator, typenam
 __global__ void CuDeviceAgg(const CuMatInfo inputMat, CuMatInfo outputMat, Inc inc, Aggregator agg, ElemFn fn)
 {
     // Use shared memory to store the intermediate results for each thread
-    extern __shared__ Real s_results[];
+    extern __shared__ Real s_valAgg[];
 
     const uint32_t startRow = blockIdx.y * blockDim.y + threadIdx.y;
     const uint32_t startCol = blockIdx.x * blockDim.x + threadIdx.x;
@@ -95,7 +66,7 @@ __global__ void CuDeviceAgg(const CuMatInfo inputMat, CuMatInfo outputMat, Inc i
 
     uint32_t tid = threadIdx.y * blockDim.x + threadIdx.x;
 
-    s_results[tid] = agg.NullValue();
+    s_valAgg[tid] = agg.NullValue();
 
     if (row >= inputMat._rows || col >= inputMat._cols)
         return;
@@ -117,7 +88,7 @@ __global__ void CuDeviceAgg(const CuMatInfo inputMat, CuMatInfo outputMat, Inc i
     }
 
     // Store the intermediate result in the allocated shared memory spot.
-    s_results[tid] = accum;
+    s_valAgg[tid] = accum;
 
     // Wait for all of the threads to finish their initial aggregation
     __syncthreads();
@@ -127,7 +98,7 @@ __global__ void CuDeviceAgg(const CuMatInfo inputMat, CuMatInfo outputMat, Inc i
     {
         if (tid < s)
         {
-            s_results[tid] = agg(s_results[tid], s_results[tid + s]);
+            s_valAgg[tid] = agg(s_valAgg[tid], s_valAgg[tid + s]);
         }
         __syncthreads();
     }
@@ -137,7 +108,7 @@ __global__ void CuDeviceAgg(const CuMatInfo inputMat, CuMatInfo outputMat, Inc i
         // Store the value
         uint32_t opIdx = ElementIdx<storageOrder>(startRow, startCol, outputMat._rows, outputMat._cols);
 
-        outputMat._dMat[opIdx] = s_results[0];
+        outputMat._dMat[opIdx] = s_valAgg[0];
     }
 }
 
@@ -147,7 +118,7 @@ template<CuStorageOrder storageOrder, typename Inc, typename Aggregator, typenam
 __global__ void CuDeviceAggIdx(const CuMatInfo inputMat, CuMatInfo outputMat, Inc inc, Aggregator agg, ElemFn fn)
 {
     // Use shared memory to store the intermediate results for each thread
-    extern __shared__ ValIdx s_results[];
+    extern __shared__ ValIdx s_idxAgg[];
 
     const uint32_t startRow = blockIdx.y * blockDim.y + threadIdx.y;
     const uint32_t startCol = blockIdx.x * blockDim.x + threadIdx.x;
@@ -159,7 +130,7 @@ __global__ void CuDeviceAggIdx(const CuMatInfo inputMat, CuMatInfo outputMat, In
 
     uint32_t tid = threadIdx.y * blockDim.x + threadIdx.x;
 
-    s_results[tid] = ValIdx(agg.NullValue(), tid);
+    s_idxAgg[tid] = ValIdx(agg.NullValue(), tid);
 
     if (row >= inputMat._rows || col >= inputMat._cols)
         return;
@@ -188,7 +159,7 @@ __global__ void CuDeviceAggIdx(const CuMatInfo inputMat, CuMatInfo outputMat, In
     }
 
     // Store the intermediate result in the allocated shared memory spot.
-    s_results[tid] = accum;
+    s_idxAgg[tid] = accum;
 
     // Wait for all of the threads to finish their initial aggregation
     __syncthreads();
@@ -198,7 +169,7 @@ __global__ void CuDeviceAggIdx(const CuMatInfo inputMat, CuMatInfo outputMat, In
     {
         if (tid < s)
         {
-            s_results[tid] = agg(s_results[tid], s_results[tid + s]);
+            s_idxAgg[tid] = agg(s_idxAgg[tid], s_idxAgg[tid + s]);
         }
         __syncthreads();
     }
@@ -208,165 +179,287 @@ __global__ void CuDeviceAggIdx(const CuMatInfo inputMat, CuMatInfo outputMat, In
         // Store the value
         uint32_t opIdx = ElementIdx<storageOrder>(startRow, startCol, outputMat._rows, outputMat._cols);
 
-        outputMat._dMat[opIdx] = s_results[0].Idx;
+        outputMat._dMat[opIdx] = s_idxAgg[0].Idx;
     }
 }
 
-template<typename Inc, typename Aggregator, typename ElemFn>
+template<typename Impl>
+struct CuMatAggregator_t
+{
+    template<typename Inc, typename Aggregator, typename ElemFn>
+    static void Invoke(const CuMat &mat, CuMat &dest,
+                       Inc inc, Aggregator agg, ElemFn fn,
+                       cublasHandle_t cublasHandle)
+    {
+        static const uint32_t s_assumedCompute = 1024;
+
+        if (mat.Empty())
+            return;
+
+        if (!cublasHandle)
+            cublasHandle = mat.Handle().CublasHandle;
+
+        cudaStream_t stream;
+        cublasGetStream_v2(cublasHandle, &stream);
+
+        // This will probably be the simplest (and slowest) way to implement this
+        uint32_t xDim = Inc::XDim(mat.Cols()),
+                 yDim = Inc::YDim(mat.Rows());
+
+        // Compute the number of elements that each thread block will need to process
+        uint32_t elsPerThreadBlock = mat.Size() / (xDim * yDim);
+        // Estimate the number of threads that are likely available to do this processing
+        uint32_t threadsPerBlock = min(max(s_assumedCompute / (xDim * yDim), 1u), 512u);
+
+        // Now compute the number of elements that each thread should process
+        //uint32_t elsPerThread = round_up(elsPerThreadBlock, threadsPerBlock);
+
+        dim3 blockSize, gridSize;
+        if (Inc::IsHorizontal)
+        {
+            blockSize = dim3(threadsPerBlock, 1);
+            gridSize = dim3(1, yDim);
+        }
+        else
+        {
+            blockSize = dim3(1, threadsPerBlock);
+            gridSize = dim3(xDim, 1);
+        }
+
+        dest.Resize(yDim, xDim);
+
+        if (mat.Order() == CuColMajor)
+        {
+            Impl::template Call<CuColMajor>(mat, dest,
+                                     inc, agg, fn,
+                                     cublasHandle,
+                                     gridSize, blockSize,
+                                     stream);
+        }
+        else
+        {
+            Impl::template Call<CuRowMajor>(mat, dest,
+                                     inc, agg, fn,
+                                     cublasHandle,
+                                     gridSize, blockSize,
+                                     stream);
+        }
+    }
+};
+
+template<bool Vals>
+struct CuMatAggregator
+    : CuMatAggregator_t<CuMatAggregator<Vals> >
+{
+    template<CuStorageOrder order, typename Inc, typename Aggregator, typename ElemFn>
+    static void Call(const CuMat &mat, CuMat &dest,
+                       Inc inc, Aggregator agg, ElemFn fn,
+                       cublasHandle_t cublasHandle,
+                       const dim3 &gridSize, const dim3 &blockSize,
+                       cudaStream_t stream)
+    {
+        // Aggregate values
+        uint32_t smemSize = (blockSize.x * blockSize.y) * sizeof(Real);
+
+        CuDeviceAgg<order>
+            <<<gridSize, blockSize, smemSize, stream>>>
+            (mat, dest, inc, agg, fn);
+    }
+};
+
+template<>
+struct CuMatAggregator<false>
+    : CuMatAggregator_t<CuMatAggregator<false> >
+{
+    template<CuStorageOrder order, typename Inc, typename Aggregator, typename ElemFn>
+    static void Call(const CuMat &mat, CuMat &dest,
+                       Inc inc, Aggregator agg, ElemFn fn,
+                       cublasHandle_t cublasHandle,
+                       const dim3 &gridSize, const dim3 &blockSize,
+                       cudaStream_t stream)
+    {
+        // Aggregate indexes
+        uint32_t smemSize = (blockSize.x * blockSize.y) * sizeof(ValIdx);
+
+        CuDeviceAggIdx<order>
+            <<<gridSize, blockSize, smemSize, stream>>>
+            (mat, dest, inc, agg, fn);
+    }
+};
+
+template<bool Vals, typename Inc, typename Aggregator, typename ElemFn>
 void CuMatAggregate(const CuMat &mat, CuMat &dest,
 				    Inc inc, Aggregator agg, ElemFn fn,
 				    cublasHandle_t cublasHandle)
 {
-    static const uint32_t s_assumedCompute = 1024;
-
-    if (mat.Empty())
-        return;
-
-	if (!cublasHandle)
-		cublasHandle = mat.Handle().CublasHandle;
-
-	cudaStream_t stream;
-	cublasGetStream_v2(cublasHandle, &stream);
-
-	// This will probably be the simplest (and slowest) way to implement this
-	uint32_t xDim = Inc::XDim(mat.Cols()),
-			 yDim = Inc::YDim(mat.Rows());
-
-	// Compute the number of elements that each thread block will need to process
-	uint32_t elsPerThreadBlock = mat.Size() / (xDim * yDim);
-	// Estimate the number of threads that are likely available to do this processing
-	uint32_t threadsPerBlock = min(max(s_assumedCompute / (xDim * yDim), 1u), 512u);
-
-	// Now compute the number of elements that each thread should process
-	//uint32_t elsPerThread = round_up(elsPerThreadBlock, threadsPerBlock);
-
-	dim3 blockSize, gridSize;
-	if (Inc::IsHorizontal)
-	{
-	    blockSize = dim3(threadsPerBlock, 1);
-	    gridSize = dim3(1, yDim);
-	}
-	else
-	{
-	    blockSize = dim3(1, threadsPerBlock);
-	    gridSize = dim3(xDim, 1);
-	}
-
-	uint32_t smemSize = threadsPerBlock * sizeof(Real);
-
-	dest.Resize(yDim, xDim);
-
-	if (mat.Order() == CuColMajor)
-	{
-	    CuDeviceAgg<CuColMajor>
-#ifdef _CUDA_COMPILE_
-	        <<<gridSize, blockSize, smemSize, stream>>>
-#endif
-	        (mat, dest, inc, agg, fn);
-	}
-	else
-	{
-        CuDeviceAgg<CuRowMajor>
-#ifdef _CUDA_COMPILE_
-            <<<gridSize, blockSize, smemSize, stream>>>
-#endif
-            (mat, dest, inc, agg, fn);
-	}
+    CuMatAggregator<Vals>::Invoke(mat, dest,
+                                  inc, agg, fn,
+                                  cublasHandle);
 }
 
-template<typename Inc, typename Aggregator, typename ElemFn>
+template<bool Vals, typename Inc, typename Aggregator, typename ElemFn>
 CuMat CuMatAggregate(const CuMat &mat,
                      Inc inc, Aggregator agg, ElemFn fn)
 {
 	CuMat ret(mat.Handle());
 
-	CuMatAggregate(mat, ret, inc, agg, fn, mat.Handle().CublasHandle);
+	CuMatAggregate<Vals>(mat, ret, inc, agg, fn, mat.Handle().CublasHandle);
 
 	return ret;
 }
 
-
-
 }
 
+template<typename Inc>
+CuMat CuMatAgg_t<Inc>::Sum() const
+{
+    return Sum(CuIdentity());
+}
+
+template<typename Inc>
 template<typename ElemFn>
-CuMat CuRowwiseOperator::Sum(ElemFn fn) const
+CuMat CuMatAgg_t<Inc>::Sum(ElemFn fn) const
 {
-    return Agg(CuPlus(), fn);
+    return Agg<true>(CuPlus(), fn);
 }
 
+template<typename Inc>
+void CuMatAgg_t<Inc>::Sum(CuMat& dest, cublasHandle_t cublasHandle) const
+{
+    Sum(dest, CuIdentity(), cublasHandle);
+}
+
+template<typename Inc>
 template<typename ElemFn>
-void CuRowwiseOperator::Sum(CuMat &dest, ElemFn fn, cublasHandle_t cublasHandle) const
+void CuMatAgg_t<Inc>::Sum(CuMat& dest, ElemFn fn,
+        cublasHandle_t cublasHandle) const
 {
-	Agg(dest, CuPlus(), fn, cublasHandle);
+    Agg<true>(dest, CuPlus(), fn, cublasHandle);
 }
 
+template<typename Inc>
+CuMat CuMatAgg_t<Inc>::Max() const
+{
+    return Max(CuIdentity());
+}
+
+template<typename Inc>
 template<typename ElemFn>
-CuMat CuColwiseOperator::Sum(ElemFn fn) const
+CuMat CuMatAgg_t<Inc>::Max(ElemFn fn) const
 {
-    return Agg(CuPlus(), fn);
+    return Agg<true>(CuMax(), fn);
 }
 
+template<typename Inc>
+void CuMatAgg_t<Inc>::Max(CuMat& dest, cublasHandle_t cublasHandle) const
+{
+    Max(dest, CuIdentity(), cublasHandle);
+}
+
+template<typename Inc>
 template<typename ElemFn>
-void CuColwiseOperator::Sum(CuMat &dest, ElemFn fn, cublasHandle_t cublasHandle) const
+void CuMatAgg_t<Inc>::Max(CuMat& dest, ElemFn fn,
+        cublasHandle_t cublasHandle) const
 {
-	Agg(dest, CuPlus(), fn, cublasHandle);
+    Agg<true>(dest, CuMax(), fn, cublasHandle);
 }
 
+template<typename Inc>
+CuMat CuMatAgg_t<Inc>::MaxIdx() const
+{
+    return MaxIdx(CuIdentity());
+}
+
+template<typename Inc>
 template<typename ElemFn>
-CuMat CuRowwiseOperator::Max(ElemFn fn) const
+CuMat CuMatAgg_t<Inc>::MaxIdx(ElemFn fn) const
 {
-	return Agg(CuMax(), fn);
+    return Agg<false>(CuMax(), fn);
 }
 
+template<typename Inc>
+void CuMatAgg_t<Inc>::MaxIdx(CuMat& dest,
+        cublasHandle_t cublasHandle) const
+{
+    MaxIdx(dest, CuIdentity(), cublasHandle);
+}
+
+template<typename Inc>
 template<typename ElemFn>
-CuMat CuColwiseOperator::Max(ElemFn fn) const
+void CuMatAgg_t<Inc>::MaxIdx(CuMat& dest, ElemFn fn,
+        cublasHandle_t cublasHandle) const
 {
-	return Agg(CuMax(), fn);
+    Agg<false>(dest, CuMax(), fn, cublasHandle);
 }
 
+template<typename Inc>
+CuMat CuMatAgg_t<Inc>::Min() const
+{
+    return Min(CuIdentity());
+}
+
+template<typename Inc>
 template<typename ElemFn>
-CuMat CuRowwiseOperator::Min(ElemFn fn) const
+CuMat CuMatAgg_t<Inc>::Min(ElemFn fn) const
 {
-	return Agg(CuMin(), fn);
+    return Agg<true>(CuMin(), fn);
 }
 
+template<typename Inc>
+void CuMatAgg_t<Inc>::Min(CuMat& dest, cublasHandle_t cublasHandle) const
+{
+    Min(dest, CuIdentity(), cublasHandle);
+}
+
+template<typename Inc>
 template<typename ElemFn>
-CuMat CuColwiseOperator::Min(ElemFn fn) const
+void CuMatAgg_t<Inc>::Min(CuMat& dest, ElemFn fn,
+        cublasHandle_t cublasHandle) const
 {
-	return Agg(CuMin(), fn);
+    Agg(dest, CuMin(), fn, cublasHandle);
 }
 
-template<typename Aggregator, typename ElemFn>
-CuMat CuRowwiseOperator::Agg(Aggregator agg, ElemFn fn) const
+template<typename Inc>
+CuMat CuMatAgg_t<Inc>::MinIdx() const
 {
-    return CuMatAggregate(Mat,
-                          Incrementer<0, 1>(),
-                          agg, fn);
+    return MinIdx(CuIdentity());
 }
 
-template<typename Aggregator, typename ElemFn>
-void CuRowwiseOperator::Agg(CuMat &dest, Aggregator agg, ElemFn fn,
-							cublasHandle_t cublasHandle) const
+template<typename Inc>
+template<typename ElemFn>
+CuMat CuMatAgg_t<Inc>::MinIdx(ElemFn fn) const
 {
-	CuMatAggregate(Mat, dest, Incrementer<0, 1>(),
-				   agg, fn, cublasHandle);
+    return Agg<false>(CuMin(), fn);
 }
 
-template<typename Aggregator, typename ElemFn>
-CuMat CuColwiseOperator::Agg(Aggregator agg, ElemFn fn) const
+template<typename Inc>
+void CuMatAgg_t<Inc>::MinIdx(CuMat& dest,
+        cublasHandle_t cublasHandle) const
 {
-    return CuMatAggregate(Mat,
-                          Incrementer<1, 0>(),
-                          agg, fn);
+    MinIdx(dest, CuIdentity(), cublasHandle);
 }
 
-template<typename Aggregator, typename ElemFn>
-void CuColwiseOperator::Agg(CuMat &dest, Aggregator agg, ElemFn fn,
-							cublasHandle_t cublasHandle) const
+template<typename Inc>
+template<typename ElemFn>
+void CuMatAgg_t<Inc>::MinIdx(CuMat& dest, ElemFn fn,
+        cublasHandle_t cublasHandle) const
 {
-	CuMatAggregate(Mat, dest, Incrementer<1, 0>(),
-				   agg, fn, cublasHandle);
+    Agg<false>(dest, CuMin(), fn, cublasHandle);
+}
+
+template<typename Inc>
+template<bool Vals, typename Aggregator, typename ElemFn>
+CuMat CuMatAgg_t<Inc>::Agg(Aggregator agg, ElemFn fn) const
+{
+    return CuMatAggregate<Vals>(Mat, Inc(), agg, fn);
+}
+
+template<typename Inc>
+template<bool Vals, typename Aggregator, typename ElemFn>
+void CuMatAgg_t<Inc>::Agg(CuMat& dest, Aggregator agg, ElemFn fn,
+        cublasHandle_t cublasHandle) const
+{
+    CuMatAggregate<Vals>(Mat, dest, Inc(), agg, fn, cublasHandle);
 }
 
 

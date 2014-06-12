@@ -16,8 +16,8 @@ struct ValIdx
 	Real Value;
 	uint32_t Idx;
 
-	ValIdx() { }
-	ValIdx(Real val, uint32_t idx)
+	__device__ ValIdx() { }
+	__device__ ValIdx(Real val, uint32_t idx)
 		: Value(val), Idx(idx) { }
 };
 
