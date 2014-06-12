@@ -11,6 +11,16 @@
 #include "cumath_traits.cuh"
 #include <float.h>
 
+struct ValIdx
+{
+	Real Value;
+	uint32_t Idx;
+
+	ValIdx() { }
+	ValIdx(Real val, uint32_t idx)
+		: Value(val), Idx(idx) { }
+};
+
 struct CuPlus
 {
     __device__ Real NullValue() const
@@ -66,6 +76,13 @@ struct CuMax
 	{
 		return max(a, b);
 	}
+	__device__ const ValIdx &operator()(const ValIdx &a, const ValIdx &b) const
+	{
+		if (a.Value > b.Value)
+			return a;
+		else
+			return b;
+	}
 };
 struct CuMin
 {
@@ -76,6 +93,13 @@ struct CuMin
 	__device__ Real operator()(Real a, Real b) const
 	{
 		return min(a, b);
+	}
+	__device__ const ValIdx &operator()(const ValIdx &a, const ValIdx &b) const
+	{
+		if (a.Value < b.Value)
+			return a;
+		else
+			return b;
 	}
 };
 struct CuAddScaledBinary

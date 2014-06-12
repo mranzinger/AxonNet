@@ -18,6 +18,30 @@ CuLoglossCost::CuLoglossCost(int deviceId)
 	: _outputIsSoftmax(false)
 {
 	_handle = CuSetupProvider::GetHandle(deviceId);
+
+	_secondHandle.Device = deviceId;
+	cublasCreate_v2(&_secondHandle.CublasHandle);
+
+	cudaStreamCreate(&_secondStream);
+
+	_cacheCompLL = new CuMat(_handle);
+	_cacheCompMaxIdxs = new CuMat(_secondHandle);
+	_cacheCompBinarized = new CuMat(_secondHandle);
+
+	_cacheCost = new CuMat(_handle);
+	_cacheCost->SetSharedModify(true);
+}
+
+CuLoglossCost::~CuLoglossCost()
+{
+	delete _cacheCompLL;
+	delete _cacheCompMaxIdxs;
+	delete _cacheCompBinarized;
+	delete _cacheCost;
+
+	cudaStreamDestroy(_secondStream);
+
+	cublasDestroy_v2(_secondHandle.CublasHandle);
 }
 
 struct CuLLVecComputeFn
@@ -146,39 +170,32 @@ CostMap CuLoglossCost::Compute(const Params& pred, const Params& labels)
 	const CuMat &mLabels = labels.GetCudaMatrix(_handle);
 
 	Real logLoss, numCorr;
+
+	cudaStreamSynchronize(0);
+
+	// Get the index for the maximum value in each column
+	//CuMat maxIdxs = mPred.Colwise().MaxIdx();
+
+	//CuMat bin(_handle);
+
+
+
+	// Index mode. Each label is stored by index
+	if (labels.Rows == 1)
 	{
-		CuMat ll(_handle);
-
-		// Index mode. Each label is stored by index
-		if (labels.Rows == 1)
-		{
-			mPred.UnaryExpr<false>(ll, CuLLIdxComputeFn(mLabels));
-		}
-		// Vector mode
-		else
-		{
-			mPred.BinaryExpr<false>(mLabels, ll, CuLLVecComputeFn());
-		}
-
-		logLoss = ll.Sum();
+		mPred.UnaryExpr<false>(*_cacheCompLL, CuLLIdxComputeFn(mLabels));
+		_cacheCompMaxIdxs->BinaryExpr<false>(mLabels, *_cacheCompBinarized, CuLLIdxMaxEqFn());
 	}
+	// Vector mode
+	else
 	{
-		// Get the index for the maximum value in each column
-		CuMat maxIdxs = mPred.Colwise().MaxIdx();
-
-		CuMat bin(_handle);
-
-		if (labels.Rows == 1)
-		{
-			maxIdxs.BinaryExpr<false>(mLabels, bin, CuLLIdxMaxEqFn());
-		}
-		else
-		{
-			mPred.BinaryExpr<false>(mLabels, bin, CuLLVecMaxEqFn(maxIdxs));
-		}
-
-		numCorr = bin.Sum();
+		mPred.BinaryExpr<false>(mLabels, *_cacheCompLL, CuLLVecComputeFn());
+		mPred.BinaryExpr<false>(mLabels, *_cacheCompBinarized, CuLLVecMaxEqFn(*_cacheCompMaxIdxs));
 	}
+
+	logLoss = _cacheCompLL->Sum();
+
+	numCorr = _cacheCompBinarized->Sum();
 
 	CostMap ret;
 	ret[CostMap::PRIMARY_NAME] = logLoss;
@@ -193,7 +210,8 @@ Params CuLoglossCost::ComputeGrad(const Params& pred, const Params& labels)
 	const CuMat &mPred = pred.GetCudaMatrix(_handle);
 	const CuMat &mLabels = labels.GetCudaMatrix(_handle);
 
-	CuMat *cost = new CuMat(_handle);
+	_cacheCost->ResizeLike(mPred);
+	CuMat *cost = new CuMat(*_cacheCost);
 
 	if (_outputIsSoftmax)
 	{
@@ -203,7 +221,8 @@ Params CuLoglossCost::ComputeGrad(const Params& pred, const Params& labels)
 		}
 		else
 		{
-			AddScaled(mPred, 1.0f / pred.Cols, mLabels, -1.0f / pred.Cols, *cost);
+			mPred.BinaryExpr<false>(mLabels, *cost, CuScaledDiff(1.0f / pred.Cols));
+			//AddScaled(mPred, 1.0f / pred.Cols, mLabels, -1.0f / pred.Cols, *cost);
 		}
 	}
 	else
@@ -225,3 +244,5 @@ void CuLoglossCost::SetOpIsSoftmax(bool value)
 {
 	_outputIsSoftmax = value;
 }
+
+

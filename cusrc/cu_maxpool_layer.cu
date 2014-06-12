@@ -201,8 +201,12 @@ Params CuMaxPoolLayer::Compute(const Params& input)
 #ifdef _CUDA_COMPILE_
 		<<<blocks, threads>>>
 #endif
-		(mInput.Buff(), mOutput.Buff(), ipWidth, ipHeight, opWidth, opHeight,
-				depth, _windowSizeX, _windowSizeY, _stepX, _stepY);
+		(mInput.Buff(), mOutput.Buff(),
+		 ipWidth, ipHeight,
+		 opWidth, opHeight,
+		 depth,
+		 _windowSizeX, _windowSizeY,
+		 _stepX, _stepY);
 
 	return output;
 }

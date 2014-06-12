@@ -141,6 +141,77 @@ __global__ void CuDeviceAgg(const CuMatInfo inputMat, CuMatInfo outputMat, Inc i
     }
 }
 
+
+
+template<CuStorageOrder storageOrder, typename Inc, typename Aggregator, typename ElemFn>
+__global__ void CuDeviceAggIdx(const CuMatInfo inputMat, CuMatInfo outputMat, Inc inc, Aggregator agg, ElemFn fn)
+{
+    // Use shared memory to store the intermediate results for each thread
+    extern __shared__ ValIdx s_results[];
+
+    const uint32_t startRow = blockIdx.y * blockDim.y + threadIdx.y;
+    const uint32_t startCol = blockIdx.x * blockDim.x + threadIdx.x;
+    const uint32_t rows = inputMat._rows;
+    const uint32_t cols = inputMat._cols;
+
+    uint32_t row = startRow;
+    uint32_t col = startCol;
+
+    uint32_t tid = threadIdx.y * blockDim.x + threadIdx.x;
+
+    s_results[tid] = ValIdx(agg.NullValue(), tid);
+
+    if (row >= inputMat._rows || col >= inputMat._cols)
+        return;
+
+    uint32_t blockSize = blockDim.x * blockDim.y;
+
+    const Real *ipBuff = inputMat._dMat;
+
+    uint32_t startIdx;
+    if (Inc::IsHorizontal)
+    	startIdx = col;
+    else
+    	startIdx = row;
+
+    // First stage: Accumulate locally into the shared memory
+    ValIdx accum(fn(ipBuff[ElementIdx<storageOrder>(row, col, rows, cols)]), startIdx);
+    inc(row, col, blockSize);
+
+    for (uint32_t idx = startIdx + blockSize;
+    	  (Inc::IsHorizontal && col < cols) || (Inc::IsVertical && row < rows);
+         inc(row, col, blockSize), idx += blockSize)
+    {
+        ValIdx comp(fn(ipBuff[ElementIdx<storageOrder>(row, col, rows, cols)]), idx);
+
+        accum = agg(accum, comp);
+    }
+
+    // Store the intermediate result in the allocated shared memory spot.
+    s_results[tid] = accum;
+
+    // Wait for all of the threads to finish their initial aggregation
+    __syncthreads();
+
+    // Now accumulate the shared values into a single value
+    for (uint32_t s = blockSize / 2; s > 0; s >>= 1)
+    {
+        if (tid < s)
+        {
+            s_results[tid] = agg(s_results[tid], s_results[tid + s]);
+        }
+        __syncthreads();
+    }
+
+    if (tid == 0)
+    {
+        // Store the value
+        uint32_t opIdx = ElementIdx<storageOrder>(startRow, startCol, outputMat._rows, outputMat._cols);
+
+        outputMat._dMat[opIdx] = s_results[0].Idx;
+    }
+}
+
 template<typename Inc, typename Aggregator, typename ElemFn>
 void CuMatAggregate(const CuMat &mat, CuMat &dest,
 				    Inc inc, Aggregator agg, ElemFn fn,
@@ -201,18 +272,6 @@ void CuMatAggregate(const CuMat &mat, CuMat &dest,
 #endif
             (mat, dest, inc, agg, fn);
 	}
-
-	/*dim3 blockSize = round_up<32>(xDim, yDim);
-	dim3 threadSize(min(32u, xDim), min(32u, yDim));
-
-	if (mat.Order() == CuColMajor)
-	{
-		CuDeviceAggSimple<CuColMajor><<<blockSize, threadSize, 0, stream>>>(mat, dest, inc, agg, fn);
-	}
-	else
-	{
-		CuDeviceAggSimple<CuRowMajor><<<blockSize, threadSize, 0, stream>>>(mat, dest, inc, agg, fn);
-	}*/
 }
 
 template<typename Inc, typename Aggregator, typename ElemFn>
