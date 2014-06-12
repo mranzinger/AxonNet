@@ -174,12 +174,7 @@ CostMap CuLoglossCost::Compute(const Params& pred, const Params& labels)
 	cudaStreamSynchronize(0);
 
 	// Get the index for the maximum value in each column
-	//CuMat maxIdxs = mPred.Colwise().MaxIdx();
 	mPred.Colwise().MaxIdx(*_cacheCompMaxIdxs);
-
-	//CuMat bin(_handle);
-
-
 
 	// Index mode. Each label is stored by index
 	if (labels.Rows == 1)
