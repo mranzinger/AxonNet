@@ -226,8 +226,8 @@ void HandwrittenLoader::Get(const vector<size_t>& idxs, ParamMap &inputMap,
 		pLabels += 10;
 	}
 
-	inputMap[_inputName.empty() ? DEFAULT_INPUT_NAME : _inputName] = move(vals);
-	inputMap[_labelName.empty() ? DEFAULT_LABEL_NAME : _labelName] = move(labels);
+	TakeSet(inputMap, _inputName.empty() ? DEFAULT_INPUT_NAME : _inputName, vals);
+	TakeSet(inputMap, _labelName.empty() ? DEFAULT_LABEL_NAME : _labelName, labels);
 }
 
 void WriteStruct(const CStructWriter &writer, const HandwrittenLoader &loader)

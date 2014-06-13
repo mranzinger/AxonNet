@@ -110,6 +110,17 @@ Params &Params::operator=(Params other)
     return *this;
 }
 
+void Params::Take(Params& other)
+{
+	swap(*this, other);
+
+	if (!_cudaMat && other._cudaMat)
+	{
+		PullIn(other._cudaMat);
+		other._cudaMat = nullptr;
+	}
+}
+
 const CMatrix &Params::GetHostMatrix() const
 {
     return const_cast<Params*>(this)->GetHostMatrix();
@@ -141,6 +152,19 @@ CuMat &Params::GetCudaMatrix(CuContext handle)
     return *_cudaMat;
 }
 
+void Params::PullIn(CuMat* cudaMat)
+{
+	if (_cudaMat == cudaMat)
+		return;
+
+	if (_cudaMat)
+		CuMat_Delete(_cudaMat);
+
+	_cudaMat = cudaMat;
+
+	CuMat_CopyToDevice(GetHostMatrix(), *_cudaMat);
+}
+
 void swap(Params &a, Params &b)
 {
     swap(a.Width, b.Width);
@@ -170,4 +194,18 @@ Params Params::CreateLike(const Params& other)
 Params Params::CreateLike(const Params& other, const CuContext& handle)
 {
 	return Params(other, CuMat_Make(handle, other.Rows, other.Cols));
+}
+
+void TakeSet(ParamMap& prms, const std::string& a_name, Params& p)
+{
+	auto iter = prms.find(a_name);
+
+	if (iter == prms.end())
+	{
+		prms.insert(make_pair(a_name, move(p)));
+	}
+	else
+	{
+		iter->second.Take(p);
+	}
 }

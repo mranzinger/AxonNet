@@ -167,11 +167,12 @@ void NeuralNet::Train(ITrainProvider &provider,
     if (testFreq == 0)
         testFreq = provider.TrainSize() / batchSize;
 
+    ParamMap inputs;
+
     for (size_t i = 0; i < maxIters; ++i)
     {
         auto tStart = high_resolution_clock::now();
 
-        ParamMap inputs;
         provider.GetTrain(inputs, batchSize);
 
         CostMap err = Backprop(inputs);

@@ -46,6 +46,10 @@ public:
 	const CuMat &GetCudaMatrix(CuContext handle) const;
 	CuMat &GetCudaMatrix(CuContext handle);
 
+	void PullIn(CuMat *cudaMat);
+
+	void Take(Params &other);
+
 	Params &operator=(Params other);
 
 	friend void swap(Params &a, Params &b);
@@ -58,4 +62,6 @@ private:
 
 typedef std::vector<Params> MultiParams;
 typedef std::map<std::string, Params> ParamMap;
+
+void TakeSet(ParamMap &prms, const std::string &a_name, Params &p);
 
