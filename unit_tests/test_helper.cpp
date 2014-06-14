@@ -24,7 +24,7 @@ void AssertEquivalence(const MatTypeA &a, const MatTypeB &b, Real precision)
 
     if (!eq)
     {
-        if (a.size() < 20 && b.size() < 20)
+        if (a.size() < 100 && b.size() < 100)
         {
             cout << "Matrix A:" << endl << a << endl << endl
                  << "Matrix B:" << endl << b << endl << endl;

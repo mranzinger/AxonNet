@@ -123,10 +123,10 @@ void TTestBackprop(Params ...prms)
     TestBackprop(layer);
 }
 
-TEST(SingleInputCuda, BackpropSoftmax)
+/*TEST(SingleInputCuda, BackpropSoftmax)
 {
     TTestBackprop<SoftmaxLayer>("");
-}
+}*/
 
 TEST(SingleInputCuda, BackpropLinear)
 {

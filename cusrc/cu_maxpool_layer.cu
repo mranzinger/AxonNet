@@ -164,12 +164,14 @@ __global__ void CuMaxPoolLayer_Backprop(const Real *pFullInput, const Real *pFul
 
 			Real ipVal = pInput[ipIdx];
 
+			Real &ipErrVal = pInputErrors[ipIdx];
+
 			if (ipVal == opVal)
 			{
-				Real &ipErrVal = pInputErrors[ipIdx];
-
 				ipErrVal = opErrVal;
 			}
+			else
+				ipErrVal = 0.0f;
 		}
 	}
 }

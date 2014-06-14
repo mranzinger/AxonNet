@@ -19,8 +19,11 @@ Params Compute(const Params &input,
 			   size_t windowSizeX, size_t windowSizeY,
 			   bool isTraining = false)
 {
-	return MaxPoolLayer("", windowSizeX, windowSizeY)
-			.SCompute(input, isTraining);
+	MaxPoolLayer layer("", windowSizeX, windowSizeY);
+
+	layer.SetDevicePreference(CudaDevicePreference::Create(0));
+
+	return layer.SCompute(input, isTraining);
 }
 
 Params Backprop(const Params &lastInput, const Params &outputErrors,
@@ -28,6 +31,8 @@ Params Backprop(const Params &lastInput, const Params &outputErrors,
 				const Params *pLastOutput = nullptr)
 {
 	MaxPoolLayer layer("", windowSizeX, windowSizeY);
+
+	layer.SetDevicePreference(CudaDevicePreference::Create(0));
 
 	const Params &lastOutput = pLastOutput ?
 								*pLastOutput
