@@ -8,13 +8,13 @@
 using namespace std;
 
 CuMat::CuMat()
-	: _dMat(NULL), _rows(0), _cols(0), _storageOrder(CuColMajor), _sharedMod(false)
+	: _dMat(NULL), _rows(0), _cols(0), _buffSize(0), _storageOrder(CuColMajor), _sharedMod(false)
 {
 	_refCt = new uint32_t(1);
 }
 
 CuMat::CuMat(CuContext handle)
-    : _handle(handle), _dMat(NULL), _rows(0), _cols(0), _storageOrder(CuColMajor), _sharedMod(false)
+    : _handle(handle), _dMat(NULL), _rows(0), _cols(0), _buffSize(0), _storageOrder(CuColMajor), _sharedMod(false)
 {
     _refCt = new uint32_t(1);
 }
@@ -22,7 +22,7 @@ CuMat::CuMat(CuContext handle)
 CuMat::CuMat(CuContext handle,
 		     uint32_t rows, uint32_t cols,
 		     CuStorageOrder storageOrder)
-	: _handle(handle), _dMat(NULL), _rows(rows), _cols(cols),
+	: _handle(handle), _dMat(NULL), _rows(rows), _cols(cols), _buffSize(0),
 	  _storageOrder(storageOrder), _sharedMod(false)
 {
 	_refCt = new uint32_t(1);
@@ -31,7 +31,7 @@ CuMat::CuMat(CuContext handle,
 }
 
 CuMat::CuMat(CuContext handle, const CMatrix& hMat)
-    : _handle(handle), _rows(hMat.rows()), _cols(hMat.cols()),
+    : _handle(handle), _rows(hMat.rows()), _cols(hMat.cols()), _buffSize(0),
       _storageOrder(CuColMajor), _sharedMod(false)
 {
     _refCt = new uint32_t(1);
@@ -42,7 +42,7 @@ CuMat::CuMat(CuContext handle, const CMatrix& hMat)
 }
 
 CuMat::CuMat(CuContext handle, const RMatrix& hMat)
-    : _handle(handle), _rows(hMat.rows()), _cols(hMat.cols()),
+    : _handle(handle), _rows(hMat.rows()), _cols(hMat.cols()), _buffSize(0),
       _storageOrder(CuRowMajor), _sharedMod(false)
 {
     _refCt = new uint32_t(1);
@@ -53,7 +53,7 @@ CuMat::CuMat(CuContext handle, const RMatrix& hMat)
 }
 
 CuMat::CuMat(CuContext handle, const Vector& hVec)
-    : _handle(handle), _rows(hVec.rows()), _cols(hVec.cols()),
+    : _handle(handle), _rows(hVec.rows()), _cols(hVec.cols()), _buffSize(0),
       _storageOrder(CuRowMajor), _sharedMod(false)
 {
     _refCt = new uint32_t(1);
@@ -65,7 +65,8 @@ CuMat::CuMat(CuContext handle, const Vector& hVec)
 
 CuMat::CuMat(const CuMat &other)
 	: _handle(other._handle), _dMat(other._dMat), _rows(other._rows), _cols(other._cols),
-	  _refCt(other._refCt), _storageOrder(other._storageOrder), _sharedMod(other._sharedMod)
+	  _refCt(other._refCt), _storageOrder(other._storageOrder), _sharedMod(other._sharedMod),
+	  _buffSize(other._buffSize)
 {
 	// Increment the ref count
 	++(*_refCt);
@@ -304,11 +305,16 @@ void CuMat::Resize(uint32_t rows, uint32_t cols)
 	_rows = rows;
 	_cols = cols;
 
-	// Free the old buffer if it is valid
-	FreeMatrix();
+	// Only allocate a new matrix if the requested buffer
+	// is not big enough
+	if (_buffSize < _rows * _cols)
+	{
+		// Free the old buffer if it is valid
+		FreeMatrix();
 
-	// Allocate the new matrix of the specified size
-	AllocateMatrix();
+		// Allocate the new matrix of the specified size
+		AllocateMatrix();
+	}
 }
 
 void CuMat::ResizeLike(const CuMat& like)
@@ -318,7 +324,11 @@ void CuMat::ResizeLike(const CuMat& like)
 
 void CuMat::Reshape(uint32_t rows, uint32_t cols)
 {
-	throw runtime_error("Not implemented.");
+	if (_buffSize < rows * cols)
+		throw runtime_error("The buffer for this matrix is not large enough to support the request");
+
+	_rows = rows;
+	_cols = cols;
 }
 
 void CuMat::PrepareForWrite(bool alloc)
@@ -349,6 +359,8 @@ void CuMat::AllocateMatrix()
 	cudaError_t cudaStat = cudaMalloc(&_dMat, _rows * _cols * sizeof(Real));
 	if (cudaStat != cudaSuccess)
 		throw runtime_error("Unable to allocate the specified matrix");
+
+	_buffSize = _rows * _cols;
 }
 
 void CuMat::FreeMatrix()
@@ -402,6 +414,7 @@ void swap(CuMat &a, CuMat &b)
 	swap(a._cols, b._cols);
 	swap(a._refCt, b._refCt);
 	swap(a._sharedMod, b._sharedMod);
+	swap(a._buffSize, b._buffSize);
 }
 
 CuScopedWeakTranspose::CuScopedWeakTranspose(const CuMat& mat)

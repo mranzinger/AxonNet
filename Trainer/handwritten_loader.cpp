@@ -28,6 +28,11 @@ HandwrittenLoader::HandwrittenLoader(const string &root)
 	   root + "t10k-labels.idx1-ubyte") 
 {
     _rootDir = root;
+
+    random_device d;
+    _deformRnd.seed(d());
+
+    _deformDist = uniform_int_distribution<>(0, 3);
 }
 
 HandwrittenLoader::HandwrittenLoader(const string &dataFile, const string &labelFile,
@@ -36,6 +41,11 @@ HandwrittenLoader::HandwrittenLoader(const string &dataFile, const string &label
 	  _testLabelFile(testLabelFile)
 {
 	Load();
+
+	random_device d;
+    _deformRnd.seed(d());
+
+    _deformDist = uniform_int_distribution<>(0, 3);
 }
 
 template<typename T>
@@ -192,9 +202,6 @@ void HandwrittenLoader::Get(const vector<size_t>& idxs, ParamMap &inputMap,
 	Real *pVals = vals.GetHostMatrix().data();
 	Real *pLabels = labels.GetHostMatrix().data();
 
-	std::random_device device;
-	std::uniform_int_distribution<> dist(0, 3);
-
 	RMatrix mat(28, 28);
 
 	for (size_t idx : idxs)
@@ -208,8 +215,8 @@ void HandwrittenLoader::Get(const vector<size_t>& idxs, ParamMap &inputMap,
 
 			mat.setConstant(-0.5f);
 
-			int wndX = dist(device);
-			int wndY = dist(device);
+			int wndX = _deformDist(_deformRnd);
+			int wndY = _deformDist(_deformRnd);
 
 			mat.block(wndY, wndX, 24, 24) = vMap.block(2, 2, 24, 24);
 

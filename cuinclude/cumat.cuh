@@ -155,7 +155,7 @@ private:
 
 	Real *_dMat;
 	uint32_t *_refCt;
-	uint32_t _rows, _cols;
+	uint32_t _rows, _cols, _buffSize;
 	CuStorageOrder _storageOrder;
 	CuContext _handle;
 	bool _sharedMod;

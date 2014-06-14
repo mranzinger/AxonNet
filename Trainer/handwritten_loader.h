@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <random>
 
 #include "2d_train_provider_base.h"
 
@@ -27,6 +28,9 @@ private:
 				_testDataFile, _testLabelFile;
 	std::string _inputName,
 	            _labelName;
+
+	mutable std::mt19937 _deformRnd;
+	mutable std::uniform_int_distribution<> _deformDist;
 
 public: 
 	HandwrittenLoader() = default;
