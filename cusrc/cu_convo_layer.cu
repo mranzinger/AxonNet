@@ -111,3 +111,45 @@ void CuConvoLayer::SetWeightDecay(Real rate)
 {
     _impl->SetWeightDecay(rate);
 }
+
+Params CuConvoLayer::Impl::Compute(const Params& input)
+{
+    const CuMat &mInput = input.GetCudaMatrix(_handle);
+
+    const int ipWidth = input.Width;
+}
+
+Params CuConvoLayer::Impl::Backprop(const Params& lastInput,
+        const Params& lastOutput, const Params& outputErrors)
+{
+}
+
+void CuConvoLayer::Impl::ApplyGradient()
+{
+    _weights.ApplyGradient();
+}
+
+void CuConvoLayer::Impl::SyncToDevice(const CWeights& hWeights, bool gradToo)
+{
+    _weights.CopyToDevice(hWiehgts, gradToo);
+}
+
+void CuConvoLayer::Impl::SyncToHost(CWeights& hWeights, bool gradToo) const
+{
+    _weights.CopyToHost(hWeights, gradToo);
+}
+
+void CuConvoLayer::Impl::SetLearningRate(Real rate)
+{
+    _weights.LearningRate = rate;
+}
+
+void CuConvoLayer::Impl::SetMomentum(Real rate)
+{
+    _weights.Momentum = rate;
+}
+
+void CuConvoLayer::Impl::SetWeightDecay(Real rate)
+{
+    _weights.WeightDecay = rate;
+}
