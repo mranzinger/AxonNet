@@ -330,6 +330,10 @@ size_t ConvoLayer::GetInputDepth() const
     return InputSize() / (_windowSizeX * _windowSizeY);
 }
 
+void ConvoLayer::OnInitCudaDevice(int deviceId)
+{
+}
+
 void WriteStruct(const CStructWriter &writer, const ConvoLayer &layer)
 {
 	WriteStruct(writer, (const SingleInputLayer &)layer);

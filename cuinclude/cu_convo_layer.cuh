@@ -16,7 +16,10 @@ class CuConvoLayer
 	: public ICuWeightLayer
 {
 scope_public:
-	CuConvoLayer(int deviceId);
+	CuConvoLayer(int deviceId,
+				 int windowSizeX, int windowSizeY,
+				 int strideX, int strideY,
+				 int padWidth, int padHeight);
 	~CuConvoLayer();
 
 	Params Compute(const Params &input) const;

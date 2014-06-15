@@ -20,8 +20,18 @@ private:
 	CuMat _cacheCompute;
 	CuMat _cacheBackprop;
 
+	int _windowSizeX, _windowSizeY;
+	int _padWidth, _padHeight;
+	int _strideX, _strideY;
+
 public:
-	Impl(int deviceId)
+	Impl(int deviceId,
+		 int windowSizeX, int windowSizeY,
+		 int strideX, int strideY,
+		 int padWidth, int padHeight)
+		: _windowSizeX(windowSizeX), _windowSizeY(windowSizeY),
+		  _padWidth(padWidth), _padHeight(padHeight),
+		  _strideX(strideX), _strideY(strideY)
 	{
 		_handle = CuSetupProvider::GetHandle(deviceId);
 
