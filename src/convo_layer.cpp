@@ -1,6 +1,6 @@
 #include "convo_layer.h"
 
-#include "util/enum_to_string.h"
+#include <util/enum_to_string.h>
 #include "memset_util.h"
 #include "thread/parallel_for.h"
 
