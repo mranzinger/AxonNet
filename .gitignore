@@ -165,3 +165,4 @@ vtune/
 schaul.cfg
 schaul.json
 .fuse*
+.cproject
