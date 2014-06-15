@@ -19,11 +19,15 @@ scope_private:
 
 	uint32_t _stepX, _stepY;
 
+	CuMat *_cacheCompute;
+	CuMat *_cacheBackprop;
+
 scope_public:
 	CuMaxPoolLayer(int deviceId);
 	CuMaxPoolLayer(int deviceId, uint32_t windowSizeX, uint32_t windowSizeY);
 	CuMaxPoolLayer(int deviceId, uint32_t windowSizeX, uint32_t windowSizeY,
 				   uint32_t stepX, uint32_t stepY);
+	~CuMaxPoolLayer();
 
 	Params Compute(const Params &input);
 	Params Backprop(const Params &input, const Params &lastOutput,

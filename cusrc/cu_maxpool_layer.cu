@@ -14,6 +14,7 @@
 using namespace std;
 
 CuMaxPoolLayer::CuMaxPoolLayer(int deviceId)
+	: _cacheCompute(NULL), _cacheBackprop(NULL)
 {
 	SetWindowSize(0, 0);
 	ResetStepSize();
@@ -22,6 +23,7 @@ CuMaxPoolLayer::CuMaxPoolLayer(int deviceId)
 }
 
 CuMaxPoolLayer::CuMaxPoolLayer(int deviceId, uint32_t windowSizeX, uint32_t windowSizeY)
+	: _cacheCompute(NULL), _cacheBackprop(NULL)
 {
 	SetWindowSize(windowSizeX, windowSizeY);
 	ResetStepSize();
@@ -31,11 +33,18 @@ CuMaxPoolLayer::CuMaxPoolLayer(int deviceId, uint32_t windowSizeX, uint32_t wind
 
 CuMaxPoolLayer::CuMaxPoolLayer(int deviceId, uint32_t windowSizeX, uint32_t windowSizeY,
 		uint32_t stepX, uint32_t stepY)
+	: _cacheCompute(NULL), _cacheBackprop(NULL)
 {
 	SetWindowSize(windowSizeX, windowSizeY);
 	SetStepSize(stepX, stepY);
 
 	InitDevice(deviceId);
+}
+
+CuMaxPoolLayer::~CuMaxPoolLayer()
+{
+	delete _cacheCompute;
+	delete _cacheBackprop;
 }
 
 void CuMaxPoolLayer::SetWindowSize(uint32_t windowSizeX, uint32_t windowSizeY)
@@ -59,6 +68,14 @@ void CuMaxPoolLayer::ResetStepSize()
 void CuMaxPoolLayer::InitDevice(int deviceId)
 {
 	_handle = CuSetupProvider::GetHandle(deviceId);
+
+	delete _cacheCompute;
+	delete _cacheBackprop;
+
+	_cacheCompute = new CuMat(_handle);
+	_cacheCompute->SetSharedModify(true);
+	_cacheBackprop = new CuMat(_handle);
+	_cacheBackprop->SetSharedModify(true);
 }
 
 void CuMaxPoolLayer::EnsureStep()
@@ -190,13 +207,16 @@ Params CuMaxPoolLayer::Compute(const Params& input)
 	const uint32_t opWidth = (uint32_t) ceil(ipWidth / float(_stepX));
 	const uint32_t opHeight = (uint32_t) ceil(ipHeight / float(_stepY));
 
-	Params output(opWidth, opHeight, depth,
-			new CuMat(_handle, opWidth * opHeight * depth, input.Cols));
+
 
 	dim3 threads(32, 32, 1);
 	dim3 blocks = round_up(opWidth * depth, opHeight, input.Cols, threads);
 
 	const CuMat &mInput = input.GetCudaMatrix(_handle);
+
+	_cacheCompute->ResizeLike(mInput);
+	Params output(opWidth, opHeight, depth, new CuMat(*_cacheCompute));
+
 	CuMat &mOutput = output.GetCudaMatrix(_handle);
 
 	CuMaxPoolLayer_Compute
@@ -221,11 +241,15 @@ Params CuMaxPoolLayer::Backprop(const Params& input, const Params& lastOutput,
 	if (!_windowSizeX || !_windowSizeY)
 		return outputErrors;
 
-	Params inputErrors = Params::CreateLike(input, _handle);
+
 
 	const CuMat &mInput = input.GetCudaMatrix(_handle);
 	const CuMat &mOutput = lastOutput.GetCudaMatrix(_handle);
 	const CuMat &mOutputErrors = outputErrors.GetCudaMatrix(_handle);
+
+	_cacheBackprop->ResizeLike(mInput);
+	Params inputErrors(input, new CuMat(*_cacheBackprop));
+
 	CuMat &mInputErrors = inputErrors.GetCudaMatrix(_handle);
 
 	const uint32_t ipWidth = input.Width;
