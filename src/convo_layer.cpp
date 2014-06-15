@@ -56,6 +56,9 @@ Params ConvoLayer::SCompute(const Params &input, bool isTraining)
 		throw runtime_error("The underlying linear layer doesn't take the correct input dimensions.");
 	}
 
+	if (_cuImpl)
+		return _cuImpl->Compute(input);
+
 	const CMatrix weights = _weights.Weights;
 	const Vector &biases = _weights.Biases;
 
@@ -165,6 +168,9 @@ Params ConvoLayer::SCompute(const Params &input, bool isTraining)
 
 Params ConvoLayer::SBackprop(const Params &lastInput, const Params &lastOutput, const Params &pOutputErrors)
 {
+	if (_cuImpl)
+		return _cuImpl->Backprop(lastInput, lastOutput, pOutputErrors);
+
 	const RMatrix &weights = _weights.Weights;
 	const Vector &biases = _weights.Biases;
 
@@ -332,6 +338,12 @@ size_t ConvoLayer::GetInputDepth() const
 
 void ConvoLayer::OnInitCudaDevice(int deviceId)
 {
+	_cuImpl.reset(new CuConvoLayer(deviceId,
+								   _windowSizeX, _windowSizeY,
+								   _strideX, _strideY,
+								   _padWidth, _padHeight));
+
+	SetCudaImplementation(_cuImpl.get());
 }
 
 void WriteStruct(const CStructWriter &writer, const ConvoLayer &layer)

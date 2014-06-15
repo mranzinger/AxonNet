@@ -61,9 +61,15 @@ public:
 	void SetWeightDecay(Real rate);
 };
 
-CuConvoLayer::CuConvoLayer(int deviceId)
+CuConvoLayer::CuConvoLayer(int deviceId,
+						   int windowSizeX, int windowSizeY,
+						   int strideX, int strideY,
+						   int padWidth, int padHeight)
 {
-	_impl = new Impl(deviceId);
+	_impl = new Impl(deviceId,
+					 windowSizeX, windowSizeY,
+					 strideX, strideY,
+					 padWidth, padHeight);
 }
 
 CuConvoLayer::~CuConvoLayer()
@@ -107,16 +113,52 @@ void CuConvoLayer::SetMomentum(Real rate)
     _impl->SetMomentum(rate);
 }
 
+
+
 void CuConvoLayer::SetWeightDecay(Real rate)
 {
     _impl->SetWeightDecay(rate);
 }
+
+__global__ void CuConvoLayer_Compute(const Real *gInput, Real *gOutput,
+									 const Real *gWeights,
+									 const int ipWidth, const int ipHeight, const int ipDepth,
+									 const int opWidth, const int opHeight, const int opDepth,
+									 const int wndSizeX, const int wndSizeY,
+									 const int strideX, const int strideY,
+									 const int padWidth, const int padHeight)
+{
+	uint32_t tx = blockIdx.x * blockDim.x + threadIdx.x;
+	uint32_t ty = blockIdx.y * blockDim.y + threadIdx.y;
+
+	const int dIdx = threadIdx.z;
+	const int layer = blockIdx.z;
+
+	const Real *lInput = gInput + layer * (ipWidth * ipHeight * ipDepth);
+	const Real *pWeights = gWeights + dIdx * (wndSizeX * wndSizeY * ipDepth);
+
+	Real *lOutput = gOutput + (opWidth * opHeight * opDepth);
+}
+
 
 Params CuConvoLayer::Impl::Compute(const Params& input)
 {
     const CuMat &mInput = input.GetCudaMatrix(_handle);
 
     const int ipWidth = input.Width;
+    const int ipHeight = input.Height;
+	const int ipDepth = input.Depth;
+	const int batchSize = input.Cols;
+
+	const int ipStride = ipWidth * ipDepth;
+
+	const int ipEffectiveWidth = ipWidth + _padWidth * 2,
+		      ipEffectiveHeight = ipHeight + _padHeight * 2;
+
+	const int opWidth = (int) floor((ipEffectiveWidth - _windowSizeX) / float(_strideX)) + 1;
+	const int opHeight = (int) floor((ipEffectiveHeight - _windowSizeY) / float(_strideY)) + 1;
+	const int opDepth = _weights.Weights.Rows();
+	const int opStride = opWidth * opDepth;
 }
 
 Params CuConvoLayer::Impl::Backprop(const Params& lastInput,
@@ -131,7 +173,7 @@ void CuConvoLayer::Impl::ApplyGradient()
 
 void CuConvoLayer::Impl::SyncToDevice(const CWeights& hWeights, bool gradToo)
 {
-    _weights.CopyToDevice(hWiehgts, gradToo);
+    _weights.CopyToDevice(hWeights, gradToo);
 }
 
 void CuConvoLayer::Impl::SyncToHost(CWeights& hWeights, bool gradToo) const
