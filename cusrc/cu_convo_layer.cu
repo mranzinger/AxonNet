@@ -10,6 +10,8 @@
 #include "cusetup_provider.cuh"
 #include "cu_weights.cuh"
 
+using namespace std;
+
 class CuConvoLayer::Impl
 {
 private:
@@ -121,23 +123,68 @@ void CuConvoLayer::SetWeightDecay(Real rate)
 }
 
 __global__ void CuConvoLayer_Compute(const Real *gInput, Real *gOutput,
-									 const Real *gWeights,
+									 const Real *gWeights, const Real *gBiases,
 									 const int ipWidth, const int ipHeight, const int ipDepth,
 									 const int opWidth, const int opHeight, const int opDepth,
 									 const int wndSizeX, const int wndSizeY,
 									 const int strideX, const int strideY,
 									 const int padWidth, const int padHeight)
 {
-	uint32_t tx = blockIdx.x * blockDim.x + threadIdx.x;
-	uint32_t ty = blockIdx.y * blockDim.y + threadIdx.y;
+	int destX = blockIdx.x * blockDim.x + threadIdx.x;
+	int destY = blockIdx.y * blockDim.y + threadIdx.y;
+
+	if (destX >= opWidth || destY >= opHeight)
+	    return;
 
 	const int dIdx = threadIdx.z;
 	const int layer = blockIdx.z;
 
 	const Real *lInput = gInput + layer * (ipWidth * ipHeight * ipDepth);
-	const Real *pWeights = gWeights + dIdx * (wndSizeX * wndSizeY * ipDepth);
+	const Real *lWeights = gWeights + dIdx * (wndSizeX * wndSizeY * ipDepth);
 
-	Real *lOutput = gOutput + (opWidth * opHeight * opDepth);
+	Real *lOutput = gOutput + layer * (opWidth * opHeight * opDepth);
+
+	int srcX = -padWidth + destX * strideX;
+	int srcY = -padHeight + destY * strideY;
+
+	int xMin = max(0, srcX);
+	int yMin = max(0, srcY);
+
+	int xMax = min(srcX + wndSizeX, ipWidth + padWidth);
+	int yMax = min(srcY + wndSizeY, ipHeight + padHeight);
+
+	int kSkipX = xMin - srcX;
+	int kSkipY = yMin - srcY;
+
+	int iStride = ipWidth * ipDepth;
+	int kStride = wndSizeX * ipDepth;
+
+	const Real *pImg = lInput + (yMin * iStride + xMin * ipDepth);
+	const Real *pWeights = lWeights + (kSkipY * kStride + kSkipX * ipDepth);
+
+	int numEls = (xMax - xMin) * ipDepth;
+
+	Real sum = gBiases[dIdx];
+
+	for (int y = yMin; y < yMax; ++y, pImg += iStride, pWeights += kStride)
+	{
+	    int off = 0;
+	    for (int x = xMin; x < xMax; ++x)
+	    {
+	        for (int i = 0; i < ipDepth; ++i, ++off)
+	        {
+                const Real imgVal = pImg[off];
+                const Real kVal = pWeights[off];
+
+                const Real product = imgVal * kVal;
+
+                sum += product;
+	        }
+	    }
+	}
+
+	// Finally, store the sum
+	lOutput[destY * opWidth * opDepth + destX * opDepth + dIdx] = sum;
 }
 
 
@@ -159,11 +206,35 @@ Params CuConvoLayer::Impl::Compute(const Params& input)
 	const int opHeight = (int) floor((ipEffectiveHeight - _windowSizeY) / float(_strideY)) + 1;
 	const int opDepth = _weights.Weights.Rows();
 	const int opStride = opWidth * opDepth;
+
+	_cacheCompute.Resize(opWidth * opHeight * opDepth, batchSize);
+	Params output(opWidth, opHeight, opDepth,
+	            new CuMat(_cacheCompute));
+
+	CuMat &mOutput = output.GetCudaMatrix(_handle);
+
+	dim3 blockSize(1, 1, opDepth);
+	dim3 gridSize(opWidth, opHeight, batchSize);
+
+	CuConvoLayer_Compute
+#ifdef _CUDA_COMPILE_
+	    <<<gridSize, blockSize>>>
+#endif
+	                    (mInput.Buff(), mOutput.Buff(),
+	                     _weights.Weights.Buff(), _weights.Biases.Buff(),
+	                     ipWidth, ipHeight, ipDepth,
+	                     opWidth, opHeight, opDepth,
+	                     _windowSizeX, _windowSizeY,
+	                     _strideX, _strideY,
+	                     _padWidth, _padHeight);
+
+	return output;
 }
 
 Params CuConvoLayer::Impl::Backprop(const Params& lastInput,
         const Params& lastOutput, const Params& outputErrors)
 {
+    return lastInput;
 }
 
 void CuConvoLayer::Impl::ApplyGradient()

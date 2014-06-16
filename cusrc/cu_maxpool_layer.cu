@@ -214,7 +214,7 @@ Params CuMaxPoolLayer::Compute(const Params& input)
 
 	const CuMat &mInput = input.GetCudaMatrix(_handle);
 
-	_cacheCompute->ResizeLike(mInput);
+	_cacheCompute->Resize(opWidth * opHeight * depth, input.Cols);
 	Params output(opWidth, opHeight, depth, new CuMat(*_cacheCompute));
 
 	CuMat &mOutput = output.GetCudaMatrix(_handle);
