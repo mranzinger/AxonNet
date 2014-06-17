@@ -244,11 +244,6 @@ Params CuConvoLayer::Impl::Compute(const Params& input)
 	if (err != cudaSuccess)
 		throw runtime_error("Unable to compute convolution.");
 
-	err = cudaDeviceSynchronize();
-
-	if (err != cudaSuccess)
-	    throw runtime_error("Unable to compute convolution.");
-
 	return output;
 }
 
