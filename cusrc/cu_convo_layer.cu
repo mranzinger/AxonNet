@@ -125,6 +125,7 @@ void CuConvoLayer::SetWeightDecay(Real rate)
 
 __global__ void CuConvoLayer_Compute(const Real *gInput, Real *gOutput,
 									 const Real *gWeights, const Real *gBiases,
+									 const int numLayers,
 									 const int ipWidth, const int ipHeight, const int ipDepth,
 									 const int opWidth, const int opHeight, const int opDepth,
 									 const int wndSizeX, const int wndSizeY,
@@ -137,8 +138,17 @@ __global__ void CuConvoLayer_Compute(const Real *gInput, Real *gOutput,
 	if (destX >= opWidth || destY >= opHeight)
 	    return;
 
-	const int dIdx = threadIdx.z;
-	const int layer = blockIdx.z;
+	const uint32_t tz = blockIdx.z * blockDim.z + threadIdx.z;
+
+	const int layer = tz / opDepth;
+
+	if (layer >= numLayers)
+		return;
+
+	const int dIdx = tz % opDepth;
+
+	//const int dIdx = threadIdx.z;
+	//const int layer = blockIdx.z;
 
 	const Real *lInput = gInput + layer * (ipWidth * ipHeight * ipDepth);
 	const Real *lWeights = gWeights + dIdx;
@@ -206,8 +216,10 @@ Params CuConvoLayer::Impl::Compute(const Params& input)
 	CuMat &mOutput = output.GetCudaMatrix(_handle);
 	mOutput.SetConstant(0.0f);
 
-	dim3 blockSize(1, 1, opDepth);
-	dim3 gridSize(opWidth, opHeight, batchSize);
+	uint32_t blockDepth = min(opDepth, 64);
+
+	dim3 blockSize(1, 1, blockDepth);
+	dim3 gridSize(opWidth, opHeight, round_up(batchSize * opDepth, blockDepth));
 
 	cudaError_t err = cudaSetDevice(_handle.Device);
 
@@ -220,11 +232,17 @@ Params CuConvoLayer::Impl::Compute(const Params& input)
 #endif
 	                    (mInput.Buff(), mOutput.Buff(),
 	                     _weights.Weights.Buff(), _weights.Biases.Buff(),
+	                     batchSize,
 	                     ipWidth, ipHeight, ipDepth,
 	                     opWidth, opHeight, opDepth,
 	                     _windowSizeX, _windowSizeY,
 	                     _strideX, _strideY,
 	                     _padWidth, _padHeight);
+
+	err = cudaGetLastError();
+
+	if (err != cudaSuccess)
+		throw runtime_error("Unable to compute convolution.");
 
 	err = cudaDeviceSynchronize();
 
