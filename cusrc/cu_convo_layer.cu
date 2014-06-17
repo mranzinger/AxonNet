@@ -9,6 +9,7 @@
 
 #include "cusetup_provider.cuh"
 #include "cu_weights.cuh"
+#include "cumath_functions.cuh"
 
 using namespace std;
 
@@ -140,7 +141,7 @@ __global__ void CuConvoLayer_Compute(const Real *gInput, Real *gOutput,
 	const int layer = blockIdx.z;
 
 	const Real *lInput = gInput + layer * (ipWidth * ipHeight * ipDepth);
-	const Real *lWeights = gWeights + dIdx * (wndSizeX * wndSizeY * ipDepth);
+	const Real *lWeights = gWeights + dIdx;
 
 	Real *lOutput = gOutput + layer * (opWidth * opHeight * opDepth);
 
@@ -150,8 +151,8 @@ __global__ void CuConvoLayer_Compute(const Real *gInput, Real *gOutput,
 	int xMin = max(0, srcX);
 	int yMin = max(0, srcY);
 
-	int xMax = min(srcX + wndSizeX, ipWidth + padWidth);
-	int yMax = min(srcY + wndSizeY, ipHeight + padHeight);
+	int xMax = min(srcX + wndSizeX, ipWidth);
+	int yMax = min(srcY + wndSizeY, ipHeight);
 
 	int kSkipX = xMin - srcX;
 	int kSkipY = yMin - srcY;
@@ -159,28 +160,22 @@ __global__ void CuConvoLayer_Compute(const Real *gInput, Real *gOutput,
 	int iStride = ipWidth * ipDepth;
 	int kStride = wndSizeX * ipDepth;
 
-	const Real *pImg = lInput + (yMin * iStride + xMin * ipDepth);
-	const Real *pWeights = lWeights + (kSkipY * kStride + kSkipX * ipDepth);
-
 	int numEls = (xMax - xMin) * ipDepth;
+	int xEnd = xMax * ipDepth;
 
 	Real sum = gBiases[dIdx];
 
-	for (int y = yMin; y < yMax; ++y, pImg += iStride, pWeights += kStride)
+	for (int iY = yMin, kY = kSkipY; iY < yMax; ++iY, ++kY)
 	{
-	    int off = 0;
-	    for (int x = xMin; x < xMax; ++x)
-	    {
-	        for (int i = 0; i < ipDepth; ++i, ++off)
-	        {
-                const Real imgVal = pImg[off];
-                const Real kVal = pWeights[off];
+		for (int iX = xMin * ipDepth, kX = kSkipX * ipDepth; iX < xEnd; ++iX, ++kX)
+		{
+			const Real iVal = lInput[RMElementIdx(iY, iX, ipHeight, iStride)];
+			const Real kVal = lWeights[(kY * kStride + kX) * opDepth];
 
-                const Real product = imgVal * kVal;
+			const Real product = iVal * kVal;
 
-                sum += product;
-	        }
-	    }
+			sum += product;
+		}
 	}
 
 	// Finally, store the sum
@@ -197,15 +192,12 @@ Params CuConvoLayer::Impl::Compute(const Params& input)
 	const int ipDepth = input.Depth;
 	const int batchSize = input.Cols;
 
-	const int ipStride = ipWidth * ipDepth;
-
 	const int ipEffectiveWidth = ipWidth + _padWidth * 2,
 		      ipEffectiveHeight = ipHeight + _padHeight * 2;
 
 	const int opWidth = (int) floor((ipEffectiveWidth - _windowSizeX) / float(_strideX)) + 1;
 	const int opHeight = (int) floor((ipEffectiveHeight - _windowSizeY) / float(_strideY)) + 1;
 	const int opDepth = _weights.Weights.Rows();
-	const int opStride = opWidth * opDepth;
 
 	_cacheCompute.Resize(opWidth * opHeight * opDepth, batchSize);
 	Params output(opWidth, opHeight, opDepth,
@@ -215,6 +207,8 @@ Params CuConvoLayer::Impl::Compute(const Params& input)
 
 	dim3 blockSize(1, 1, opDepth);
 	dim3 gridSize(opWidth, opHeight, batchSize);
+
+	cudaSetDevice(_handle.Device);
 
 	CuConvoLayer_Compute
 #ifdef _CUDA_COMPILE_

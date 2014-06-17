@@ -24,12 +24,15 @@ Params Compute(const CMatrix &kernel, const Vector &bias,
 			   size_t padWidth, size_t padHeight,
 			   bool isTraining = false)
 {
-	return ConvoLayer("",
+	ConvoLayer layer("",
 					  kernel, bias,
 					  windowSizeX, windowSizeY,
 					  strideX, strideY,
-					  padWidth, padHeight)
-			.SCompute(input, isTraining);
+					  padWidth, padHeight);
+
+	layer.SetDevicePreference(CudaDevicePreference::Create(2));
+
+	return layer.SCompute(input, isTraining);
 }
 
 Params Backprop(const CMatrix &kernel, const Vector &bias,

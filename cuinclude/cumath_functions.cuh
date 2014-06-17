@@ -121,6 +121,18 @@ __device__ inline unsigned int ElementIdx(unsigned int row, unsigned int col,
 		return col * rows + row;
 }
 
+__device__ inline unsigned int CMElementIdx(unsigned int row, unsigned int col,
+										    unsigned int rows, unsigned int cols)
+{
+	return col * rows + row;
+}
+
+__device__ inline unsigned int RMElementIdx(unsigned int row, unsigned int col,
+											unsigned int rows, unsigned int cols)
+{
+	return row * cols + col;
+}
+
 template<typename UnaryFn,
 		 CuStorageOrder orderSrc,
 		 CuStorageOrder orderDest,

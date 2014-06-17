@@ -32,7 +32,7 @@ void TestCompute(SingleInputLayer &layer)
 
     Params hOutput = layer.SCompute(input, false);
 
-    layer.SetDevicePreference(CudaDevicePreference::Create(0));
+    layer.SetDevicePreference(CudaDevicePreference::Create(2));
 
     Params dOutput = layer.SCompute(input, false);
 
