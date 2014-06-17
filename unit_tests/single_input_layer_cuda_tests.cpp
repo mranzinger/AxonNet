@@ -58,7 +58,11 @@ TEST(SingleInputCuda, ComputeLinearLayer)
 
 TEST(SingleInputCuda, ComputeConvoLayer)
 {
-    TTestCompute<ConvoLayer>("", 5, 20, 4, 4, 1, 1);
+    TTestCompute<ConvoLayer>("",
+                             5, 20,
+                             7, 7,
+                             2, 2,
+                             3, 3);
 }
 
 TEST(SingleInputCuda, ComputeMaxPool)

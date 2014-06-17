@@ -160,7 +160,7 @@ __global__ void CuConvoLayer_Compute(const Real *gInput, Real *gOutput,
 	int iStride = ipWidth * ipDepth;
 	int kStride = wndSizeX * ipDepth;
 
-	int numEls = (xMax - xMin) * ipDepth;
+	//int numEls = (xMax - xMin) * ipDepth;
 	int xEnd = xMax * ipDepth;
 
 	Real sum = gBiases[dIdx];
@@ -204,11 +204,15 @@ Params CuConvoLayer::Impl::Compute(const Params& input)
 	            new CuMat(_cacheCompute));
 
 	CuMat &mOutput = output.GetCudaMatrix(_handle);
+	mOutput.SetConstant(0.0f);
 
 	dim3 blockSize(1, 1, opDepth);
 	dim3 gridSize(opWidth, opHeight, batchSize);
 
-	cudaSetDevice(_handle.Device);
+	cudaError_t err = cudaSetDevice(_handle.Device);
+
+	if (err != cudaSuccess)
+	    throw runtime_error("Unable to set the device.");
 
 	CuConvoLayer_Compute
 #ifdef _CUDA_COMPILE_
@@ -221,6 +225,11 @@ Params CuConvoLayer::Impl::Compute(const Params& input)
 	                     _windowSizeX, _windowSizeY,
 	                     _strideX, _strideY,
 	                     _padWidth, _padHeight);
+
+	err = cudaDeviceSynchronize();
+
+	if (err != cudaSuccess)
+	    throw runtime_error("Unable to compute convolution.");
 
 	return output;
 }

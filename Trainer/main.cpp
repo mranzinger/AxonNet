@@ -1,11 +1,15 @@
 #include <iostream>
 #include <fstream>
+#include <chrono>
 
 #include <boost/program_options.hpp>
 #include <boost/filesystem.hpp>
 
 #include <serialization/master.h>
 
+#include <cuda_runtime_api.h>
+
+#define _UNIT_TESTS_
 #include "neural_net.h"
 #include "linear_layer.h"
 #include "neuron_layer.h"
@@ -23,6 +27,84 @@ namespace fs = boost::filesystem;
 
 int main(int argc, char *argv [])
 {
+    static const int s_testSize = 1;
+
+    ConvoLayer convoTest("",
+                        3, 128,
+                        11, 11,
+                        5, 5,
+                        5, 5);
+
+    Params computeInput(256, 256, 3,
+                new CMatrix(CMatrix::Random(256 * 256 * 3, 128)));
+
+    Params hostComp = convoTest.SCompute(computeInput, false);
+
+    cout << "Running CPU Timing Test" << endl;
+
+    auto timeStart = chrono::high_resolution_clock::now();
+
+    /*for (int i = 0; i < s_testSize; ++i)
+    {
+        cout << i << endl;
+
+        Params computeOutput = convoTest.SCompute(computeInput, false);
+    }*/
+
+    auto timeStop = chrono::high_resolution_clock::now();
+
+    auto durMs = chrono::duration_cast<chrono::milliseconds>(timeStop - timeStart);
+
+    cout << "Done. Total Time: " << durMs.count() << "ms." << endl
+         << "Time Per Op: " << (durMs.count() / float(s_testSize)) << "ms." << endl;
+
+    convoTest.SetDevicePreference(CudaDevicePreference::Create(0));
+
+    // Run a dummy computation to get the buffer onto the device.
+    // Memory transfer is not part of the test
+    Params cudaComp = convoTest.SCompute(computeInput, false);
+
+    if (!hostComp.GetHostMatrix().isApprox(cudaComp.GetHostMatrix(), 0.001))
+    {
+        cout << "Failed convolution computation" << endl;
+        return 1;
+    }
+
+    cudaError_t cudaErr = cudaDeviceSynchronize();
+    if (cudaErr != cudaSuccess)
+    {
+        cout << "Invalid cuda execution" << endl;
+        return 1;
+    }
+
+    cout << "Running GPU Timing Test" << endl;
+
+    timeStart = chrono::high_resolution_clock::now();
+
+    for (int i = 0; i < s_testSize; ++i)
+    {
+        cout << i << endl;
+
+        Params computeOutput = convoTest.SCompute(computeInput, false);
+
+        cudaErr = cudaDeviceSynchronize();
+
+        if (cudaErr != cudaSuccess)
+        {
+            cout << "Invalid cuda execution" << endl;
+            return 1;
+        }
+    }
+
+    timeStop = chrono::high_resolution_clock::now();
+
+    durMs = chrono::duration_cast<chrono::milliseconds>(timeStop - timeStart);
+
+    cout << "Done. Total Time: " << durMs.count() << "ms." << endl
+         << "Time Per Op: " << (durMs.count() / float(s_testSize)) << "ms." << endl;
+
+    return 0;
+
     string datasetRoot;
     string networkFile;
     string checkpointFile;
