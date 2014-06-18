@@ -23,20 +23,32 @@ void AssertEquivalence(const MatTypeA &a, const MatTypeB &b, Real precision)
 	ASSERT_EQ(a.rows(), b.rows());
 	ASSERT_EQ(a.cols(), b.cols());
 
-	for (int row = 0; row < a.rows(); ++row)
+	if (!a.isApprox(b, precision))
 	{
-		for (int col = 0; col < a.cols(); ++col)
-		{
-			const Real aVal = a(row, col);
-			const Real bVal = b(row, col);
+	    Real largestDev = 0.0f;
+	    Real laVal, lbVal;
+	    int lRow, lCol;
 
-			if (abs(aVal - bVal) > precision)
-			{
-				cout << "[" << row << ", " << col << "] "
-				     << aVal << " != " << bVal << endl;
-				ASSERT_TRUE(false);
-			}
-		}
+        for (int row = 0; row < a.rows(); ++row)
+        {
+            for (int col = 0; col < a.cols(); ++col)
+            {
+                const Real aVal = a(row, col);
+                const Real bVal = b(row, col);
+
+                if (abs(aVal / bVal - 1.0f) > largestDev)
+                {
+                    laVal = aVal;
+                    lbVal = bVal;
+                    lRow = row;
+                    lCol = col;
+                }
+            }
+        }
+
+        cout << "[" << lRow << ", " << lCol << "] "
+             << laVal << " != " << lbVal << endl;
+        ASSERT_TRUE(false);
 	}
 }
 
