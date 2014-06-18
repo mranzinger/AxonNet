@@ -11,7 +11,7 @@
 
 #include <gtest/gtest.h>
 
-const Real DEFAULT_PRECISION = 0.0001;
+const Real DEFAULT_PRECISION = 0.001;
 
 using namespace std;
 
@@ -20,18 +20,24 @@ namespace {
 template<typename MatTypeA, typename MatTypeB>
 void AssertEquivalence(const MatTypeA &a, const MatTypeB &b, Real precision)
 {
-    bool eq = a.isApprox(b, precision);
+	ASSERT_EQ(a.rows(), b.rows());
+	ASSERT_EQ(a.cols(), b.cols());
 
-    if (!eq)
-    {
-        if (a.size() < 100 && b.size() < 100)
-        {
-            cout << "Matrix A:" << endl << a << endl << endl
-                 << "Matrix B:" << endl << b << endl << endl;
-        }
-        // Obviously, this is false... do it for the debug statement
-        ASSERT_TRUE(a.isApprox(b, precision));
-    }
+	for (int row = 0; row < a.rows(); ++row)
+	{
+		for (int col = 0; col < a.cols(); ++col)
+		{
+			const Real aVal = a(row, col);
+			const Real bVal = b(row, col);
+
+			if (abs(aVal - bVal) > precision)
+			{
+				cout << "[" << row << ", " << col << "] "
+				     << aVal << " != " << bVal << endl;
+				ASSERT_TRUE(false);
+			}
+		}
+	}
 }
 
 }

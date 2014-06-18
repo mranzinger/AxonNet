@@ -27,7 +27,7 @@ namespace fs = boost::filesystem;
 
 int main(int argc, char *argv [])
 {
-    static const int s_testSize = 1;
+    static const int s_testSize = 10;
 
     ConvoLayer convoTest("",
                         3, 128,
@@ -44,12 +44,12 @@ int main(int argc, char *argv [])
 
     auto timeStart = chrono::high_resolution_clock::now();
 
-    /*for (int i = 0; i < s_testSize; ++i)
+    for (int i = 0; i < s_testSize; ++i)
     {
         cout << i << endl;
 
         Params computeOutput = convoTest.SCompute(computeInput, false);
-    }*/
+    }
 
     auto timeStop = chrono::high_resolution_clock::now();
 
@@ -64,11 +64,11 @@ int main(int argc, char *argv [])
     // Memory transfer is not part of the test
     Params cudaComp = convoTest.SCompute(computeInput, false);
 
-    if (!hostComp.GetHostMatrix().isApprox(cudaComp.GetHostMatrix(), 0.001))
+    /*if (!hostComp.GetHostMatrix().isApprox(cudaComp.GetHostMatrix(), 0.001))
     {
         cout << "Failed convolution computation" << endl;
         return 1;
-    }
+    }*/
 
     cudaError_t cudaErr = cudaDeviceSynchronize();
     if (cudaErr != cudaSuccess)

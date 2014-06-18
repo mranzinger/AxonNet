@@ -138,20 +138,9 @@ __global__ void CuConvoLayer_Compute(const Real *gInput, Real *gOutput,
 	if (destX >= opWidth || destY >= opHeight)
 	    return;
 
-	const uint32_t tz = blockIdx.z * blockDim.z + threadIdx.z;
-
-	const int layer = tz / opDepth;
-
-	if (layer >= numLayers)
-		return;
-
-	const int dIdx = tz % opDepth;
-
-	//const int dIdx = threadIdx.z;
-	//const int layer = blockIdx.z;
+	const int layer = blockIdx.z;
 
 	const Real *lInput = gInput + layer * (ipWidth * ipHeight * ipDepth);
-	const Real *lWeights = gWeights + dIdx;
 
 	Real *lOutput = gOutput + layer * (opWidth * opHeight * opDepth);
 
@@ -170,26 +159,43 @@ __global__ void CuConvoLayer_Compute(const Real *gInput, Real *gOutput,
 	int iStride = ipWidth * ipDepth;
 	int kStride = wndSizeX * ipDepth;
 
-	//int numEls = (xMax - xMin) * ipDepth;
+	int kfSkipStride = (kSkipY * kStride + kSkipX) * opDepth;
+	int kInnerSkipStride = (kSkipX + (srcX + wndSizeX - xMax)) * opDepth;
+
 	int xEnd = xMax * ipDepth;
 
-	Real sum = gBiases[dIdx];
+	const int dxMin = xMin * ipDepth;
 
-	for (int iY = yMin, kY = kSkipY; iY < yMax; ++iY, ++kY)
+	const int opStoreIdx = destY * opWidth * opDepth + destX * opDepth;
+
+	for (int dIdx = threadIdx.z; dIdx < opDepth; dIdx += blockDim.z)
 	{
-		for (int iX = xMin * ipDepth, kX = kSkipX * ipDepth; iX < xEnd; ++iX, ++kX)
+		const Real *lWeights = gWeights + dIdx;
+
+		Real sum = gBiases[dIdx];
+
+		const Real *iBuff = lInput + yMin * iStride;
+		const Real *kBuff = lWeights + kfSkipStride;
+
+		for (int iY = yMin; iY < yMax; ++iY, iBuff += iStride)
 		{
-			const Real iVal = lInput[RMElementIdx(iY, iX, ipHeight, iStride)];
-			const Real kVal = lWeights[(kY * kStride + kX) * opDepth];
+			for (int iX = dxMin; iX < xEnd; ++iX, kBuff += opDepth)
+			{
+				const Real iVal = iBuff[iX];
+				const Real kVal = kBuff[0];
 
-			const Real product = iVal * kVal;
+				const Real product = iVal * kVal;
 
-			sum += product;
+				sum += product;
+			}
+
+			// Skip over the padding parts of the filter
+			kBuff += kInnerSkipStride;
 		}
-	}
 
-	// Finally, store the sum
-	lOutput[destY * opWidth * opDepth + destX * opDepth + dIdx] = sum;
+		// Finally, store the sum
+		lOutput[opStoreIdx + dIdx] = sum;
+	}
 }
 
 
@@ -214,12 +220,11 @@ Params CuConvoLayer::Impl::Compute(const Params& input)
 	            new CuMat(_cacheCompute));
 
 	CuMat &mOutput = output.GetCudaMatrix(_handle);
-	mOutput.SetConstant(0.0f);
 
 	uint32_t blockDepth = min(opDepth, 64);
 
 	dim3 blockSize(1, 1, blockDepth);
-	dim3 gridSize(opWidth, opHeight, round_up(batchSize * opDepth, blockDepth));
+	dim3 gridSize(opWidth, opHeight, batchSize);
 
 	cudaError_t err = cudaSetDevice(_handle.Device);
 
