@@ -170,19 +170,22 @@ __global__ void CuConvoLayer_Compute(const Real *gInput, Real *gOutput,
 
 	for (int dIdx = threadIdx.z; dIdx < opDepth; dIdx += blockDim.z)
 	{
-		const Real *lWeights = gWeights + dIdx;
+		//const Real *lWeights = gWeights + dIdx;
 
 		Real sum = gBiases[dIdx];
 
-		const Real *iBuff = lInput + yMin * iStride;
-		const Real *kBuff = lWeights + kfSkipStride;
+		//const Real *iBuff = lInput + yMin * iStride;
+		//const Real *kBuff = lWeights + kfSkipStride;
 
-		for (int iY = yMin; iY < yMax; ++iY, iBuff += iStride)
+		int imgIdx = yMin * iStride;
+		int weightsIdx = dIdx + kfSkipStride;
+
+		for (int iY = yMin; iY < yMax; ++iY, imgIdx += iStride)
 		{
-			for (int iX = dxMin; iX < xEnd; ++iX, kBuff += opDepth)
+			for (int iX = dxMin; iX < xEnd; ++iX, weightsIdx += opDepth)
 			{
-				const Real iVal = iBuff[iX];
-				const Real kVal = kBuff[0];
+				const Real iVal = lInput[imgIdx + iX];
+				const Real kVal = gWeights[weightsIdx];
 
 				const Real product = iVal * kVal;
 
@@ -190,7 +193,7 @@ __global__ void CuConvoLayer_Compute(const Real *gInput, Real *gOutput,
 			}
 
 			// Skip over the padding parts of the filter
-			kBuff += kInnerSkipStride;
+			weightsIdx += kInnerSkipStride;
 		}
 
 		// Finally, store the sum
