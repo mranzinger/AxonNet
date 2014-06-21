@@ -34,9 +34,6 @@ void TestCompute(SingleInputLayer &layer)
 
     Params hOutput = layer.SCompute(input, false);
 
-    cout << "Host Matrix" << endl;
-    cout << hOutput.GetHostMatrix().block(0, 0, 5, 2) << endl;
-
     layer.SetDevicePreference(CudaDevicePreference::Create(0));
 
     Params dOutput = layer.SCompute(input, false);
@@ -51,7 +48,7 @@ void TTestCompute(Params ...prms)
     TestCompute(layer);
 }
 
-/*TEST(SingleInputCuda, ComputeSoftmax)
+TEST(SingleInputCuda, ComputeSoftmax)
 {
     TTestCompute<SoftmaxLayer>("");
 }
@@ -59,7 +56,7 @@ void TTestCompute(Params ...prms)
 TEST(SingleInputCuda, ComputeLinearLayer)
 {
     TTestCompute<LinearLayer>("", 32 * 32 * 5, 100);
-}*/
+}
 
 TEST(SingleInputCuda, ComputeConvoLayer)
 {
@@ -132,10 +129,10 @@ void TTestBackprop(Params ...prms)
     TestBackprop(layer);
 }
 
-/*TEST(SingleInputCuda, BackpropSoftmax)
+TEST(SingleInputCuda, BackpropSoftmax)
 {
     TTestBackprop<SoftmaxLayer>("");
-}*/
+}
 
 TEST(SingleInputCuda, BackpropLinear)
 {

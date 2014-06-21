@@ -159,8 +159,8 @@ __global__ void CuConvoLayer_Compute(const Real *gInput, Real *gOutput,
 	int iStride = ipWidth * ipDepth;
 	int kStride = wndSizeX * ipDepth;
 
-	int kfSkipStride = (kSkipY * kStride + kSkipX) * opDepth;
-	int kInnerSkipStride = (kSkipX + (srcX + wndSizeX - xMax)) * opDepth;
+	int kfSkipStride = (kSkipY * kStride + kSkipX * ipDepth) * opDepth;
+	int kInnerSkipStride = (kSkipX + (srcX + wndSizeX - xMax)) * ipDepth * opDepth;
 
 	int xEnd = xMax * ipDepth;
 
