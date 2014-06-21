@@ -170,12 +170,7 @@ __global__ void CuConvoLayer_Compute(const Real *gInput, Real *gOutput,
 
 	for (int dIdx = threadIdx.z; dIdx < opDepth; dIdx += blockDim.z)
 	{
-		//const Real *lWeights = gWeights + dIdx;
-
 		Real sum = gBiases[dIdx];
-
-		//const Real *iBuff = lInput + yMin * iStride;
-		//const Real *kBuff = lWeights + kfSkipStride;
 
 		int imgIdx = yMin * iStride;
 		int weightsIdx = dIdx + kfSkipStride;
