@@ -196,6 +196,80 @@ __global__ void CuConvoLayer_Compute(const Real *gInput, Real *gOutput,
 	}
 }
 
+__global__ void CuConvoLayer_Compute2(const Real *gInput, Real *gOutput,
+                                      const Real *gWeights, const Real *gBiases,
+                                      const int numLayers,
+                                      const int ipWidth, const int ipHeight, const int ipDepth,
+                                      const int opWidth, const int opHeight, const int opDepth,
+                                      const int wndSizeX, const int wndSizeY,
+                                      const int strideX, const int strideY,
+                                      const int padWidth, const int padHeight)
+{
+    int destX = blockIdx.x * blockDim.x + threadIdx.x;
+    int destY = blockIdx.y * blockDim.y + threadIdx.y;
+
+    if (destX >= opWidth || destY >= opHeight)
+        return;
+
+    const int layer = blockIdx.z * blockDim.z + threadIdx.z;
+
+    const Real *lInput = gInput + layer * (ipWidth * ipHeight * ipDepth);
+
+    Real *lOutput = gOutput + layer * (opWidth * opHeight * opDepth);
+
+    int srcX = -padWidth + destX * strideX;
+    int srcY = -padHeight + destY * strideY;
+
+    int xMin = max(0, srcX);
+    int yMin = max(0, srcY);
+
+    int xMax = min(srcX + wndSizeX, ipWidth);
+    int yMax = min(srcY + wndSizeY, ipHeight);
+
+    int kSkipX = xMin - srcX;
+    int kSkipY = yMin - srcY;
+
+    int iStride = ipWidth * ipDepth;
+    int kStride = wndSizeX * ipDepth;
+
+    int kfSkipStride = (kSkipY * kStride + kSkipX * ipDepth) * opDepth;
+    int kInnerSkipStride = (kSkipX + (srcX + wndSizeX - xMax)) * ipDepth * opDepth;
+
+    int xEnd = xMax * ipDepth;
+
+    const int dxMin = xMin * ipDepth;
+
+    const int opStoreIdx = destY * opWidth * opDepth + destX * opDepth;
+
+    // Initialize all of the output values to the bias
+    for (int i = 0; i < opDepth; ++i)
+        lOutput[opStoreIdx + i] = gBiases[i];
+
+    int imgIdx = yMin * iStride;
+    int weightsIdx = kfSkipStride;
+
+    for (int iY = yMin; iY < yMax; ++iY, imgIdx += iStride)
+    {
+        for (int iX = dxMin; iX < xEnd; ++iX, weightsIdx += opDepth)
+        {
+            const Real iVal = lInput[imgIdx + iX];
+
+            for (int k = 0; k < opDepth; ++k)
+            {
+                const Real kVal = gWeights[weightsIdx + k];
+
+                const Real product = iVal * kVal;
+
+                // TODO: The global write here is a bummer
+                lOutput[opStoreIdx + k] += product;
+            }
+        }
+
+        // Skip over the padding parts of the filter
+        weightsIdx += kInnerSkipStride;
+    }
+}
+
 
 Params CuConvoLayer::Impl::Compute(const Params& input)
 {
@@ -219,15 +293,15 @@ Params CuConvoLayer::Impl::Compute(const Params& input)
 
 	CuMat &mOutput = output.GetCudaMatrix(_handle);
 
-	uint32_t blockDepth = min(opDepth, 64);
-
-	dim3 blockSize(1, 1, blockDepth);
-	dim3 gridSize(opWidth, opHeight, batchSize);
-
 	cudaError_t err = cudaSetDevice(_handle.Device);
 
 	if (err != cudaSuccess)
 	    throw runtime_error("Unable to set the device.");
+
+	/*uint32_t blockDepth = min(opDepth, 64);
+
+    dim3 blockSize(1, 1, blockDepth);
+    dim3 gridSize(opWidth, opHeight, batchSize);
 
 	CuConvoLayer_Compute
 #ifdef _CUDA_COMPILE_
@@ -240,7 +314,23 @@ Params CuConvoLayer::Impl::Compute(const Params& input)
 	                     opWidth, opHeight, opDepth,
 	                     _windowSizeX, _windowSizeY,
 	                     _strideX, _strideY,
-	                     _padWidth, _padHeight);
+	                     _padWidth, _padHeight);*/
+
+	dim3 blockSize(min(32, output.Width), min(32, output.Height), 1);
+    dim3 gridSize = round_up(output.Width, output.Height, output.Cols, blockSize);
+
+    CuConvoLayer_Compute2
+#ifdef _CUDA_COMPILE_
+        <<<gridSize, blockSize>>>
+#endif
+                        (mInput.Buff(), mOutput.Buff(),
+                         _weights.Weights.Buff(), _weights.Biases.Buff(),
+                         batchSize,
+                         ipWidth, ipHeight, ipDepth,
+                         opWidth, opHeight, opDepth,
+                         _windowSizeX, _windowSizeY,
+                         _strideX, _strideY,
+                         _padWidth, _padHeight);
 
 	err = cudaGetLastError();
 
@@ -248,6 +338,8 @@ Params CuConvoLayer::Impl::Compute(const Params& input)
 		throw runtime_error("Unable to compute convolution.");
 
 	return output;
+
+
 }
 
 Params CuConvoLayer::Impl::Backprop(const Params& lastInput,
