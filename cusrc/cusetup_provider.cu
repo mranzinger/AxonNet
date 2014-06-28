@@ -7,19 +7,41 @@
 
 #include "cusetup_provider.cuh"
 
+#include <iostream>
+
+using namespace std;
+
 CuSetupProvider::CuSetupProvider()
 {
 }
 
 CuSetupProvider::~CuSetupProvider()
 {
-	for (HandleMap::iterator iter = _handleMap.begin(),
+	/*for (HandleMap::iterator iter = _handleMap.begin(),
 			                 end = _handleMap.end();
 			iter != end;
 			++iter)
 	{
-		cublasDestroy_v2(iter->second.CublasHandle);
-	}
+	    cudaError_t err = cudaSetDevice(iter->second.Device);
+	    if (err != cudaSuccess)
+	    {
+	        cerr << "Failed to set the device before freeing. Error: " << err << endl;
+	        exit(1);
+	    }
+
+	    err = cudaDeviceSynchronize();
+	    if (err != cudaSuccess)
+	    {
+	        cerr << "Failed to synchronize with the device before freeing the cublas handle. Error: " << err << endl;
+	        exit(1);
+	    }
+
+		cublasStatus_t status = cublasDestroy_v2(iter->second.CublasHandle);
+		if (status != CUBLAS_STATUS_SUCCESS)
+		{
+		    cerr << "Failed to destroy the cublas handle. Error: " << status << endl;
+		}
+	}*/
 }
 
 CuContext CuSetupProvider::GetHandle(int deviceId, int threadId)

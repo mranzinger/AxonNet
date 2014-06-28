@@ -30,7 +30,7 @@ Params Compute(const CMatrix &kernel, const Vector &bias,
 					  strideX, strideY,
 					  padWidth, padHeight);
 
-	//layer.SetDevicePreference(CudaDevicePreference::Create(0));
+	layer.SetDevicePreference(CudaDevicePreference::Create(0));
 
 	return layer.SCompute(input, isTraining);
 }

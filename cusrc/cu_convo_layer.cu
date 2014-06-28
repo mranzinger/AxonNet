@@ -196,22 +196,33 @@ __global__ void CuConvoLayer_Compute(const Real *gInput, Real *gOutput,
 	}
 }
 
-__global__ void CuConvoLayer_Compute2(const Real *gInput, Real *gOutput,
-                                      const Real *gWeights, const Real *gBiases,
-                                      const int numLayers,
-                                      const int ipWidth, const int ipHeight, const int ipDepth,
-                                      const int opWidth, const int opHeight, const int opDepth,
-                                      const int wndSizeX, const int wndSizeY,
-                                      const int strideX, const int strideY,
-                                      const int padWidth, const int padHeight)
+template<int wndProcX>
+__device__ void CuConvoLayer_Compute2_Device(
+                                 const Real *gInput, Real *sInput, Real *gOutput,
+                                 const Real *gWeights, const Real *gBiases,
+                                 const int numLayers,
+                                 const int ipWidth, const int ipHeight, const int ipDepth,
+                                 const int opWidth, const int opHeight, const int opDepth,
+                                 const int wndSizeX, const int wndSizeY,
+                                 const int strideX, const int strideY,
+                                 const int padWidth, const int padHeight)
 {
-    int destX = blockIdx.x * blockDim.x + threadIdx.x;
+    // Switching the x's and the z's here
+    int destX = blockIdx.z * blockDim.z + threadIdx.z;
+
     int destY = blockIdx.y * blockDim.y + threadIdx.y;
 
     if (destX >= opWidth || destY >= opHeight)
         return;
 
-    const int layer = blockIdx.z * blockDim.z + threadIdx.z;
+    int destZ = blockIdx.x * blockDim.x + threadIdx.x;
+
+    int layer = destZ / opDepth;
+
+    if (layer >= numLayers)
+        return;
+
+    int dIdx = destZ % opDepth;
 
     const Real *lInput = gInput + layer * (ipWidth * ipHeight * ipDepth);
 
@@ -241,35 +252,104 @@ __global__ void CuConvoLayer_Compute2(const Real *gInput, Real *gOutput,
 
     const int opStoreIdx = destY * opWidth * opDepth + destX * opDepth;
 
-    // Initialize all of the output values to the bias
-    for (int i = 0; i < opDepth; ++i)
-        lOutput[opStoreIdx + i] = gBiases[i];
+    Real sum = gBiases[dIdx];
 
     int imgIdx = yMin * iStride;
-    int weightsIdx = kfSkipStride;
+    int weightsIdx = dIdx + kfSkipStride;
 
     for (int iY = yMin; iY < yMax; ++iY, imgIdx += iStride)
     {
-        for (int iX = dxMin; iX < xEnd; ++iX, weightsIdx += opDepth)
+        for (int iX = dxMin; iX < xEnd; iX += wndProcX)
         {
-            const Real iVal = lInput[imgIdx + iX];
-
-            for (int k = 0; k < opDepth; ++k)
+            for (int iW = 0; iW < wndProcX; ++iW, weightsIdx += opDepth)
             {
-                const Real kVal = gWeights[weightsIdx + k];
+                const Real iVal = lInput[imgIdx + iX + iW];
+                const Real kVal = gWeights[weightsIdx];
 
                 const Real product = iVal * kVal;
 
-                // TODO: The global write here is a bummer
-                lOutput[opStoreIdx + k] += product;
+                sum += product;
             }
         }
 
         // Skip over the padding parts of the filter
         weightsIdx += kInnerSkipStride;
     }
+
+    // Finally, store the sum
+    lOutput[opStoreIdx + dIdx] = sum;
 }
 
+__global__ void CuConvoLayer_Compute2(const Real *gInput, Real *gOutput,
+                                     const Real *gWeights, const Real *gBiases,
+                                     const int numLayers,
+                                     const int ipWidth, const int ipHeight, const int ipDepth,
+                                     const int opWidth, const int opHeight, const int opDepth,
+                                     const int wndSizeX, const int wndSizeY,
+                                     const int strideX, const int strideY,
+                                     const int padWidth, const int padHeight)
+{
+    __shared__ extern Real s_input[];
+
+    // Switching the x's and the z's here
+    int destX = blockIdx.z * blockDim.z + threadIdx.z;
+
+    if (destX >= opWidth)
+        return;
+
+    int srcX = -padWidth + destX * strideX;
+
+    int xMin = max(0, srcX);
+
+    int xMax = min(srcX + wndSizeX, ipWidth);
+
+    const int kernWidth = xMax - xMin;
+
+    if (kernWidth <= 0)
+        return;
+
+#define MAKE_CONVO_CALL(procWidth) \
+    case procWidth: \
+            CuConvoLayer_Compute2_Device<procWidth>( \
+                                         gInput, s_input, gOutput, \
+                                         gWeights, gBiases, \
+                                         numLayers, \
+                                         ipWidth, ipHeight, ipDepth, \
+                                         opWidth, opHeight, opDepth, \
+                                         wndSizeX, wndSizeY, \
+                                         strideX, strideY, \
+                                         padWidth, padHeight); \
+    break
+
+
+
+    switch (kernWidth)
+    {
+    MAKE_CONVO_CALL(1);
+    MAKE_CONVO_CALL(2);
+    MAKE_CONVO_CALL(3);
+    MAKE_CONVO_CALL(4);
+    MAKE_CONVO_CALL(5);
+    MAKE_CONVO_CALL(6);
+    MAKE_CONVO_CALL(7);
+    MAKE_CONVO_CALL(8);
+    MAKE_CONVO_CALL(9);
+    MAKE_CONVO_CALL(10);
+    MAKE_CONVO_CALL(11);
+    MAKE_CONVO_CALL(12);
+    MAKE_CONVO_CALL(13);
+    MAKE_CONVO_CALL(14);
+    MAKE_CONVO_CALL(15);
+    MAKE_CONVO_CALL(16);
+    MAKE_CONVO_CALL(17);
+    MAKE_CONVO_CALL(18);
+    MAKE_CONVO_CALL(19);
+    MAKE_CONVO_CALL(20);
+    MAKE_CONVO_CALL(21);
+    }
+
+#undef MAKE_CONVO_CALL
+}
 
 Params CuConvoLayer::Impl::Compute(const Params& input)
 {
@@ -316,12 +396,14 @@ Params CuConvoLayer::Impl::Compute(const Params& input)
 	                     _strideX, _strideY,
 	                     _padWidth, _padHeight);*/
 
-	dim3 blockSize(min(32, output.Width), min(32, output.Height), 1);
-    dim3 gridSize = round_up(output.Width, output.Height, output.Cols, blockSize);
+	uint32_t blockDepth = min(opDepth, 128);
 
-    CuConvoLayer_Compute2
+	dim3 blockSize(blockDepth, 1, 1);
+	dim3 gridSize = round_up(opDepth * batchSize, opHeight, opWidth, blockSize);
+
+	CuConvoLayer_Compute2
 #ifdef _CUDA_COMPILE_
-        <<<gridSize, blockSize>>>
+        <<<gridSize, blockSize, _windowSizeX * _windowSizeY * ipDepth>>>
 #endif
                         (mInput.Buff(), mOutput.Buff(),
                          _weights.Weights.Buff(), _weights.Biases.Buff(),

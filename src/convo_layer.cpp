@@ -92,6 +92,8 @@ Params ConvoLayer::SCompute(const Params &input, bool isTraining)
 	const CMatrix &mInput = input.GetHostMatrix();
 	CMatrix &mOutput = output.GetHostMatrix();
 
+	/*vector<Real> firstImage, firstWeight;*/
+
 	FastFor(GetThreadPool(), 0, batchSize, dfMiniBatchSize,
 	        [&] (int imageIdx)
 	{
@@ -145,6 +147,15 @@ Params ConvoLayer::SCompute(const Params &input, bool isTraining)
 
 					auto imgBlock = GetImageBlock(filterRow + yKernelStart, xKernelStart, xKernelSize);
 
+					/*if (imageIdx == 0 && yConvoCurr == -3 && xConvoCurr == -3)
+					{
+					    for (int p = 0; p < filterBlock.cols(); ++p)
+					    {
+					        firstWeight.push_back(filterBlock(0, p));
+					        firstImage.push_back(imgBlock(p));
+					    }
+					}*/
+
 					convoPartialSum += filterBlock * imgBlock;
 				}
 
@@ -163,13 +174,20 @@ Params ConvoLayer::SCompute(const Params &input, bool isTraining)
 		}
 	});
 
+	/*for (int p = 0; p < firstImage.size(); ++p)
+	    cout << firstImage[p] << "  ";
+	cout << endl;
+	for (int p = 0; p < firstWeight.size(); ++p)
+	    cout << firstWeight[p] << "  ";
+	cout << endl;*/
+
 	return move(output);
 }
 
 Params ConvoLayer::SBackprop(const Params &lastInput, const Params &lastOutput, const Params &pOutputErrors)
 {
-	if (_cuImpl)
-		return _cuImpl->Backprop(lastInput, lastOutput, pOutputErrors);
+	//if (_cuImpl)
+	//	return _cuImpl->Backprop(lastInput, lastOutput, pOutputErrors);
 
 	const RMatrix &weights = _weights.Weights;
 	const Vector &biases = _weights.Biases;

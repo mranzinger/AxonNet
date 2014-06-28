@@ -27,7 +27,7 @@ namespace fs = boost::filesystem;
 
 int main(int argc, char *argv [])
 {
-    static const int s_testSize = 10;
+    static const int s_testSize = 1;
 
     ConvoLayer convoTest("",
                         3, 128,
