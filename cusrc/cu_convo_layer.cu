@@ -196,11 +196,13 @@ __global__ void CuConvoLayer_Compute(const Real *gInput, Real *gOutput,
 	}
 }
 
+__shared__ extern Real sInput[];
+
 template<int wndProcX>
 __device__ void CuConvoLayer_Compute2_Device(
-                                 const Real *gInput, Real *sInput, Real *gOutput,
+                                 const Real *gInput, Real *gOutput,
                                  const Real *gWeights, const Real *gBiases,
-                                 const int numLayers,
+                                 //const int numLayers,
                                  const int ipWidth, const int ipHeight, const int ipDepth,
                                  const int opWidth, const int opHeight, const int opDepth,
                                  const int wndSizeX, const int wndSizeY,
@@ -212,15 +214,15 @@ __device__ void CuConvoLayer_Compute2_Device(
 
     int destY = blockIdx.y * blockDim.y + threadIdx.y;
 
-    if (destX >= opWidth || destY >= opHeight)
-        return;
+    //if (destX >= opWidth || destY >= opHeight)
+    //    return;
 
     int destZ = blockIdx.x * blockDim.x + threadIdx.x;
 
     int layer = destZ / opDepth;
 
-    if (layer >= numLayers)
-        return;
+    //if (layer >= numLayers)
+    //    return;
 
     int dIdx = destZ % opDepth;
 
@@ -254,13 +256,104 @@ __device__ void CuConvoLayer_Compute2_Device(
 
     Real sum = gBiases[dIdx];
 
-    int imgIdx = yMin * iStride;
+    //int imgIdx = yMin * iStride;
     int weightsIdx = dIdx + kfSkipStride;
 
-    for (int iY = yMin; iY < yMax; ++iY, imgIdx += iStride)
+    int endImgIdx = yMax * iStride;
+
+    int procInputWidth = xEnd - dxMin;
+
+    /// !!!! Load the image buffer into shared memory !!!!
+    // Calculate the number of warps that are in this block.
+    // For coalesced access rules, we want these guys to be grouped on a row
+    int numWarps = blockDim.x / 32;
+
+    // Not enough threads to even fill a single warp...
+    // This will not be ultra-efficient
+    if (numWarps <= 1)
+    {
+        int startCol = dxMin + threadIdx.x;
+
+        for (int iY = 0, imgIdx = yMin * iStride;
+                imgIdx < endImgIdx;
+                ++iY, imgIdx += iStride)
+        {
+            for (int iX = startCol; iX < xEnd; iX += blockDim.x)
+            {
+                const Real iVal = lInput[imgIdx + iX];
+
+                sInput[iY * procInputWidth + iX - dxMin] = iVal;
+            }
+        }
+    }
+    else
+    {
+        int warpsPerRow = numWarps / (yMax - yMin);
+
+        // Not enough warps to do all of the rows at once,
+        // So instead each warp will do a different row and they will
+        // increment
+        if (warpsPerRow == 0)
+        {
+            int startRow = threadIdx.x / 32;
+            int startCol = dxMin + (threadIdx.x % 32);
+
+            for (int iY = startRow, imgIdx = (yMin + startRow) * iStride;
+                     imgIdx < endImgIdx;
+                     iY += numWarps, imgIdx += (numWarps * iStride))
+            {
+                for (int iX = startCol; iX < xEnd; iX += 32)
+                {
+                    const Real iVal = lInput[imgIdx + iX];
+
+                    sInput[iY * procInputWidth + iX - dxMin] = iVal;
+                }
+            }
+        }
+        else
+        {
+            int myRow = threadIdx.x / (32 * warpsPerRow);
+            int startCol = dxMin + (threadIdx.x % (32 * warpsPerRow));
+            int imgIdx = (yMin + myRow) * iStride;
+
+            for (int iX = startCol; iX < xEnd; iX += (32 * warpsPerRow))
+            {
+                const Real iVal = lInput[imgIdx + iX];
+
+                sInput[myRow * procInputWidth + iX - dxMin] = iVal;
+            }
+        }
+    }
+
+    __syncthreads();
+
+    int ipIdx = 0;
+    for (int iY = yMin; iY < yMax; ++iY)
     {
         for (int iX = dxMin; iX < xEnd; iX += wndProcX)
         {
+            #pragma unroll
+            for (int iW = 0; iW < wndProcX; ++iW, ++ipIdx, weightsIdx += opDepth)
+            {
+                const Real iVal = sInput[ipIdx];
+                const Real kVal = gWeights[weightsIdx];
+
+                const Real product = iVal * kVal;
+
+                sum += product;
+            }
+        }
+
+        // Skip over the padding parts of the filter
+        weightsIdx += kInnerSkipStride;
+    }
+
+    //for (int iY = yMin; iY < yMax; ++iY, imgIdx += iStride)
+    /*for (int imgIdx = yMin * iStride; imgIdx < endImgIdx; imgIdx += iStride)
+    {
+        for (int iX = dxMin; iX < xEnd; iX += wndProcX)
+        {
+            //#pragma unroll
             for (int iW = 0; iW < wndProcX; ++iW, weightsIdx += opDepth)
             {
                 const Real iVal = lInput[imgIdx + iX + iW];
@@ -274,7 +367,7 @@ __device__ void CuConvoLayer_Compute2_Device(
 
         // Skip over the padding parts of the filter
         weightsIdx += kInnerSkipStride;
-    }
+    }*/
 
     // Finally, store the sum
     lOutput[opStoreIdx + dIdx] = sum;
@@ -282,14 +375,14 @@ __device__ void CuConvoLayer_Compute2_Device(
 
 __global__ void CuConvoLayer_Compute2(const Real *gInput, Real *gOutput,
                                      const Real *gWeights, const Real *gBiases,
-                                     const int numLayers,
+                                     //const int numLayers,
                                      const int ipWidth, const int ipHeight, const int ipDepth,
                                      const int opWidth, const int opHeight, const int opDepth,
                                      const int wndSizeX, const int wndSizeY,
                                      const int strideX, const int strideY,
                                      const int padWidth, const int padHeight)
 {
-    __shared__ extern Real s_input[];
+    //__shared__ extern Real s_input[];
 
     // Switching the x's and the z's here
     int destX = blockIdx.z * blockDim.z + threadIdx.z;
@@ -311,9 +404,9 @@ __global__ void CuConvoLayer_Compute2(const Real *gInput, Real *gOutput,
 #define MAKE_CONVO_CALL(procWidth) \
     case procWidth: \
             CuConvoLayer_Compute2_Device<procWidth>( \
-                                         gInput, s_input, gOutput, \
+                                         gInput, gOutput, \
                                          gWeights, gBiases, \
-                                         numLayers, \
+                                         /*numLayers, */\
                                          ipWidth, ipHeight, ipDepth, \
                                          opWidth, opHeight, opDepth, \
                                          wndSizeX, wndSizeY, \
@@ -396,18 +489,18 @@ Params CuConvoLayer::Impl::Compute(const Params& input)
 	                     _strideX, _strideY,
 	                     _padWidth, _padHeight);*/
 
-	uint32_t blockDepth = min(opDepth, 128);
+	uint32_t blockDepth = min(opDepth, 1024);
 
 	dim3 blockSize(blockDepth, 1, 1);
 	dim3 gridSize = round_up(opDepth * batchSize, opHeight, opWidth, blockSize);
 
 	CuConvoLayer_Compute2
-#ifdef _CUDA_COMPILE_
-        <<<gridSize, blockSize, _windowSizeX * _windowSizeY * ipDepth>>>
-#endif
+//#ifdef _CUDA_COMPILE_
+        <<<gridSize, blockSize, _windowSizeX * _windowSizeY * ipDepth * sizeof(Real)>>>
+//#endif
                         (mInput.Buff(), mOutput.Buff(),
                          _weights.Weights.Buff(), _weights.Biases.Buff(),
-                         batchSize,
+                         //batchSize,
                          ipWidth, ipHeight, ipDepth,
                          opWidth, opHeight, opDepth,
                          _windowSizeX, _windowSizeY,

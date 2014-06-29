@@ -13,8 +13,6 @@
 
 #include <math.h>
 
-#include <Eigen/Dense>
-
 #include "math_defines.h"
 #include "cumath_functions.cuh"
 #include "cusetup_provider.cuh"

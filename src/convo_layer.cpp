@@ -92,9 +92,9 @@ Params ConvoLayer::SCompute(const Params &input, bool isTraining)
 	const CMatrix &mInput = input.GetHostMatrix();
 	CMatrix &mOutput = output.GetHostMatrix();
 
-	/*vector<Real> firstImage, firstWeight;*/
+	//vector<Real> firstImage, firstWeight;
 
-	FastFor(GetThreadPool(), 0, batchSize, dfMiniBatchSize,
+	ParallelFor(GetThreadPool(), 0, batchSize, dfMiniBatchSize,
 	        [&] (int imageIdx)
 	{
 	    int miniBatchSize = min(dfMiniBatchSize, batchSize - imageIdx);
@@ -147,7 +147,7 @@ Params ConvoLayer::SCompute(const Params &input, bool isTraining)
 
 					auto imgBlock = GetImageBlock(filterRow + yKernelStart, xKernelStart, xKernelSize);
 
-					/*if (imageIdx == 0 && yConvoCurr == -3 && xConvoCurr == -3)
+					/*if (imageIdx == 0 && yConvoCurr == -5 && xConvoCurr == -5)
 					{
 					    for (int p = 0; p < filterBlock.cols(); ++p)
 					    {

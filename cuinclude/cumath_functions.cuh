@@ -15,6 +15,12 @@
 #include "cumath_unary_functions.cuh"
 #include "cumath_binary_functions.cuh"
 
+template<uint32_t base>
+__device__ uint32_t d_round_up(uint32_t val)
+{
+    return (val + base - 1) / base;
+}
+
 inline uint32_t round_up(uint32_t val, uint32_t base)
 {
 	return (val + base - 1) / base;
