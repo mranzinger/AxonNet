@@ -19,7 +19,7 @@ NVCC              ?= $(CUDA_INSTALL_PATH)/bin/nvcc
 CUDA_INSTALL_LIBS := -lcudart -lcublas -lcuda -L$(CUDA_LIB_PATH)
 CUDA_SDK          ?= 6.0
 CUDA_ARCHITECTURE ?= -arch=sm_20
-NVCCFLAGS := --ptxas-options=-v -D_CUDA_COMPILE_ $(CUDA_ARCHITECTURE)
+NVCCFLAGS := --ptxas-options=-v -D_CUDA_COMPILE_ $(CUDA_ARCHITECTURE) -Xcudafe "--diag_suppress=boolean_controlling_expr_is_constant" -Xcudafe "--diag_suppress=code_is_unreachable"
 DNVCCFLAGS := $(NVCCFLAGS) -G -g
 RNVCCFLAGS := $(NVCCFLAGS) -O3
 
