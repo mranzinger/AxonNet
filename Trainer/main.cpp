@@ -31,7 +31,7 @@ int main(int argc, char *argv [])
 
     ConvoLayer convoTest("",
                         3, 128,
-                        7, 7,
+                        11, 11,
                         5, 5,
                         5, 5);
 

@@ -399,12 +399,14 @@ Params CuConvoLayer::Impl::Compute(const Params& input)
 	uint32_t smemSize = _windowSizeX * _windowSizeY * ipDepth * sizeof(Real);
 
 	uint32_t numImagesPerThread = 1;
-	if ((batchSize % 4) == 0)
-		numImagesPerThread = 4;
-	else if ((batchSize % 3) == 0)
-		numImagesPerThread = 3;
-	else if ((batchSize % 2) == 0)
-		numImagesPerThread = 2;
+	for (int i = 8; i > 1; --i)
+	{
+		if ((batchSize % i) == 0)
+		{
+			numImagesPerThread = i;
+			break;
+		}
+	}
 
 	smemSize *= numImagesPerThread;
 	gridSize.x /= numImagesPerThread;
@@ -436,6 +438,18 @@ Params CuConvoLayer::Impl::Compute(const Params& input)
 		break;
 	case 4:
 		LAUNCH_CONVO_KERNEL(4);
+		break;
+	case 5:
+		LAUNCH_CONVO_KERNEL(5);
+		break;
+	case 6:
+		LAUNCH_CONVO_KERNEL(6);
+		break;
+	case 7:
+		LAUNCH_CONVO_KERNEL(7);
+		break;
+	case 8:
+		LAUNCH_CONVO_KERNEL(8);
 		break;
 	}
 
