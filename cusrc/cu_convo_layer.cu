@@ -196,7 +196,34 @@ __global__ void CuConvoLayer_Compute(const Real *gInput, Real *gOutput,
 	}
 }
 
+struct PlacementParams
+{
+    int KSkipStride;
+    int KInnerSkipStride;
+};
+
+struct ConvoKernelParams
+{
+    int IpDepth;
+    int OpDepth;
+    int WindowSizeX;
+    int WindowSizeY;
+    int StrideX;
+    int StrideY;
+    int PadWidth;
+    int PadHeight;
+
+    Real *WeightsBuff;
+    Real *BiasBuff;
+
+    PlacementParams Places[20];
+};
+
+
+
 __shared__ extern Real sInput[];
+
+
 
 template<int wndProcX>
 __device__ void CuConvoLayer_Compute2_Device(
