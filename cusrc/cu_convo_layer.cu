@@ -146,6 +146,7 @@ struct ConvoKernelParams
     PlacementParams Places[20];
 };
 
+template<int numImagesPerThread>
 __global__ void CuConvoLayer_Compute(const Real *gInput, Real *gOutput,
                                      const Real *gWeights, const Real *gBiases,
                                      //const int numLayers,
@@ -165,18 +166,24 @@ __global__ void CuConvoLayer_Compute(const Real *gInput, Real *gOutput,
     //if (destX >= opWidth || destY >= opHeight)
     //    return;
 
-    const int destZ = blockIdx.x * blockDim.x + threadIdx.x;
+    //const int destZ = blockIdx.x * blockDim.x + threadIdx.x;
 
-    const int layer = destZ / opDepth;
+    //const int layer = destZ / opDepth;
+    const int layer = blockIdx.x * numImagesPerThread;
 
     //if (layer >= numLayers)
     //    return;
 
-    const int dIdx = destZ % opDepth;
+    //const int dIdx = destZ % opDepth;
+    const int dIdx = threadIdx.x;
 
-    const Real *lInput = gInput + layer * (ipWidth * ipHeight * ipDepth);
+    const int ipImgSize = ipWidth * ipHeight * ipDepth;
 
-    Real *lOutput = gOutput + layer * (opWidth * opHeight * opDepth);
+    const Real *lInput = gInput + layer * ipImgSize;
+
+    const int opImgSize = opWidth * opHeight * opDepth;
+
+    Real *lOutput = gOutput + layer * opImgSize;
 
     const int srcX = -padWidth + destX * strideX;
     const int srcY = -padHeight + destY * strideY;
@@ -202,14 +209,13 @@ __global__ void CuConvoLayer_Compute(const Real *gInput, Real *gOutput,
 
     const int dxMin = xMin * ipDepth;
 
-    Real sum = gBiases[dIdx];
-
     //int imgIdx = yMin * iStride;
     int weightsIdx = dIdx + kfSkipStride;
 
     const int endImgIdx = yMax * iStride;
 
     const int procInputWidth = xEnd - dxMin;
+    const int procInputSize = procInputWidth * (yMax - yMin);
 
     /// !!!! Load the image buffer into shared memory !!!!
     // Calculate the number of warps that are in this block.
@@ -228,9 +234,13 @@ __global__ void CuConvoLayer_Compute(const Real *gInput, Real *gOutput,
         {
             for (int iX = startCol; iX < xEnd; iX += blockDim.x)
             {
-                const Real iVal = lInput[imgIdx + iX];
+				#pragma unroll
+            	for (int k = 0; k < numImagesPerThread; ++k)
+            	{
+            		const Real iVal = lInput[imgIdx + (k * ipImgSize) + iX];
 
-                sInput[iY * procInputWidth + iX - dxMin] = iVal;
+            		sInput[(k * procInputSize) + (iY * procInputWidth + iX - dxMin)] = iVal;
+            	}
             }
         }
     }
@@ -249,14 +259,21 @@ __global__ void CuConvoLayer_Compute(const Real *gInput, Real *gOutput,
         {
             for (int iX = startCol; iX < xEnd; iX += (32 * warpsPerRow))
             {
-                const Real iVal = lInput[imgIdx + iX];
+				#pragma unroll
+            	for (int k = 0; k < numImagesPerThread; ++k)
+            	{
+            		const Real iVal = lInput[imgIdx + (k * ipImgSize) + iX];
 
-                sInput[iY * procInputWidth + iX - dxMin] = iVal;
+            		sInput[(k * procInputSize) + (iY * procInputWidth + iX - dxMin)] = iVal;
+            	}
             }
         }
     }
 
     __syncthreads();
+
+    //Real sum = gBiases[dIdx];
+    Real sum[numImagesPerThread] = { 0.0f };
 
     // Peel vectors of 8
     const int vecProcX = procInputWidth & ~0x7;
@@ -272,30 +289,52 @@ __global__ void CuConvoLayer_Compute(const Real *gInput, Real *gOutput,
 			#pragma unroll
     		for (int i = 0; i < 8; ++i)
     		{
-    			const Real iVal = sInput[ipIdx + i];
     			const Real kVal = gWeights[weightsIdx + i * opDepth];
 
-    			const Real product = iVal * kVal;
+				#pragma unroll
+    			for (int k = 0; k < numImagesPerThread; ++k)
+    			{
+    				const Real iVal = sInput[ipIdx + (k * procInputSize) + i];
 
-    			sum += product;
+    				const Real product = iVal * kVal;
+
+    				sum[k] += product;
+    			}
     		}
 
     		ipIdx += 8;
     		weightsIdx += 8 * opDepth;
     	}
 
-#define DUFF_CASE(v) \
-    	case v: \
-    		sum += sInput[ipIdx + (v - 1)] * gWeights[weightsIdx + (v - 1) * opDepth]
+#define DUFF_CASE(v) { \
+			const Real kVal = gWeights[weightsIdx + (v - 1) * opDepth]; \
+    		for (int k = 0; k < numImagesPerThread; ++k) \
+    		{ \
+    			sum[k] += sInput[ipIdx + (k * procInputSize) + (v - 1)] * kVal; \
+    		} }
 
     	switch (vecTailX)
     	{
+    	case 7:
+		//#pragma unroll
     	DUFF_CASE(7);
+    	case 6:
+		//#pragma unroll
     	DUFF_CASE(6);
+    	case 5:
+		//#pragma unroll
     	DUFF_CASE(5);
+    	case 4:
+		//#pragma unroll
     	DUFF_CASE(4);
+    	case 3:
+		//#pragma unroll
     	DUFF_CASE(3);
+    	case 2:
+		//#pragma unroll
     	DUFF_CASE(2);
+    	case 1:
+		//#pragma unroll
     	DUFF_CASE(1);
     	case 0:
     		break;
@@ -306,20 +345,6 @@ __global__ void CuConvoLayer_Compute(const Real *gInput, Real *gOutput,
 
 #undef DUFF_CASE
 
-        /*for (int iX = dxMin; iX < xEnd; iX += wndProcX)
-        {
-            #pragma unroll
-            for (int iW = 0; iW < wndProcX; ++iW, ++ipIdx, weightsIdx += opDepth)
-            {
-                const Real iVal = sInput[ipIdx];
-                const Real kVal = gWeights[weightsIdx];
-
-                const Real product = iVal * kVal;
-
-                sum += product;
-            }
-        }*/
-
         // Skip over the padding parts of the filter
         weightsIdx += kInnerSkipStride;
     }
@@ -327,7 +352,13 @@ __global__ void CuConvoLayer_Compute(const Real *gInput, Real *gOutput,
     const int opStoreIdx = destY * opWidth * opDepth + destX * opDepth;
 
     // Finally, store the sum
-    lOutput[opStoreIdx + dIdx] = sum;
+    //lOutput[opStoreIdx + dIdx] = sum;
+    const Real bias = gBiases[dIdx];
+	#pragma unroll
+    for (int k = 0; k < numImagesPerThread; ++k)
+    {
+    	lOutput[opStoreIdx + (k * opImgSize) + dIdx] = sum[k] + bias;
+    }
 }
 
 Params CuConvoLayer::Impl::Compute(const Params& input)
@@ -357,14 +388,58 @@ Params CuConvoLayer::Impl::Compute(const Params& input)
 	if (err != cudaSuccess)
 	    throw runtime_error("Unable to set the device.");
 
-	uint32_t blockDepth = min(opDepth, 1024);
+	if (opDepth > 1024)
+		throw runtime_error("Output depths greater than 1024 are not supported.");
+
+	uint32_t blockDepth = opDepth;
 
 	dim3 blockSize(blockDepth, 1, 1);
-	dim3 gridSize = round_up(opDepth * batchSize, opHeight, opWidth, blockSize);
+	dim3 gridSize = round_up(blockDepth * batchSize, opHeight, opWidth, blockSize);
 
 	uint32_t smemSize = _windowSizeX * _windowSizeY * ipDepth * sizeof(Real);
 
-	CuConvoLayer_Compute
+	uint32_t numImagesPerThread = 1;
+	if ((batchSize % 4) == 0)
+		numImagesPerThread = 4;
+	else if ((batchSize % 3) == 0)
+		numImagesPerThread = 3;
+	else if ((batchSize % 2) == 0)
+		numImagesPerThread = 2;
+
+	smemSize *= numImagesPerThread;
+	gridSize.x /= numImagesPerThread;
+
+	//cudaFuncSetCacheConfig(CuConvoLayer_Compute, cudaFuncCachePreferShared);
+
+#define LAUNCH_CONVO_KERNEL(v) \
+			CuConvoLayer_Compute \
+				<v> \
+				<<<gridSize, blockSize, smemSize>>> \
+					(mInput.Buff(), mOutput.Buff(), \
+				     _weights.Weights.Buff(), _weights.Biases.Buff(), \
+				     ipWidth, ipHeight, ipDepth, \
+				     opWidth, opHeight, opDepth, \
+				     _windowSizeX, _windowSizeY, \
+				     _strideX, _strideY, \
+				     _padWidth, _padHeight)
+
+	switch (numImagesPerThread)
+	{
+	case 1:
+		LAUNCH_CONVO_KERNEL(1);
+		break;
+	case 2:
+		LAUNCH_CONVO_KERNEL(2);
+		break;
+	case 3:
+		LAUNCH_CONVO_KERNEL(3);
+		break;
+	case 4:
+		LAUNCH_CONVO_KERNEL(4);
+		break;
+	}
+
+	/*CuConvoLayer_Compute
         <<<gridSize, blockSize, smemSize>>>
                         (mInput.Buff(), mOutput.Buff(),
                          _weights.Weights.Buff(), _weights.Biases.Buff(),
@@ -372,7 +447,7 @@ Params CuConvoLayer::Impl::Compute(const Params& input)
                          opWidth, opHeight, opDepth,
                          _windowSizeX, _windowSizeY,
                          _strideX, _strideY,
-                         _padWidth, _padHeight);
+                         _padWidth, _padHeight);*/
 
 	err = cudaGetLastError();
 
