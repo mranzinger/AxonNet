@@ -33,7 +33,8 @@ int main(int argc, char *argv [])
                         3, 128,
                         11, 11,
                         5, 5,
-                        5, 5);
+                        0, 0);
+                        //5, 5);
 
     Params computeInput(256, 256, 3,
                 new CMatrix(CMatrix::Random(256 * 256 * 3, 128)));

@@ -146,10 +146,9 @@ struct ConvoKernelParams
     PlacementParams Places[20];
 };
 
-template<int numImagesPerThread>
+template<bool padded, int numImagesPerThread>
 __global__ void CuConvoLayer_Compute(const Real *gInput, Real *gOutput,
                                      const Real *gWeights, const Real *gBiases,
-                                     //const int numLayers,
                                      const int ipWidth, const int ipHeight, const int ipDepth,
                                      const int opWidth, const int opHeight, const int opDepth,
                                      const int wndSizeX, const int wndSizeY,
@@ -163,18 +162,8 @@ __global__ void CuConvoLayer_Compute(const Real *gInput, Real *gOutput,
 
     const int destY = blockIdx.y * blockDim.y + threadIdx.y;
 
-    //if (destX >= opWidth || destY >= opHeight)
-    //    return;
-
-    //const int destZ = blockIdx.x * blockDim.x + threadIdx.x;
-
-    //const int layer = destZ / opDepth;
     const int layer = blockIdx.x * numImagesPerThread;
 
-    //if (layer >= numLayers)
-    //    return;
-
-    //const int dIdx = destZ % opDepth;
     const int dIdx = threadIdx.x;
 
     const int ipImgSize = ipWidth * ipHeight * ipDepth;
@@ -185,37 +174,35 @@ __global__ void CuConvoLayer_Compute(const Real *gInput, Real *gOutput,
 
     Real *lOutput = gOutput + layer * opImgSize;
 
-    const int srcX = -padWidth + destX * strideX;
-    const int srcY = -padHeight + destY * strideY;
+    const int srcX = padded ? (-padWidth + destX * strideX) : (destX * strideX);
+    const int srcY = padded ? (-padHeight + destY * strideY) : (destY * strideY);
 
-    const int xMin = max(0, srcX);
-    const int yMin = max(0, srcY);
+    const int xMin = padded ? max(0, srcX) : srcX;
+    const int yMin = padded ? max(0, srcY) : srcY;
 
-    const int xMax = min(srcX + wndSizeX, ipWidth);
-    const int yMax = min(srcY + wndSizeY, ipHeight);
+    const int xMax = padded ? min(srcX + wndSizeX, ipWidth) : (srcX + wndSizeX);
+    const int yMax = padded ? min(srcY + wndSizeY, ipHeight) : (srcY + wndSizeY);
 
-    //const int wndProcX = xMax - xMin;
-
-    const int kSkipX = xMin - srcX;
-    const int kSkipY = yMin - srcY;
+    const int kSkipX = padded ? (xMin - srcX) : 0;
+    const int kSkipY = padded ? (yMin - srcY) : 0;
 
     const int iStride = ipWidth * ipDepth;
     const int kStride = wndSizeX * ipDepth;
 
-    const int kfSkipStride = (kSkipY * kStride + kSkipX * ipDepth) * opDepth;
-    const int kInnerSkipStride = (kSkipX + (srcX + wndSizeX - xMax)) * ipDepth * opDepth;
+    const int kfSkipStride = padded ? ((kSkipY * kStride + kSkipX * ipDepth) * opDepth) : 0;
+    const int kInnerSkipStride = padded ? ((kSkipX + (srcX + wndSizeX - xMax)) * ipDepth * opDepth) : 0;
 
     const int xEnd = xMax * ipDepth;
 
     const int dxMin = xMin * ipDepth;
 
     //int imgIdx = yMin * iStride;
-    int weightsIdx = dIdx + kfSkipStride;
+    int weightsIdx = padded ? (dIdx + kfSkipStride) : dIdx;
 
     const int endImgIdx = yMax * iStride;
 
-    const int procInputWidth = xEnd - dxMin;
-    const int procInputSize = procInputWidth * (yMax - yMin);
+    const int procInputWidth = padded ? (xEnd - dxMin) : (wndSizeX * ipDepth);
+    const int procInputSize = padded ? (procInputWidth * (yMax - yMin)) : (procInputWidth * wndSizeY);
 
     /// !!!! Load the image buffer into shared memory !!!!
     // Calculate the number of warps that are in this block.
@@ -329,12 +316,12 @@ __global__ void CuConvoLayer_Compute(const Real *gInput, Real *gOutput,
     	}
 
     	ipIdx += vecTailX;
-    	weightsIdx += vecTailX * opDepth;
+    	weightsIdx += (padded ? kInnerSkipStride : 0) + vecTailX * opDepth;
 
 #undef DUFF_CASE
 
         // Skip over the padding parts of the filter
-        weightsIdx += kInnerSkipStride;
+        //weightsIdx += kInnerSkipStride;
     }
 
     const int opStoreIdx = destY * opWidth * opDepth + destX * opDepth;
@@ -401,9 +388,11 @@ Params CuConvoLayer::Impl::Compute(const Params& input)
 
 	//cudaFuncSetCacheConfig(CuConvoLayer_Compute, cudaFuncCachePreferShared);
 
-#define LAUNCH_CONVO_KERNEL(v) \
+	bool padded = _padWidth > 0 || _padHeight > 0;
+
+#define LAUNCH_CONVO_KERNEL(p, v) \
 			CuConvoLayer_Compute \
-				<v> \
+				<p, v> \
 				<<<gridSize, blockSize, smemSize>>> \
 					(mInput.Buff(), mOutput.Buff(), \
 				     _weights.Weights.Buff(), _weights.Biases.Buff(), \
@@ -413,19 +402,25 @@ Params CuConvoLayer::Impl::Compute(const Params& input)
 				     _strideX, _strideY, \
 				     _padWidth, _padHeight)
 
+#define PADDED_B(v) \
+	if (padded) \
+		LAUNCH_CONVO_KERNEL(true, v); \
+	else \
+		LAUNCH_CONVO_KERNEL(false, v)
+
 	switch (numImagesPerThread)
 	{
 	case 1:
-		LAUNCH_CONVO_KERNEL(1);
+		PADDED_B(1);
 		break;
 	case 2:
-		LAUNCH_CONVO_KERNEL(2);
+		PADDED_B(2);
 		break;
 	case 3:
-		LAUNCH_CONVO_KERNEL(3);
+		PADDED_B(3);
 		break;
 	case 4:
-		LAUNCH_CONVO_KERNEL(4);
+		PADDED_B(4);
 		break;
 	}
 
