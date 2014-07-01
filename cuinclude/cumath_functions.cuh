@@ -21,7 +21,7 @@ __device__ uint32_t d_round_up(uint32_t val)
     return (val + base - 1) / base;
 }
 
-inline uint32_t round_up(uint32_t val, uint32_t base)
+__device__ __host__ inline uint32_t round_up(uint32_t val, uint32_t base)
 {
 	return (val + base - 1) / base;
 }
