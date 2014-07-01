@@ -236,12 +236,12 @@ __global__ void CuConvoLayer_Compute(const Real *gInput, Real *gOutput,
     }
     else
     {
-        int warpsPerRow = round_up(numWarps, yMax - yMin);
-        int simulRows = numWarps / warpsPerRow;
+        const int warpsPerRow = round_up(numWarps, yMax - yMin);
+        const int simulRows = numWarps / warpsPerRow;
 
         // Let each warp do a separate row
-        int startRow = threadIdx.x / (32 * warpsPerRow);
-        int startCol = dxMin + (threadIdx.x % (32 * warpsPerRow));
+        const int startRow = threadIdx.x / (32 * warpsPerRow);
+        const int startCol = dxMin + (threadIdx.x % (32 * warpsPerRow));
 
         for (int iY = startRow, imgIdx = (yMin + startRow) * iStride;
                  imgIdx < endImgIdx;
