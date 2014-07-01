@@ -123,79 +123,6 @@ void CuConvoLayer::SetWeightDecay(Real rate)
     _impl->SetWeightDecay(rate);
 }
 
-__global__ void CuConvoLayer_Compute(const Real *gInput, Real *gOutput,
-									 const Real *gWeights, const Real *gBiases,
-									 const int numLayers,
-									 const int ipWidth, const int ipHeight, const int ipDepth,
-									 const int opWidth, const int opHeight, const int opDepth,
-									 const int wndSizeX, const int wndSizeY,
-									 const int strideX, const int strideY,
-									 const int padWidth, const int padHeight)
-{
-	int destX = blockIdx.x * blockDim.x + threadIdx.x;
-	int destY = blockIdx.y * blockDim.y + threadIdx.y;
-
-	if (destX >= opWidth || destY >= opHeight)
-	    return;
-
-	const int layer = blockIdx.z;
-
-	const Real *lInput = gInput + layer * (ipWidth * ipHeight * ipDepth);
-
-	Real *lOutput = gOutput + layer * (opWidth * opHeight * opDepth);
-
-	int srcX = -padWidth + destX * strideX;
-	int srcY = -padHeight + destY * strideY;
-
-	int xMin = max(0, srcX);
-	int yMin = max(0, srcY);
-
-	int xMax = min(srcX + wndSizeX, ipWidth);
-	int yMax = min(srcY + wndSizeY, ipHeight);
-
-	int kSkipX = xMin - srcX;
-	int kSkipY = yMin - srcY;
-
-	int iStride = ipWidth * ipDepth;
-	int kStride = wndSizeX * ipDepth;
-
-	int kfSkipStride = (kSkipY * kStride + kSkipX * ipDepth) * opDepth;
-	int kInnerSkipStride = (kSkipX + (srcX + wndSizeX - xMax)) * ipDepth * opDepth;
-
-	int xEnd = xMax * ipDepth;
-
-	const int dxMin = xMin * ipDepth;
-
-	const int opStoreIdx = destY * opWidth * opDepth + destX * opDepth;
-
-	for (int dIdx = threadIdx.z; dIdx < opDepth; dIdx += blockDim.z)
-	{
-		Real sum = gBiases[dIdx];
-
-		int imgIdx = yMin * iStride;
-		int weightsIdx = dIdx + kfSkipStride;
-
-		for (int iY = yMin; iY < yMax; ++iY, imgIdx += iStride)
-		{
-			for (int iX = dxMin; iX < xEnd; ++iX, weightsIdx += opDepth)
-			{
-				const Real iVal = lInput[imgIdx + iX];
-				const Real kVal = gWeights[weightsIdx];
-
-				const Real product = iVal * kVal;
-
-				sum += product;
-			}
-
-			// Skip over the padding parts of the filter
-			weightsIdx += kInnerSkipStride;
-		}
-
-		// Finally, store the sum
-		lOutput[opStoreIdx + dIdx] = sum;
-	}
-}
-
 struct PlacementParams
 {
     int KSkipStride;
@@ -223,13 +150,10 @@ struct ConvoKernelParams
 
 __shared__ extern Real sInput[];
 
-
-
 template<int wndProcX>
-__device__ void CuConvoLayer_Compute2_Device(
+__device__ void CuConvoLayer_Compute_Device(
                                  const Real *gInput, Real *gOutput,
                                  const Real *gWeights, const Real *gBiases,
-                                 //const int numLayers,
                                  const int ipWidth, const int ipHeight, const int ipDepth,
                                  const int opWidth, const int opHeight, const int opDepth,
                                  const int wndSizeX, const int wndSizeY,
@@ -241,15 +165,9 @@ __device__ void CuConvoLayer_Compute2_Device(
 
     int destY = blockIdx.y * blockDim.y + threadIdx.y;
 
-    //if (destX >= opWidth || destY >= opHeight)
-    //    return;
-
     int destZ = blockIdx.x * blockDim.x + threadIdx.x;
 
     int layer = destZ / opDepth;
-
-    //if (layer >= numLayers)
-    //    return;
 
     int dIdx = destZ % opDepth;
 
@@ -266,29 +184,15 @@ __device__ void CuConvoLayer_Compute2_Device(
     int xMax = min(srcX + wndSizeX, ipWidth);
     int yMax = min(srcY + wndSizeY, ipHeight);
 
-    int kSkipX = xMin - srcX;
-    int kSkipY = yMin - srcY;
-
     int iStride = ipWidth * ipDepth;
-    int kStride = wndSizeX * ipDepth;
-
-    int kfSkipStride = (kSkipY * kStride + kSkipX * ipDepth) * opDepth;
-    int kInnerSkipStride = (kSkipX + (srcX + wndSizeX - xMax)) * ipDepth * opDepth;
 
     int xEnd = xMax * ipDepth;
 
     const int dxMin = xMin * ipDepth;
 
-    const int opStoreIdx = destY * opWidth * opDepth + destX * opDepth;
+    const int endImgIdx = yMax * iStride;
 
-    Real sum = gBiases[dIdx];
-
-    //int imgIdx = yMin * iStride;
-    int weightsIdx = dIdx + kfSkipStride;
-
-    int endImgIdx = yMax * iStride;
-
-    int procInputWidth = xEnd - dxMin;
+    const int procInputWidth = xEnd - dxMin;
 
     /// !!!! Load the image buffer into shared memory !!!!
     // Calculate the number of warps that are in this block.
@@ -315,44 +219,39 @@ __device__ void CuConvoLayer_Compute2_Device(
     }
     else
     {
-        int warpsPerRow = numWarps / (yMax - yMin);
+        int warpsPerRow = round_up(numWarps, yMax - yMin);
+        int simulRows = numWarps / warpsPerRow;
 
-        // Not enough warps to do all of the rows at once,
-        // So instead each warp will do a different row and they will
-        // increment
-        if (warpsPerRow == 0)
+        // Let each warp do a separate row
+        int startRow = threadIdx.x / (32 * warpsPerRow);
+        int startCol = dxMin + (threadIdx.x % (32 * warpsPerRow));
+
+        for (int iY = startRow, imgIdx = (yMin + startRow) * iStride;
+                 imgIdx < endImgIdx;
+                 iY += simulRows, imgIdx += (simulRows * iStride))
         {
-            int startRow = threadIdx.x / 32;
-            int startCol = dxMin + (threadIdx.x % 32);
-
-            for (int iY = startRow, imgIdx = (yMin + startRow) * iStride;
-                     imgIdx < endImgIdx;
-                     iY += numWarps, imgIdx += (numWarps * iStride))
-            {
-                for (int iX = startCol; iX < xEnd; iX += 32)
-                {
-                    const Real iVal = lInput[imgIdx + iX];
-
-                    sInput[iY * procInputWidth + iX - dxMin] = iVal;
-                }
-            }
-        }
-        else
-        {
-            int myRow = threadIdx.x / (32 * warpsPerRow);
-            int startCol = dxMin + (threadIdx.x % (32 * warpsPerRow));
-            int imgIdx = (yMin + myRow) * iStride;
-
             for (int iX = startCol; iX < xEnd; iX += (32 * warpsPerRow))
             {
                 const Real iVal = lInput[imgIdx + iX];
 
-                sInput[myRow * procInputWidth + iX - dxMin] = iVal;
+                sInput[iY * procInputWidth + iX - dxMin] = iVal;
             }
         }
     }
 
     __syncthreads();
+
+    int kSkipX = xMin - srcX;
+    int kSkipY = yMin - srcY;
+
+    int kStride = wndSizeX * ipDepth;
+
+    int kfSkipStride = (kSkipY * kStride + kSkipX * ipDepth) * opDepth;
+    int kInnerSkipStride = (kSkipX + (srcX + wndSizeX - xMax)) * ipDepth * opDepth;
+
+    int weightsIdx = dIdx + kfSkipStride;
+
+    Real sum = gBiases[dIdx];
 
     int ipIdx = 0;
     for (int iY = yMin; iY < yMax; ++iY)
@@ -375,32 +274,13 @@ __device__ void CuConvoLayer_Compute2_Device(
         weightsIdx += kInnerSkipStride;
     }
 
-    //for (int iY = yMin; iY < yMax; ++iY, imgIdx += iStride)
-    /*for (int imgIdx = yMin * iStride; imgIdx < endImgIdx; imgIdx += iStride)
-    {
-        for (int iX = dxMin; iX < xEnd; iX += wndProcX)
-        {
-            //#pragma unroll
-            for (int iW = 0; iW < wndProcX; ++iW, weightsIdx += opDepth)
-            {
-                const Real iVal = lInput[imgIdx + iX + iW];
-                const Real kVal = gWeights[weightsIdx];
-
-                const Real product = iVal * kVal;
-
-                sum += product;
-            }
-        }
-
-        // Skip over the padding parts of the filter
-        weightsIdx += kInnerSkipStride;
-    }*/
+    const int opStoreIdx = destY * opWidth * opDepth + destX * opDepth;
 
     // Finally, store the sum
     lOutput[opStoreIdx + dIdx] = sum;
 }
 
-__global__ void CuConvoLayer_Compute2(const Real *gInput, Real *gOutput,
+__global__ void CuConvoLayer_Compute(const Real *gInput, Real *gOutput,
                                      const Real *gWeights, const Real *gBiases,
                                      //const int numLayers,
                                      const int ipWidth, const int ipHeight, const int ipDepth,
@@ -409,8 +289,6 @@ __global__ void CuConvoLayer_Compute2(const Real *gInput, Real *gOutput,
                                      const int strideX, const int strideY,
                                      const int padWidth, const int padHeight)
 {
-    //__shared__ extern Real s_input[];
-
     // Switching the x's and the z's here
     int destX = blockIdx.z * blockDim.z + threadIdx.z;
 
@@ -430,10 +308,9 @@ __global__ void CuConvoLayer_Compute2(const Real *gInput, Real *gOutput,
 
 #define MAKE_CONVO_CALL(procWidth) \
     case procWidth: \
-            CuConvoLayer_Compute2_Device<procWidth>( \
+            CuConvoLayer_Compute_Device<procWidth>( \
                                          gInput, gOutput, \
                                          gWeights, gBiases, \
-                                         /*numLayers, */\
                                          ipWidth, ipHeight, ipDepth, \
                                          opWidth, opHeight, opDepth, \
                                          wndSizeX, wndSizeY, \
@@ -498,36 +375,17 @@ Params CuConvoLayer::Impl::Compute(const Params& input)
 	if (err != cudaSuccess)
 	    throw runtime_error("Unable to set the device.");
 
-	/*uint32_t blockDepth = min(opDepth, 64);
-
-    dim3 blockSize(1, 1, blockDepth);
-    dim3 gridSize(opWidth, opHeight, batchSize);
-
-	CuConvoLayer_Compute
-#ifdef _CUDA_COMPILE_
-	    <<<gridSize, blockSize>>>
-#endif
-	                    (mInput.Buff(), mOutput.Buff(),
-	                     _weights.Weights.Buff(), _weights.Biases.Buff(),
-	                     batchSize,
-	                     ipWidth, ipHeight, ipDepth,
-	                     opWidth, opHeight, opDepth,
-	                     _windowSizeX, _windowSizeY,
-	                     _strideX, _strideY,
-	                     _padWidth, _padHeight);*/
-
 	uint32_t blockDepth = min(opDepth, 1024);
 
 	dim3 blockSize(blockDepth, 1, 1);
 	dim3 gridSize = round_up(opDepth * batchSize, opHeight, opWidth, blockSize);
 
-	CuConvoLayer_Compute2
-//#ifdef _CUDA_COMPILE_
-        <<<gridSize, blockSize, _windowSizeX * _windowSizeY * ipDepth * sizeof(Real)>>>
-//#endif
+	uint32_t smemSize = _windowSizeX * _windowSizeY * ipDepth * sizeof(Real);
+
+	CuConvoLayer_Compute
+        <<<gridSize, blockSize, smemSize>>>
                         (mInput.Buff(), mOutput.Buff(),
                          _weights.Weights.Buff(), _weights.Biases.Buff(),
-                         //batchSize,
                          ipWidth, ipHeight, ipDepth,
                          opWidth, opHeight, opDepth,
                          _windowSizeX, _windowSizeY,
