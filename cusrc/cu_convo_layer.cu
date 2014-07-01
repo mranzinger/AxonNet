@@ -306,8 +306,10 @@ __global__ void CuConvoLayer_Compute(const Real *gInput, Real *gOutput,
     		weightsIdx += 8 * opDepth;
     	}
 
-#define DUFF_CASE(v) { \
+#define DUFF_CASE(v) case v: \
+			{ \
 			const Real kVal = gWeights[weightsIdx + (v - 1) * opDepth]; \
+			_Pragma("unroll") \
     		for (int k = 0; k < numImagesPerThread; ++k) \
     		{ \
     			sum[k] += sInput[ipIdx + (k * procInputSize) + (v - 1)] * kVal; \
@@ -315,26 +317,12 @@ __global__ void CuConvoLayer_Compute(const Real *gInput, Real *gOutput,
 
     	switch (vecTailX)
     	{
-    	case 7:
-		//#pragma unroll
     	DUFF_CASE(7);
-    	case 6:
-		//#pragma unroll
     	DUFF_CASE(6);
-    	case 5:
-		//#pragma unroll
     	DUFF_CASE(5);
-    	case 4:
-		//#pragma unroll
     	DUFF_CASE(4);
-    	case 3:
-		//#pragma unroll
     	DUFF_CASE(3);
-    	case 2:
-		//#pragma unroll
     	DUFF_CASE(2);
-    	case 1:
-		//#pragma unroll
     	DUFF_CASE(1);
     	case 0:
     		break;
@@ -399,7 +387,7 @@ Params CuConvoLayer::Impl::Compute(const Params& input)
 	uint32_t smemSize = _windowSizeX * _windowSizeY * ipDepth * sizeof(Real);
 
 	uint32_t numImagesPerThread = 1;
-	for (int i = 8; i > 1; --i)
+	for (int i = 4; i > 1; --i)
 	{
 		if ((batchSize % i) == 0)
 		{
@@ -438,18 +426,6 @@ Params CuConvoLayer::Impl::Compute(const Params& input)
 		break;
 	case 4:
 		LAUNCH_CONVO_KERNEL(4);
-		break;
-	case 5:
-		LAUNCH_CONVO_KERNEL(5);
-		break;
-	case 6:
-		LAUNCH_CONVO_KERNEL(6);
-		break;
-	case 7:
-		LAUNCH_CONVO_KERNEL(7);
-		break;
-	case 8:
-		LAUNCH_CONVO_KERNEL(8);
 		break;
 	}
 
