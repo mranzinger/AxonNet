@@ -31,7 +31,7 @@ int main(int argc, char *argv [])
 
     ConvoLayer convoTest("",
                         3, 128,
-                        11, 11,
+                        7, 7,
                         5, 5,
                         5, 5);
 
@@ -58,7 +58,7 @@ int main(int argc, char *argv [])
     cout << "Done. Total Time: " << durMs.count() << "ms." << endl
          << "Time Per Op: " << (durMs.count() / float(s_testSize)) << "ms." << endl;
 
-    convoTest.SetDevicePreference(CudaDevicePreference::Create(0));
+    convoTest.SetDevicePreference(CudaDevicePreference::Create(1));
 
     // Run a dummy computation to get the buffer onto the device.
     // Memory transfer is not part of the test

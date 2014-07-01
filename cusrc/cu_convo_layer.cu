@@ -348,27 +348,6 @@ __device__ void CuConvoLayer_Compute2_Device(
         weightsIdx += kInnerSkipStride;
     }
 
-    //for (int iY = yMin; iY < yMax; ++iY, imgIdx += iStride)
-    /*for (int imgIdx = yMin * iStride; imgIdx < endImgIdx; imgIdx += iStride)
-    {
-        for (int iX = dxMin; iX < xEnd; iX += wndProcX)
-        {
-            //#pragma unroll
-            for (int iW = 0; iW < wndProcX; ++iW, weightsIdx += opDepth)
-            {
-                const Real iVal = lInput[imgIdx + iX + iW];
-                const Real kVal = gWeights[weightsIdx];
-
-                const Real product = iVal * kVal;
-
-                sum += product;
-            }
-        }
-
-        // Skip over the padding parts of the filter
-        weightsIdx += kInnerSkipStride;
-    }*/
-
     // Finally, store the sum
     lOutput[opStoreIdx + dIdx] = sum;
 }
@@ -382,8 +361,208 @@ __global__ void CuConvoLayer_Compute2(const Real *gInput, Real *gOutput,
                                      const int strideX, const int strideY,
                                      const int padWidth, const int padHeight)
 {
-    //__shared__ extern Real s_input[];
+	// Switching the x's and the z's here
+    const int destX = blockIdx.z * blockDim.z + threadIdx.z;
 
+    const int destY = blockIdx.y * blockDim.y + threadIdx.y;
+
+    //if (destX >= opWidth || destY >= opHeight)
+    //    return;
+
+    const int destZ = blockIdx.x * blockDim.x + threadIdx.x;
+
+    const int layer = destZ / opDepth;
+
+    //if (layer >= numLayers)
+    //    return;
+
+    const int dIdx = destZ % opDepth;
+
+    const Real *lInput = gInput + layer * (ipWidth * ipHeight * ipDepth);
+
+    Real *lOutput = gOutput + layer * (opWidth * opHeight * opDepth);
+
+    const int srcX = -padWidth + destX * strideX;
+    const int srcY = -padHeight + destY * strideY;
+
+    const int xMin = max(0, srcX);
+    const int yMin = max(0, srcY);
+
+    const int xMax = min(srcX + wndSizeX, ipWidth);
+    const int yMax = min(srcY + wndSizeY, ipHeight);
+
+    //const int wndProcX = xMax - xMin;
+
+    const int kSkipX = xMin - srcX;
+    const int kSkipY = yMin - srcY;
+
+    const int iStride = ipWidth * ipDepth;
+    const int kStride = wndSizeX * ipDepth;
+
+    const int kfSkipStride = (kSkipY * kStride + kSkipX * ipDepth) * opDepth;
+    const int kInnerSkipStride = (kSkipX + (srcX + wndSizeX - xMax)) * ipDepth * opDepth;
+
+    const int xEnd = xMax * ipDepth;
+
+    const int dxMin = xMin * ipDepth;
+
+    const int opStoreIdx = destY * opWidth * opDepth + destX * opDepth;
+
+    Real sum = gBiases[dIdx];
+
+    //int imgIdx = yMin * iStride;
+    int weightsIdx = dIdx + kfSkipStride;
+
+    const int endImgIdx = yMax * iStride;
+
+    const int procInputWidth = xEnd - dxMin;
+
+    /// !!!! Load the image buffer into shared memory !!!!
+    // Calculate the number of warps that are in this block.
+    // For coalesced access rules, we want these guys to be grouped on a row
+    const int numWarps = blockDim.x / 32;
+
+    // Not enough threads to even fill a single warp...
+    // This will not be ultra-efficient
+    if (numWarps <= 1)
+    {
+        const int startCol = dxMin + threadIdx.x;
+
+        for (int iY = 0, imgIdx = yMin * iStride;
+                imgIdx < endImgIdx;
+                ++iY, imgIdx += iStride)
+        {
+            for (int iX = startCol; iX < xEnd; iX += blockDim.x)
+            {
+                const Real iVal = lInput[imgIdx + iX];
+
+                sInput[iY * procInputWidth + iX - dxMin] = iVal;
+            }
+        }
+    }
+    else
+    {
+        const int warpsPerRow = numWarps / (yMax - yMin);
+
+        // Not enough warps to do all of the rows at once,
+        // So instead each warp will do a different row and they will
+        // increment
+        if (warpsPerRow == 0)
+        {
+            const int startRow = threadIdx.x / 32;
+            const int startCol = dxMin + (threadIdx.x % 32);
+
+            for (int iY = startRow, imgIdx = (yMin + startRow) * iStride;
+                     imgIdx < endImgIdx;
+                     iY += numWarps, imgIdx += (numWarps * iStride))
+            {
+                for (int iX = startCol; iX < xEnd; iX += 32)
+                {
+                    const Real iVal = lInput[imgIdx + iX];
+
+                    sInput[iY * procInputWidth + iX - dxMin] = iVal;
+                }
+            }
+        }
+        else
+        {
+            const int myRow = threadIdx.x / (32 * warpsPerRow);
+            const int startCol = dxMin + (threadIdx.x % (32 * warpsPerRow));
+            const int imgIdx = (yMin + myRow) * iStride;
+
+            for (int iX = startCol; iX < xEnd; iX += (32 * warpsPerRow))
+            {
+                const Real iVal = lInput[imgIdx + iX];
+
+                sInput[myRow * procInputWidth + iX - dxMin] = iVal;
+            }
+        }
+    }
+
+    __syncthreads();
+
+    // Peel vectors of 8
+    const int vecProcX = procInputWidth & ~0x7;
+    const int vecTailX = procInputWidth & 0x7;
+
+    const int vecXend = dxMin + vecProcX;
+
+    int ipIdx = 0;
+    for (int iY = yMin; iY < yMax; ++iY)
+    {
+    	for (int iX = dxMin; iX < vecXend; iX += 8)
+    	{
+			#pragma unroll
+    		for (int i = 0; i < 8; ++i)
+    		{
+    			const Real iVal = sInput[ipIdx + i];
+    			const Real kVal = gWeights[weightsIdx + i * opDepth];
+
+    			const Real product = iVal * kVal;
+
+    			sum += product;
+    		}
+
+    		ipIdx += 8;
+    		weightsIdx += 8 * opDepth;
+    	}
+
+#define DUFF_CASE(v) \
+    	case v: \
+    		sum += sInput[ipIdx + (v - 1)] * gWeights[weightsIdx + (v - 1) * opDepth]
+
+    	switch (vecTailX)
+    	{
+    	DUFF_CASE(7);
+    	DUFF_CASE(6);
+    	DUFF_CASE(5);
+    	DUFF_CASE(4);
+    	DUFF_CASE(3);
+    	DUFF_CASE(2);
+    	DUFF_CASE(1);
+    	case 0:
+    		break;
+    	}
+
+    	ipIdx += vecTailX;
+    	weightsIdx += vecTailX * opDepth;
+
+#undef DUFF_CASE
+
+        /*for (int iX = dxMin; iX < xEnd; iX += wndProcX)
+        {
+            #pragma unroll
+            for (int iW = 0; iW < wndProcX; ++iW, ++ipIdx, weightsIdx += opDepth)
+            {
+                const Real iVal = sInput[ipIdx];
+                const Real kVal = gWeights[weightsIdx];
+
+                const Real product = iVal * kVal;
+
+                sum += product;
+            }
+        }*/
+
+        // Skip over the padding parts of the filter
+        weightsIdx += kInnerSkipStride;
+    }
+
+    // Finally, store the sum
+    lOutput[opStoreIdx + dIdx] = sum;
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
     // Switching the x's and the z's here
     int destX = blockIdx.z * blockDim.z + threadIdx.z;
 
@@ -406,15 +585,12 @@ __global__ void CuConvoLayer_Compute2(const Real *gInput, Real *gOutput,
             CuConvoLayer_Compute2_Device<procWidth>( \
                                          gInput, gOutput, \
                                          gWeights, gBiases, \
-                                         /*numLayers, */\
                                          ipWidth, ipHeight, ipDepth, \
                                          opWidth, opHeight, opDepth, \
                                          wndSizeX, wndSizeY, \
                                          strideX, strideY, \
                                          padWidth, padHeight); \
     break
-
-
 
     switch (kernWidth)
     {
@@ -442,6 +618,7 @@ __global__ void CuConvoLayer_Compute2(const Real *gInput, Real *gOutput,
     }
 
 #undef MAKE_CONVO_CALL
+*/
 }
 
 Params CuConvoLayer::Impl::Compute(const Params& input)
