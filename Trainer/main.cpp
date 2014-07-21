@@ -123,5 +123,5 @@ int main(int argc, char *argv [])
 
 	//string root = "/home/mike/dev/personal/mnist/";
 
-    net.Train(loader, batchSize, 1000000000, testRate, checkpointRoot);
+    net.Train(loader, batchSize, 10000, testRate, checkpointRoot);
 }

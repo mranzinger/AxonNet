@@ -424,6 +424,9 @@ Params CuConvoLayer::Impl::Compute(const Params& input)
 		break;
 	}
 
+#undef PADDED_B
+#undef LAUNCH_CONVO_KERNEL
+
 	/*CuConvoLayer_Compute
         <<<gridSize, blockSize, smemSize>>>
                         (mInput.Buff(), mOutput.Buff(),
@@ -444,9 +447,97 @@ Params CuConvoLayer::Impl::Compute(const Params& input)
 
 }
 
+template<bool padded>
+__global__ void CuConvoLayer_NaiveBackprop(const Real *gLastInput, const Real *gLastOutput,
+										   const Real *gOutputErrors, Real *gInputErrors,
+										   const Real *gWeights, const int numBlocksPerPatch,
+										   const int ipWidth, const int ipHeight, const int ipDepth,
+										   const int opWidth, const int opHeight, const int opDepth,
+										   const int wndSizeX, const int wndSizeY,
+										   const int strideX, const int strideY,
+										   const int padWidth, const int padHeight)
+{
+	__shared__ extern Real smem[];
+
+	const int destX = blockIdx.y * blockDim.y + threadIdx.y;
+	const int destY = blockIdx.z * blockDim.z + threadIdx.z;
+
+	const int layer = blockIdx.x / numBlocksPerPatch;
+
+	const int patchIdx = blockIdx.x % numBlocksPerPath;
+
+}
+
 Params CuConvoLayer::Impl::Backprop(const Params& lastInput,
         const Params& lastOutput, const Params& outputErrors)
 {
+	const int ipWidth = lastInput.Width;
+	const int ipHeight = lastInput.Height;
+	const int ipDepth = lastInput.Depth;
+	const int batchSize = lastInput.Cols;
+
+	const int opWidth = lastOutput.Width;
+	const int opHeight = lastOutput.Height;
+	const int opDepth = lastOutput.Depth;
+
+	_cacheBackprop.Resize(ipWidth * ipHeight * ipDepth, batchSize);
+	Params inputErrors(ipWidth, ipHeight, ipDepth,
+			   new CuMat(_cacheBackprop));
+
+	const CuMat &mLastInput = lastInput.GetCudaMatrix(_handle);
+	const CuMat &mLastOutput = lastOutput.GetCudaMatrix(_handle);
+	const CuMat &mOutputErrors = outputErrors.GetCudaMatrix(_handle);
+	CuMat &mInputErrors = inputErrors.GetCudaMatrix(_handle);
+
+	cudaError_t err = cudaSetDevice(_handle.Device);
+
+	if (err != cudaSuccess)
+		throw runtime_error("Unable to set the device.");
+
+	if (opDepth > 1024)
+		throw runtime_error("Output depths greater than 1024 are not supported.");
+
+	uint32_t patchSize = _windowSizeX * _windowSizeY * ipDepth;
+
+	uint32_t blockDepth = min(1024u, patchSize);
+
+	// Enforce that any splitting of an image patch is done on a whole row
+	uint32_t spill = blockDepth % (_windowSizeX * ipDepth);
+	blockDepth -= spill;
+
+	// Calculate the number of blocks it will take to process each image patch
+	uint32_t blocksPerPatch = round_up(patchSize, blockDepth);
+
+	// Similar to compute, the x dimension will be used as the z dimension
+	dim3 blockSize(blockDepth, 1, 1);
+	dim3 gridSize = round_up(blockDepth * batchSize, opWidth, opHeight, blockSize);
+
+	uint32_t smemSize = max(patchSize, opDepth) * sizeof(Real);
+
+	bool padded = _padWidth > 0 || _padHeight > 0;
+
+	// The BP kernel computes the input errors
+#define LAUNCH_BP_KERNEL(p) \
+			CuConvoLayer_NaiveBackprop \
+				<p> \
+				<<<gridSize, blockSize, smemSize>>> \
+					(mLastInput.Buff(), mLastOutput.Buff(), \
+					 mOutputErrors.Buff(), mInputErrors.Buff(), \
+					 _weights.Weights.Buff(), \
+					 blocksPerPatch, \
+					 ipWidth, ipHeight, ipDepth, \
+					 opWidth, opHeight, opDepth, \
+					 _windowSizeX, _windowSizeY, \
+					 _strideX, _strideY, \
+					 _padWidth, _padHeight)
+
+	if (padded)
+		LAUNCH_BP_KERNEL(true);
+	else
+		LAUNCH_BP_KERNEL(false);
+
+#undef LAUNCH_BP_KERNEL
+
     return lastInput;
 }
 
