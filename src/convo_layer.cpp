@@ -186,8 +186,8 @@ Params ConvoLayer::SCompute(const Params &input, bool isTraining)
 
 Params ConvoLayer::SBackprop(const Params &lastInput, const Params &lastOutput, const Params &pOutputErrors)
 {
-	//if (_cuImpl)
-	//	return _cuImpl->Backprop(lastInput, lastOutput, pOutputErrors);
+	if (_cuImpl)
+		return _cuImpl->Backprop(lastInput, lastOutput, pOutputErrors);
 
 	const RMatrix &weights = _weights.Weights;
 	const Vector &biases = _weights.Biases;

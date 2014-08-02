@@ -450,22 +450,92 @@ Params CuConvoLayer::Impl::Compute(const Params& input)
 template<bool padded>
 __global__ void CuConvoLayer_NaiveBackprop(const Real *gLastInput, const Real *gLastOutput,
 										   const Real *gOutputErrors, Real *gInputErrors,
-										   const Real *gWeights, const int numBlocksPerPatch,
+										   const Real *gWeights,
 										   const int ipWidth, const int ipHeight, const int ipDepth,
 										   const int opWidth, const int opHeight, const int opDepth,
 										   const int wndSizeX, const int wndSizeY,
 										   const int strideX, const int strideY,
 										   const int padWidth, const int padHeight)
 {
-	__shared__ extern Real smem[];
+	__shared__ extern Real shared_module[];
 
 	const int destX = blockIdx.y * blockDim.y + threadIdx.y;
 	const int destY = blockIdx.z * blockDim.z + threadIdx.z;
 
-	const int layer = blockIdx.x / numBlocksPerPatch;
+	const int layer = blockIdx.x;
 
-	const int patchIdx = blockIdx.x % numBlocksPerPath;
+	const int ipImgStride = ipWidth * ipDepth;
+	const int ipImgSize = ipImgStride * ipHeight;
+	const int opImgSize = opWidth * opHeight * opDepth;
 
+	const Real *lOutputErrors = gOutputErrors + opImgSize * layer;
+	Real *lInputErrors = gInputErrors + ipImgSize * layer;
+
+	// Compute the input error module.
+	// No need to worry about padding here
+	{
+		const int weightsSize = wndSizeX * wndSizeY * ipDepth * opDepth;
+
+		// The weights matrix is column major, which means that each thread
+		// will operate on contiguous memory.
+		const int startIdx = threadIdx.x * opDepth;
+		const int threadStride = blockDim.x * opDepth;
+
+		const int opErrIdx = destY * opWidth * opDepth + destX * opDepth;
+
+		// A thread block doesn't necessarily process the entire block
+		// at once
+		for (int currRow = startIdx, i = threadIdx.x; currRow < weightsSize;
+				currRow += threadStride, i += blockDim.x)
+		{
+			Real val = 0.0f;
+			for (int wI = 0; wI < opDepth; ++wI)
+			{
+				const Real wVal = gWeights[currRow + wI];
+				const Real errVal = lOutputErrors[opErrIdx + wI];
+
+				val += wVal * errVal;
+			}
+
+			shared_module[i] = val;
+		}
+
+		// Ok, at this point, all of the input errors for this module are stored in
+		// shared memory. The next step is to write this module out into the input
+		// error buffer.
+		__syncthreads();
+	}
+
+	// Be lazy about padding...
+	const int srcX = padded ? (-padWidth + destX * strideX) : (destX * strideX);
+    const int srcY = padded ? (-padHeight + destY * strideY) : (destY * strideY);
+
+    // We know that the thread block size is a factor of the module stride
+    const int yStart = max(srcY, 0);
+    const int yEnd = min(srcY + wndSizeY, ipHeight);
+
+    const int xStart = max(srcX * ipDepth, 0);
+    const int xEnd = min((srcX + wndSizeX), ipWidth) * ipDepth;
+
+    const int yOff = max(-srcY, 0);
+    const int xOff = max(-srcX, 0) * ipDepth;
+
+    const int moduleStride = wndSizeX * ipDepth;
+
+    int opYIdx = yStart * ipImgStride;
+    int ipYIdx = yOff * moduleStride;
+    for (int y = yStart; y < yEnd; ++y, opYIdx += ipImgStride, ipYIdx += moduleStride)
+    {
+    	for (int x = xStart + threadIdx.x; x < xEnd; x += blockDim.x)
+    	{
+    		const Real sVal = shared_module[ipYIdx + xOff + x];
+
+    		Real *dVal = lInputErrors + opYIdx + x;
+
+    		// TODO: It is really ugly to use atomics here...
+    		atomicAdd(dVal, sVal);
+    	}
+    }
 }
 
 Params CuConvoLayer::Impl::Backprop(const Params& lastInput,
@@ -489,6 +559,9 @@ Params CuConvoLayer::Impl::Backprop(const Params& lastInput,
 	const CuMat &mOutputErrors = outputErrors.GetCudaMatrix(_handle);
 	CuMat &mInputErrors = inputErrors.GetCudaMatrix(_handle);
 
+	// Initialize the input error matrix to 0
+	mInputErrors.SetConstant(0.0f);
+
 	cudaError_t err = cudaSetDevice(_handle.Device);
 
 	if (err != cudaSuccess)
@@ -497,22 +570,24 @@ Params CuConvoLayer::Impl::Backprop(const Params& lastInput,
 	if (opDepth > 1024)
 		throw runtime_error("Output depths greater than 1024 are not supported.");
 
-	uint32_t patchSize = _windowSizeX * _windowSizeY * ipDepth;
+	//if ((opDepth % 32) != 0)
+	//	throw runtime_error("Only output depths that have 32 as a factor are currently supported.");
 
-	uint32_t blockDepth = min(1024u, patchSize);
+	uint32_t moduleSize = _windowSizeX * _windowSizeY * ipDepth;
 
-	// Enforce that any splitting of an image patch is done on a whole row
-	uint32_t spill = blockDepth % (_windowSizeX * ipDepth);
-	blockDepth -= spill;
+	uint32_t patchSeg = _windowSizeX * ipDepth;
+	if (patchSeg > 1024)
+		patchSeg = max(_windowSizeX, ipDepth);
+	if (patchSeg > 1024)
+		patchSeg = min(_windowSizeX, ipDepth);
 
-	// Calculate the number of blocks it will take to process each image patch
-	uint32_t blocksPerPatch = round_up(patchSize, blockDepth);
+	assert(patchSeg <= 1024);
 
 	// Similar to compute, the x dimension will be used as the z dimension
-	dim3 blockSize(blockDepth, 1, 1);
-	dim3 gridSize = round_up(blockDepth * batchSize, opWidth, opHeight, blockSize);
+	dim3 blockSize(patchSeg, 1, 1);
+	dim3 gridSize = round_up(batchSize * patchSeg, opWidth, opHeight, blockSize);
 
-	uint32_t smemSize = max(patchSize, opDepth) * sizeof(Real);
+	uint32_t smemSize = moduleSize * sizeof(Real);
 
 	bool padded = _padWidth > 0 || _padHeight > 0;
 
@@ -524,7 +599,6 @@ Params CuConvoLayer::Impl::Backprop(const Params& lastInput,
 					(mLastInput.Buff(), mLastOutput.Buff(), \
 					 mOutputErrors.Buff(), mInputErrors.Buff(), \
 					 _weights.Weights.Buff(), \
-					 blocksPerPatch, \
 					 ipWidth, ipHeight, ipDepth, \
 					 opWidth, opHeight, opDepth, \
 					 _windowSizeX, _windowSizeY, \
