@@ -70,3 +70,18 @@ void AssertMatrixEquivalence(const RMatrix& a, const RMatrix& b,
 {
 	AssertEquivalence(a, b, precision);
 }
+
+std::string MatToStr(const Vector& a)
+{
+    return eig_to_str(a);
+}
+
+std::string MatToStr(const CMatrix& a)
+{
+    return eig_to_str(a);
+}
+
+std::string MatToStr(const RMatrix& a)
+{
+    return eig_to_str(a);
+}

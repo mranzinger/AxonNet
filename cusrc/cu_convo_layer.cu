@@ -612,7 +612,7 @@ Params CuConvoLayer::Impl::Backprop(const Params& lastInput,
 
 #undef LAUNCH_BP_KERNEL
 
-    return lastInput;
+    return inputErrors;
 }
 
 void CuConvoLayer::Impl::ApplyGradient()
