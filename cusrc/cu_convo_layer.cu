@@ -526,11 +526,11 @@ __global__ void CuConvoLayer_NaiveBackprop(const Real *gLastInput, const Real *g
     int ipYIdx = yOff * moduleStride;
     for (int y = yStart; y < yEnd; ++y, opYIdx += ipImgStride, ipYIdx += moduleStride)
     {
-    	for (int x = xStart + threadIdx.x; x < xEnd; x += blockDim.x)
+    	for (int opX = xStart + threadIdx.x, ipX = xOff + threadIdx.x; opX < xEnd; opX += blockDim.x, ipX += blockDim.x)
     	{
-    		const Real sVal = shared_module[ipYIdx + xOff + x];
+    		const Real sVal = shared_module[ipYIdx + ipX];
 
-    		Real *dVal = lInputErrors + opYIdx + x;
+    		Real *dVal = lInputErrors + opYIdx + opX;
 
     		// TODO: It is really ugly to use atomics here...
     		atomicAdd(dVal, sVal);
