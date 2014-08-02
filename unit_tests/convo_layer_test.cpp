@@ -48,6 +48,8 @@ Params Backprop(const CMatrix &kernel, const Vector &bias,
 					 strideX, strideY,
 					 padWidth, padHeight);
 
+	layer.SetDevicePreference(CudaDevicePreference::Create(0));
+
 	const Params &lastOutput = pLastOutput ?
 								  *pLastOutput
 							    : layer.SCompute(lastInput, true);
