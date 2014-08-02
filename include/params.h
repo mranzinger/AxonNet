@@ -50,6 +50,8 @@ public:
 
 	void Take(Params &other);
 
+	bool PrintLayer(uint32_t layer) const;
+
 	Params &operator=(Params other);
 
 	friend void swap(Params &a, Params &b);

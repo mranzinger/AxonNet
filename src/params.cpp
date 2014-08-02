@@ -5,6 +5,9 @@
  */
 
 #include "params.h"
+
+#include <iostream>
+
 #include "cumat_host_helper.h"
 
 using namespace std;
@@ -165,6 +168,8 @@ void Params::PullIn(CuMat* cudaMat)
 	CuMat_CopyToDevice(GetHostMatrix(), *_cudaMat);
 }
 
+
+
 void swap(Params &a, Params &b)
 {
     swap(a.Width, b.Width);
@@ -208,4 +213,19 @@ void TakeSet(ParamMap& prms, const std::string& a_name, Params& p)
 	{
 		iter->second.Take(p);
 	}
+}
+
+bool Params::PrintLayer(uint32_t layer) const
+{
+	const CMatrix &fullMat = GetHostMatrix();
+
+	assert(layer < fullMat.cols());
+
+	const Real *lData = fullMat.data() + layer * Rows;
+
+	RMap m(const_cast<Real*>(lData), Height, Width * Depth);
+
+	cout << m << endl;
+
+	return true;
 }

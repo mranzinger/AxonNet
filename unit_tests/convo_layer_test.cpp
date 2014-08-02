@@ -281,7 +281,9 @@ TEST(ConvoLayerTest, HarderBackprop)
 		}
 	}
 
-	AssertMatrixEquivalence(inputErrors.GetHostMatrix(), cInputErrors);
+	Params cPrms(5, 5, 1, new CMatrix(cInputErrors));
+
+	AssertMatrixEquivalence(inputErrors.GetHostMatrix(), cPrms.GetHostMatrix());
 }
 
 TEST(ConvoLayerTest, HarderBackpropStride)

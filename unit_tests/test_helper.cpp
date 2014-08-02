@@ -71,6 +71,18 @@ void AssertMatrixEquivalence(const RMatrix& a, const RMatrix& b,
 	AssertEquivalence(a, b, precision);
 }
 
+template<typename T>
+std::string eig_to_str(const T &a)
+{
+    std::ostringstream ss;
+
+    ss << a;
+
+    std::cout << a << std::endl;
+
+    return ss.str();
+}
+
 std::string MatToStr(const Vector& a)
 {
     return eig_to_str(a);
