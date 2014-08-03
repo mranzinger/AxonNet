@@ -769,7 +769,8 @@ __global__ void CuConvoLayer_ComputeWeightGrad(
 
     // We will use the current streaming multiprocessor as the destination buffer.
     // This should help reduce atomic conflict
-    uint32_t smIdx = get_smid();
+    const uint32_t smIdx = get_smid();
+    //const uint32_t smIdx = 0;
 
     Real *lWeightsGrad = gWeightsGrad[smIdx];
     Real *lBiasGrad = gBiasGrad[smIdx];
@@ -995,6 +996,8 @@ void CuConvoLayer::Impl::ComputeErrorGradient(const Params& lastInput,
              _weights.BiasGrad.Buff(),
              _weights.BiasGrad.Size()
              );
+
+    _weights.DynamicLearningRate = 1.f / (opWidth * opHeight);
 }
 
 void CuConvoLayer::Impl::ApplyGradient()
