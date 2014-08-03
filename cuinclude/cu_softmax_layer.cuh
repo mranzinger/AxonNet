@@ -30,5 +30,5 @@ scope_private:
 	CuMat *_cacheBackprop;
 	CuMat *_cacheIpMax;
 	CuMat *_cacheExpSum;
-	CuMat *_cacheJacobian;
+	//CuMat *_cacheJacobian;
 };

@@ -36,8 +36,6 @@ struct CuSoftmaxDiv
     }
 };
 
-void CalcSoftmaxDiff(CuMat &mDiff, const CuMat &lastOutput);
-
 CuSoftmaxLayer::CuSoftmaxLayer(int deviceId)
 	: _costIsLogreg(false)
 {
@@ -51,7 +49,6 @@ CuSoftmaxLayer::CuSoftmaxLayer(int deviceId)
 
 	_cacheIpMax = new CuMat(_handle);
 	_cacheExpSum = new CuMat(_handle);
-	_cacheJacobian = new CuMat(_handle);
 }
 
 CuSoftmaxLayer::~CuSoftmaxLayer()
@@ -60,7 +57,6 @@ CuSoftmaxLayer::~CuSoftmaxLayer()
     delete _cacheBackprop;
     delete _cacheIpMax;
     delete _cacheExpSum;
-    delete _cacheJacobian;
 }
 
 Params CuSoftmaxLayer::Compute(const Params& input)
@@ -90,6 +86,67 @@ Params CuSoftmaxLayer::Compute(const Params& input)
 	return ret;
 }
 
+__global__ void CuSoftmaxLayer_CalcInputErrors(
+                    const Real *gLastOutput,
+                    const Real *gOutputErrors,
+                    Real *gInputErrors,
+                    const uint32_t numRows)
+{
+    // TODO: Use shared memory
+    const uint32_t y = blockIdx.y * blockDim.y + threadIdx.y;
+
+    if (y >= numRows)
+        return;
+
+    const uint32_t layer = blockIdx.z * blockDim.z + threadIdx.z;
+
+    const Real *lLastOutput = gLastOutput + layer * numRows;
+    const Real *lOutputErrors = gOutputErrors + layer * numRows;
+    Real *lInputErrors = gInputErrors + layer * numRows;
+
+    const uint32_t vecProcX = numRows & ~0x7;
+
+    const Real opY = lLastOutput[y];
+
+    Real sum = 0.0f;
+    for (uint32_t x = 0; x < vecProcX; )
+    {
+        const uint32_t xEnd = x + 8;
+
+        #pragma unroll
+        for (; x < xEnd; ++x)
+        {
+            // This is where shared memory is key...
+            const Real opX = lLastOutput[x];
+
+            const Real opErr = lOutputErrors[x];
+
+            assert(opX >= 0);
+
+            const Real kronecker = (x == y) ? 1.0f : 0.0f;
+
+            const Real prod = (opY * (kronecker - opX)) * opErr;
+
+            sum += prod;
+        }
+    }
+
+    for (uint32_t x = vecProcX; x < numRows; ++x)
+    {
+        const Real opX = lLastOutput[x];
+
+        assert(opX >= 0);
+
+        const Real kronecker = (x == y) ? 1.0f : 0.0f;
+
+        const Real prod = opY * (kronecker - opX);
+
+        sum += prod;
+    }
+
+    lInputErrors[y] = sum;
+}
+
 Params CuSoftmaxLayer::Backprop(const Params& lastInput,
 		const Params& lastOutput, const Params& outputErrors)
 {
@@ -102,14 +159,25 @@ Params CuSoftmaxLayer::Backprop(const Params& lastInput,
 
 	Params ret(lastInput, m);
 
-	CuMat &inputErrors = ret.GetCudaMatrix(_handle);
+	const CuMat &mLastOutput = lastOutput.GetCudaMatrix(_handle);
+	const CuMat &mOutputErrors = outputErrors.GetCudaMatrix(_handle);
+	CuMat &mInputErrors = ret.GetCudaMatrix(_handle);
 
-	// Create a big jacobian matrix of first derivatives
-	_cacheJacobian->Resize(lastOutput.Rows * lastOutput.Rows, lastOutput.Cols);
-	CalcSoftmaxDiff(*_cacheJacobian, lastOutput.GetCudaMatrix(_handle));
+	// This computation requires a 3D Jacobian to be computed.
+	// To conserve memory (a 90k x 90k matrix is daunting),
+	// we will actually directly compute the matrix product while
+	// computing the jacobian. This circumvents the matrix being
+	// instantiated and hoggin RAM
 
-	MultiplyTrans3D(*_cacheJacobian, lastOutput.Rows, lastOutput.Rows,
-				    outputErrors.GetCudaMatrix(_handle), inputErrors);
+	dim3 blockSize(1, min(128, lastOutput.Rows), 1);
+	dim3 gridSize = round_up(1, mLastOutput.Rows(), mLastOutput.Cols(), blockSize);
+
+	CuSoftmaxLayer_CalcInputErrors<<<gridSize, blockSize>>>
+	                              (mLastOutput.Buff(),
+	                               mOutputErrors.Buff(),
+	                               mInputErrors.Buff(),
+	                               mLastOutput.Rows()
+	                               );
 
 	return ret;
 }
@@ -117,44 +185,6 @@ Params CuSoftmaxLayer::Backprop(const Params& lastInput,
 void CuSoftmaxLayer::SetCostIsLogreg(bool value)
 {
 	_costIsLogreg = value;
-}
-
-
-__global__ void CuCalcSoftmaxDiff(CuMatInfo mDiffInfo, CuMatInfo mLastOpInfo)
-{
-	uint32_t x = blockIdx.x * blockDim.x + threadIdx.x;
-	uint32_t y = blockIdx.y * blockDim.y + threadIdx.y;
-	uint32_t z = blockIdx.z * blockDim.z + threadIdx.z;
-
-	// Rows both times here is intentional
-	if (x >= mLastOpInfo._rows || y >= mLastOpInfo._rows)
-		return;
-
-	uint32_t opRow = y * mLastOpInfo._rows + x;
-
-	uint32_t opIdx = z * mDiffInfo._rows + opRow;
-
-	uint32_t ipOffset = z * mLastOpInfo._rows;
-
-	Real dX = mLastOpInfo._dMat[ipOffset + x];
-	Real dY = mLastOpInfo._dMat[ipOffset + y];
-
-	Real dXdY = dY * ((x == y) - dX);
-
-	mDiffInfo._dMat[opIdx] = dXdY;
-}
-
-void CalcSoftmaxDiff(CuMat& mDiff, const CuMat& lastOutput)
-{
-	dim3 threads(min(32u, lastOutput.Rows()),
-				 min(32u, lastOutput.Rows()),
-				 1);
-	dim3 blocks = round_up(lastOutput.Rows(), lastOutput.Rows(), lastOutput.Cols(),
-						   threads);
-
-	// TODO: The matrix is symmetric, so a single block could absolutely scatter
-	// its output into the corresponding x,y pairs
-	CuCalcSoftmaxDiff<<<blocks, threads>>>(mDiff, lastOutput);
 }
 
 

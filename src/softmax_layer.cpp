@@ -95,7 +95,11 @@ Params SoftmaxLayer::SBackprop(const Params &lastInput, const Params &lastOutput
 		{
 			for (int x = 0; x < m.innerSize(); ++x)
 			{
-				m(y, x) = vLastOutput(y) * ((x == y) - vLastOutput(x));
+			    const Real kroenecker = (x == y) ? 1.0f : 0.0f;
+
+			    const Real val = vLastOutput(y) * (kroenecker - vLastOutput(x));
+
+				m(y, x) = val;
 			}
 		}
 

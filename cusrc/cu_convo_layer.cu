@@ -31,9 +31,6 @@ private:
 	int _padWidth, _padHeight;
 	int _strideX, _strideY;
 
-	cudaStream_t _errInputStream,
-	             _errWeightsStream;
-
 public:
 	Impl(int deviceId,
 		 int windowSizeX, int windowSizeY,
@@ -43,9 +40,7 @@ public:
 		  _padWidth(padWidth), _padHeight(padHeight),
 		  _strideX(strideX), _strideY(strideY),
 		  d_cacheWeightGrads(NULL),
-		  d_cacheBiasGrads(NULL),
-		  _errInputStream(NULL),
-		  _errWeightsStream(NULL)
+		  d_cacheBiasGrads(NULL)
 	{
 		_handle = CuSetupProvider::GetHandle(deviceId);
 
@@ -59,21 +54,11 @@ public:
 
 		_cacheWeightGrads.SetHandle(_handle);
 		_cacheBiasGrads.SetHandle(_handle);
-
-		cudaSetDevice(deviceId);
-		cudaStreamCreate(&_errInputStream);
-		cudaStreamCreate(&_errWeightsStream);
-
-		_weights.SetStream(_errWeightsStream);
-		_cacheWeightGrads.SetStream(_errWeightsStream);
-		_cacheBiasGrads.SetStream(_errWeightsStream);
 	}
 	~Impl()
 	{
 	    cudaFree(d_cacheWeightGrads);
 	    cudaFree(d_cacheBiasGrads);
-	    cudaStreamDestroy(_errInputStream);
-	    cudaStreamDestroy(_errWeightsStream);
 	}
 
 	Params Compute(const Params &input);
@@ -576,9 +561,6 @@ Params CuConvoLayer::Impl::Backprop(const Params& lastInput,
 
 	ComputeErrorGradient(lastInput, lastOutput, outputErrors);
 
-	cudaStreamSynchronize(_errInputStream);
-	cudaStreamSynchronize(_errWeightsStream);
-
 	return ret;
 }
 
@@ -603,8 +585,6 @@ Params CuConvoLayer::Impl::GetInputErrors(const Params& lastInput, const Params&
     CuMat &mInputErrors = inputErrors.GetCudaMatrix(_handle);
 
     cudaStreamSynchronize(mOutputErrors.Handle().GetStream());
-
-    mInputErrors.SetStream(_errInputStream);
 
     // Initialize the input error matrix to 0
     mInputErrors.SetConstant(0.0f);
@@ -643,7 +623,7 @@ Params CuConvoLayer::Impl::GetInputErrors(const Params& lastInput, const Params&
 #define LAUNCH_BP_KERNEL(p) \
             CuConvoLayer_NaiveBackprop \
                 <p> \
-                <<<gridSize, blockSize, smemSize, _errInputStream>>> \
+                <<<gridSize, blockSize, smemSize>>> \
                     (mOutputErrors.Buff(), mInputErrors.Buff(), \
                      _weights.Weights.Buff(), \
                      ipWidth, ipHeight, ipDepth, \
@@ -913,6 +893,11 @@ void CuConvoLayer::Impl::ComputeErrorGradient(const Params& lastInput,
     const int opHeight = lastOutput.Height;
     const int opDepth = lastOutput.Depth;
 
+    cudaError_t err = cudaSetDevice(_handle.Device);
+
+    if (err != cudaSuccess)
+        throw runtime_error("Unable to set the device.");
+
     InitCacheWeightGrads();
 
     const CuMat &mLastInput = lastInput.GetCudaMatrix(_handle);
@@ -923,11 +908,6 @@ void CuConvoLayer::Impl::ComputeErrorGradient(const Params& lastInput,
     _cacheBiasGrads.SetConstant(0.0f);
     _weights.WeightsGrad.SetConstant(0.0f);
     _weights.BiasGrad.SetConstant(0.0f);
-
-    cudaError_t err = cudaSetDevice(_handle.Device);
-
-    if (err != cudaSuccess)
-        throw runtime_error("Unable to set the device.");
 
     if (opDepth > 1024)
         throw runtime_error("Output depths greater than 1024 are not supported.");
@@ -957,7 +937,7 @@ void CuConvoLayer::Impl::ComputeErrorGradient(const Params& lastInput,
 #define LAUNCH_BP_KERNEL(p, v) \
     CuConvoLayer_ComputeWeightGrad \
         <p, v> \
-        <<<gridSize, blockSize, smemSize, _errWeightsStream>>> \
+        <<<gridSize, blockSize, smemSize>>> \
             (mOutputErrors.Buff(), mLastInput.Buff(), \
              d_cacheWeightGrads, d_cacheBiasGrads, \
              ipWidth, ipHeight, ipDepth, \
@@ -997,7 +977,7 @@ void CuConvoLayer::Impl::ComputeErrorGradient(const Params& lastInput,
     // Sum all of the partial weights buffers
     CuConvoLayer_SumGradients
         <16>
-        <<<gridSize, blockSize, 0, _errWeightsStream>>>
+        <<<gridSize, blockSize>>>
             (d_cacheWeightGrads,
              _weights.WeightsGrad.Buff(),
              _weights.WeightsGrad.Size()
@@ -1008,7 +988,7 @@ void CuConvoLayer::Impl::ComputeErrorGradient(const Params& lastInput,
 
     CuConvoLayer_SumGradients
         <16>
-        <<<gridSize, blockSize, 0, _errWeightsStream>>>
+        <<<gridSize, blockSize>>>
             (d_cacheBiasGrads,
              _weights.BiasGrad.Buff(),
              _weights.BiasGrad.Size()
@@ -1017,11 +997,7 @@ void CuConvoLayer::Impl::ComputeErrorGradient(const Params& lastInput,
 
 void CuConvoLayer::Impl::ApplyGradient()
 {
-    cudaStreamSynchronize(_errWeightsStream);
-
     _weights.ApplyGradient();
-
-    cudaStreamSynchronize(_errWeightsStream);
 }
 
 void CuConvoLayer::Impl::SyncToDevice(const CWeights& hWeights, bool gradToo)
