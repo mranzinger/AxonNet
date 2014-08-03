@@ -56,6 +56,8 @@ Params Backprop(const CMatrix &kernel, const Vector &bias,
 
 	Params ret = layer.SBackprop(lastInput, lastOutput, outputErrors);
 
+	layer.SyncToHost(true);
+
 	weightsGrad = layer._weights.WeightsGrad;
 	biasGrad = layer._weights.BiasGrad;
 
