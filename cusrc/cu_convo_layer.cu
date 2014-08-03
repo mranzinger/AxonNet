@@ -464,7 +464,7 @@ Params CuConvoLayer::Impl::Compute(const Params& input)
 
 }
 
-template<bool padded>
+template<bool padded, int numImagesPerThread>
 __global__ void CuConvoLayer_NaiveBackprop(const Real *gOutputErrors, Real *gInputErrors,
 										   const Real *gWeights,
 										   const int ipWidth, const int ipHeight, const int ipDepth,
@@ -478,7 +478,7 @@ __global__ void CuConvoLayer_NaiveBackprop(const Real *gOutputErrors, Real *gInp
 	const int destX = blockIdx.y * blockDim.y + threadIdx.y;
 	const int destY = blockIdx.z * blockDim.z + threadIdx.z;
 
-	const int layer = blockIdx.x;
+	const int layer = blockIdx.x * numImagesPerThread;
 
 	const int ipImgStride = ipWidth * ipDepth;
 	const int ipImgSize = ipImgStride * ipHeight;
@@ -487,10 +487,12 @@ __global__ void CuConvoLayer_NaiveBackprop(const Real *gOutputErrors, Real *gInp
 	const Real *lOutputErrors = gOutputErrors + opImgSize * layer;
 	Real *lInputErrors = gInputErrors + ipImgSize * layer;
 
+	const int ipModuleSize = wndSizeX * wndSizeY * ipDepth;
+
 	// Compute the input error module.
 	// No need to worry about padding here
 	{
-		const int weightsSize = wndSizeX * wndSizeY * ipDepth * opDepth;
+		const int weightsSize = ipModuleSize * opDepth;
 
 		// The weights matrix is column major, which means that each thread
 		// will operate on contiguous memory.
@@ -504,16 +506,29 @@ __global__ void CuConvoLayer_NaiveBackprop(const Real *gOutputErrors, Real *gInp
 		for (int currRow = startIdx, i = threadIdx.x; currRow < weightsSize;
 				currRow += threadStride, i += blockDim.x)
 		{
-			Real val = 0.0f;
+			//Real val = 0.0f;
+		    //Real vals[numImagesPerThread] = { 0 };
+
+            #pragma unroll
+		    for (int k = 0; k < numImagesPerThread; ++k)
+		    {
+		        shared_module[k * ipModuleSize + i] = 0.0f;
+		    }
+
 			for (int wI = 0; wI < opDepth; ++wI)
 			{
 				const Real wVal = gWeights[currRow + wI];
-				const Real errVal = lOutputErrors[opErrIdx + wI];
 
-				val += wVal * errVal;
+                #pragma unroll
+				for (int k = 0; k < numImagesPerThread; ++k)
+				{
+				    const Real errVal = lOutputErrors[k * opImgSize + opErrIdx + wI];
+
+				    shared_module[(k * ipModuleSize) + i] += wVal * errVal;
+				}
 			}
 
-			shared_module[i] = val;
+			//shared_module[i] = val;
 		}
 
 		// Ok, at this point, all of the input errors for this module are stored in
@@ -544,12 +559,16 @@ __global__ void CuConvoLayer_NaiveBackprop(const Real *gOutputErrors, Real *gInp
     {
     	for (int opX = xStart + threadIdx.x, ipX = xOff + threadIdx.x; opX < xEnd; opX += blockDim.x, ipX += blockDim.x)
     	{
-    		const Real sVal = shared_module[ipYIdx + ipX];
+            #pragma unroll
+    	    for (int k = 0; k < numImagesPerThread; ++k)
+    	    {
+    	        const Real sVal = shared_module[(k * ipModuleSize) + ipYIdx + ipX];
 
-    		Real *dVal = lInputErrors + opYIdx + opX;
+    	        Real *dVal = lInputErrors + (k * ipImgSize) + opYIdx + opX;
 
-    		// TODO: It is really ugly to use atomics here...
-    		atomicAdd(dVal, sVal);
+    	        // TODO: It is really ugly to use atomics here...
+    	        atomicAdd(dVal, sVal);
+    	    }
     	}
     }
 }
@@ -616,13 +635,26 @@ Params CuConvoLayer::Impl::GetInputErrors(const Params& lastInput, const Params&
 
     uint32_t smemSize = moduleSize * sizeof(Real);
 
+    uint32_t numImagesPerThread = 1;
+    for (int i = 8; i > 1; --i)
+    {
+        if ((batchSize % i) == 0)
+        {
+            numImagesPerThread = i;
+            break;
+        }
+    }
+
+    smemSize *= numImagesPerThread;
+    gridSize.x /= numImagesPerThread;
+
     bool padded = _padWidth > 0 || _padHeight > 0;
 
 
     // The BP kernel computes the input errors
-#define LAUNCH_BP_KERNEL(p) \
+#define LAUNCH_BP_KERNEL(p, v) \
             CuConvoLayer_NaiveBackprop \
-                <p> \
+                <p, v> \
                 <<<gridSize, blockSize, smemSize>>> \
                     (mOutputErrors.Buff(), mInputErrors.Buff(), \
                      _weights.Weights.Buff(), \
@@ -632,11 +664,41 @@ Params CuConvoLayer::Impl::GetInputErrors(const Params& lastInput, const Params&
                      _strideX, _strideY, \
                      _padWidth, _padHeight)
 
-    if (padded)
-        LAUNCH_BP_KERNEL(true);
-    else
-        LAUNCH_BP_KERNEL(false);
+#define PADDED_B(v) \
+    if (padded) \
+        LAUNCH_BP_KERNEL(true, v); \
+    else \
+        LAUNCH_BP_KERNEL(false, v)
 
+    switch (numImagesPerThread)
+    {
+    case 1:
+        PADDED_B(1);
+        break;
+    case 2:
+        PADDED_B(2);
+        break;
+    case 3:
+        PADDED_B(3);
+        break;
+    case 4:
+        PADDED_B(4);
+        break;
+    case 5:
+        PADDED_B(5);
+        break;
+    case 6:
+        PADDED_B(6);
+        break;
+    case 7:
+        PADDED_B(7);
+        break;
+    case 8:
+        PADDED_B(8);
+        break;
+    }
+
+#undef PADDED_B
 #undef LAUNCH_BP_KERNEL
 
     return inputErrors;
