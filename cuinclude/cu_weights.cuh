@@ -36,6 +36,7 @@ public:
     CWeights ToHost() const;
 
     void SetHandle(const CuContext &handle);
+    void SetStream(cudaStream_t stream);
 
     void CopyToDevice(const CWeights &hWeights, bool gradToo = false);
     void CopyToHost(CWeights &hWeights, bool gradToo = false) const;

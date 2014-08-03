@@ -22,10 +22,17 @@ private:
 
 	CuMat _cacheCompute;
 	CuMat _cacheBackprop;
+	CuMat _cacheWeightGrads;
+	CuMat _cacheBiasGrads;
+	Real **d_cacheWeightGrads,
+	     **d_cacheBiasGrads;
 
 	int _windowSizeX, _windowSizeY;
 	int _padWidth, _padHeight;
 	int _strideX, _strideY;
+
+	cudaStream_t _errInputStream,
+	             _errWeightsStream;
 
 public:
 	Impl(int deviceId,
@@ -34,7 +41,11 @@ public:
 		 int padWidth, int padHeight)
 		: _windowSizeX(windowSizeX), _windowSizeY(windowSizeY),
 		  _padWidth(padWidth), _padHeight(padHeight),
-		  _strideX(strideX), _strideY(strideY)
+		  _strideX(strideX), _strideY(strideY),
+		  d_cacheWeightGrads(NULL),
+		  d_cacheBiasGrads(NULL),
+		  _errInputStream(NULL),
+		  _errWeightsStream(NULL)
 	{
 		_handle = CuSetupProvider::GetHandle(deviceId);
 
@@ -45,14 +56,34 @@ public:
 
 		_cacheBackprop.SetHandle(_handle);
 		_cacheBackprop.SetSharedModify(true);
+
+		_cacheWeightGrads.SetHandle(_handle);
+		_cacheBiasGrads.SetHandle(_handle);
+
+		cudaSetDevice(deviceId);
+		cudaStreamCreate(&_errInputStream);
+		cudaStreamCreate(&_errWeightsStream);
+
+		_weights.SetStream(_errWeightsStream);
+		_cacheWeightGrads.SetStream(_errWeightsStream);
+		_cacheBiasGrads.SetStream(_errWeightsStream);
 	}
 	~Impl()
 	{
+	    cudaFree(d_cacheWeightGrads);
+	    cudaFree(d_cacheBiasGrads);
+	    cudaStreamDestroy(_errInputStream);
+	    cudaStreamDestroy(_errWeightsStream);
 	}
 
 	Params Compute(const Params &input);
 	Params Backprop(const Params &lastInput, const Params &lastOutput,
 					const Params &outputErrors);
+
+	void ComputeErrorGradient(const Params &lastInput, const Params &lastOutput,
+	                          const Params &outputErrors);
+	Params GetInputErrors(const Params &lastInput, const Params &lastOutput,
+	                      const Params &outputErrors);
 
 	void ApplyGradient();
 
@@ -62,6 +93,7 @@ public:
 	void SetLearningRate(Real rate);
 	void SetMomentum(Real rate);
 	void SetWeightDecay(Real rate);
+	void InitCacheWeightGrads();
 };
 
 CuConvoLayer::CuConvoLayer(int deviceId,
@@ -448,8 +480,7 @@ Params CuConvoLayer::Impl::Compute(const Params& input)
 }
 
 template<bool padded>
-__global__ void CuConvoLayer_NaiveBackprop(const Real *gLastInput, const Real *gLastOutput,
-										   const Real *gOutputErrors, Real *gInputErrors,
+__global__ void CuConvoLayer_NaiveBackprop(const Real *gOutputErrors, Real *gInputErrors,
 										   const Real *gWeights,
 										   const int ipWidth, const int ipHeight, const int ipDepth,
 										   const int opWidth, const int opHeight, const int opDepth,
@@ -541,83 +572,355 @@ __global__ void CuConvoLayer_NaiveBackprop(const Real *gLastInput, const Real *g
 Params CuConvoLayer::Impl::Backprop(const Params& lastInput,
         const Params& lastOutput, const Params& outputErrors)
 {
-	const int ipWidth = lastInput.Width;
-	const int ipHeight = lastInput.Height;
-	const int ipDepth = lastInput.Depth;
-	const int batchSize = lastInput.Cols;
+	Params ret = GetInputErrors(lastInput, lastOutput, outputErrors);
 
-	const int opWidth = lastOutput.Width;
-	const int opHeight = lastOutput.Height;
-	const int opDepth = lastOutput.Depth;
+	ComputeErrorGradient(lastInput, lastOutput, outputErrors);
 
-	_cacheBackprop.Resize(ipWidth * ipHeight * ipDepth, batchSize);
-	Params inputErrors(ipWidth, ipHeight, ipDepth,
-			   new CuMat(_cacheBackprop));
+	cudaStreamSynchronize(_errInputStream);
+	cudaStreamSynchronize(_errWeightsStream);
 
-	const CuMat &mLastInput = lastInput.GetCudaMatrix(_handle);
-	const CuMat &mLastOutput = lastOutput.GetCudaMatrix(_handle);
-	const CuMat &mOutputErrors = outputErrors.GetCudaMatrix(_handle);
-	CuMat &mInputErrors = inputErrors.GetCudaMatrix(_handle);
+	return ret;
+}
 
-	// Initialize the input error matrix to 0
-	mInputErrors.SetConstant(0.0f);
+Params CuConvoLayer::Impl::GetInputErrors(const Params& lastInput, const Params& lastOutput,
+        const Params& outputErrors)
+{
+    const int ipWidth = lastInput.Width;
+    const int ipHeight = lastInput.Height;
+    const int ipDepth = lastInput.Depth;
+    const int batchSize = lastInput.Cols;
 
-	cudaError_t err = cudaSetDevice(_handle.Device);
+    const int opWidth = lastOutput.Width;
+    const int opHeight = lastOutput.Height;
+    const int opDepth = lastOutput.Depth;
 
-	if (err != cudaSuccess)
-		throw runtime_error("Unable to set the device.");
+    _cacheBackprop.Resize(ipWidth * ipHeight * ipDepth, batchSize);
+    Params inputErrors(ipWidth, ipHeight, ipDepth,
+               new CuMat(_cacheBackprop));
 
-	if (opDepth > 1024)
-		throw runtime_error("Output depths greater than 1024 are not supported.");
+    const CuMat &mLastInput = lastInput.GetCudaMatrix(_handle);
+    const CuMat &mOutputErrors = outputErrors.GetCudaMatrix(_handle);
+    CuMat &mInputErrors = inputErrors.GetCudaMatrix(_handle);
 
-	//if ((opDepth % 32) != 0)
-	//	throw runtime_error("Only output depths that have 32 as a factor are currently supported.");
+    cudaStreamSynchronize(mOutputErrors.Handle().GetStream());
 
-	uint32_t moduleSize = _windowSizeX * _windowSizeY * ipDepth;
+    mInputErrors.SetStream(_errInputStream);
 
-	uint32_t patchSeg = _windowSizeX * ipDepth;
-	if (patchSeg > 1024)
-		patchSeg = max(_windowSizeX, ipDepth);
-	if (patchSeg > 1024)
-		patchSeg = min(_windowSizeX, ipDepth);
+    // Initialize the input error matrix to 0
+    mInputErrors.SetConstant(0.0f);
 
-	assert(patchSeg <= 1024);
+    cudaError_t err = cudaSetDevice(_handle.Device);
 
-	// Similar to compute, the x dimension will be used as the z dimension
-	dim3 blockSize(patchSeg, 1, 1);
-	dim3 gridSize = round_up(batchSize * patchSeg, opWidth, opHeight, blockSize);
+    if (err != cudaSuccess)
+        throw runtime_error("Unable to set the device.");
 
-	uint32_t smemSize = moduleSize * sizeof(Real);
+    if (opDepth > 1024)
+        throw runtime_error("Output depths greater than 1024 are not supported.");
 
-	bool padded = _padWidth > 0 || _padHeight > 0;
+    //if ((opDepth % 32) != 0)
+    //  throw runtime_error("Only output depths that have 32 as a factor are currently supported.");
 
-	// The BP kernel computes the input errors
+    uint32_t moduleSize = _windowSizeX * _windowSizeY * ipDepth;
+
+    uint32_t patchSeg = _windowSizeX * ipDepth;
+    if (patchSeg > 1024)
+        patchSeg = max(_windowSizeX, ipDepth);
+    if (patchSeg > 1024)
+        patchSeg = min(_windowSizeX, ipDepth);
+
+    assert(patchSeg <= 1024);
+
+    // Similar to compute, the x dimension will be used as the z dimension
+    dim3 blockSize(patchSeg, 1, 1);
+    dim3 gridSize = round_up(batchSize * patchSeg, opWidth, opHeight, blockSize);
+
+    uint32_t smemSize = moduleSize * sizeof(Real);
+
+    bool padded = _padWidth > 0 || _padHeight > 0;
+
+    // The BP kernel computes the input errors
 #define LAUNCH_BP_KERNEL(p) \
-			CuConvoLayer_NaiveBackprop \
-				<p> \
-				<<<gridSize, blockSize, smemSize>>> \
-					(mLastInput.Buff(), mLastOutput.Buff(), \
-					 mOutputErrors.Buff(), mInputErrors.Buff(), \
-					 _weights.Weights.Buff(), \
-					 ipWidth, ipHeight, ipDepth, \
-					 opWidth, opHeight, opDepth, \
-					 _windowSizeX, _windowSizeY, \
-					 _strideX, _strideY, \
-					 _padWidth, _padHeight)
+            CuConvoLayer_NaiveBackprop \
+                <p> \
+                <<<gridSize, blockSize, smemSize>>> \
+                    (mOutputErrors.Buff(), mInputErrors.Buff(), \
+                     _weights.Weights.Buff(), \
+                     ipWidth, ipHeight, ipDepth, \
+                     opWidth, opHeight, opDepth, \
+                     _windowSizeX, _windowSizeY, \
+                     _strideX, _strideY, \
+                     _padWidth, _padHeight)
 
-	if (padded)
-		LAUNCH_BP_KERNEL(true);
-	else
-		LAUNCH_BP_KERNEL(false);
+    if (padded)
+        LAUNCH_BP_KERNEL(true);
+    else
+        LAUNCH_BP_KERNEL(false);
 
 #undef LAUNCH_BP_KERNEL
 
     return inputErrors;
 }
 
+__device__ uint32_t get_smid(void)
+{
+     uint32_t ret;
+
+     asm("mov.u32 %0, %smid;" : "=r"(ret) );
+
+     return ret;
+}
+
+template<bool padded, int numImagesPerThread>
+__global__ void CuConvoLayer_ComputeWeightGrad(
+                        const Real *gOutputErrors, const Real *gLastInput,
+                        Real **gWeightsGrad, Real **gBiasGrad,
+                        const int ipWidth, const int ipHeight, const int ipDepth,
+                        const int opWidth, const int opHeight, const int opDepth,
+                        const int wndSizeX, const int wndSizeY,
+                        const int strideX, const int strideY,
+                        const int padWidth, const int padHeight)
+{
+    __shared__ extern Real shared_input[];
+
+    // Switching the x's and the z's here
+    const int destX = blockIdx.y * blockDim.y + threadIdx.y;
+    const int destY = blockIdx.z * blockDim.z + threadIdx.z;
+
+    const int layer = blockIdx.x * numImagesPerThread;
+
+    const int dIdx = threadIdx.x;
+
+    const int ipImgSize = ipWidth * ipHeight * ipDepth;
+
+    const Real *lLastInput = gLastInput + layer * ipImgSize;
+
+    const int opImgStride = opWidth * opDepth;
+    const int opImgSize = opImgStride * opHeight;
+
+    const Real *lOutputErrors = gOutputErrors + layer * opImgSize;
+
+    const int srcX = padded ? (-padWidth + destX * strideX) : (destX * strideX);
+    const int srcY = padded ? (-padHeight + destY * strideY) : (destY * strideY);
+
+    const int xMin = padded ? max(0, srcX) : srcX;
+    const int yMin = padded ? max(0, srcY) : srcY;
+
+    const int xMax = padded ? min(srcX + wndSizeX, ipWidth) : (srcX + wndSizeX);
+    const int yMax = padded ? min(srcY + wndSizeY, ipHeight) : (srcY + wndSizeY);
+
+    const int kSkipX = padded ? (xMin - srcX) : 0;
+    const int kSkipY = padded ? (yMin - srcY) : 0;
+
+    const int iStride = ipWidth * ipDepth;
+    const int kStride = wndSizeX * ipDepth;
+
+    const int kfSkipStride = padded ? ((kSkipY * kStride + kSkipX * ipDepth) * opDepth) : 0;
+    const int kInnerSkipStride = padded ? ((kSkipX + (srcX + wndSizeX - xMax)) * ipDepth * opDepth) : 0;
+
+    const int xEnd = xMax * ipDepth;
+
+    const int dxMin = xMin * ipDepth;
+
+    const int endImgIdx = yMax * iStride;
+
+    const int procInputWidth = padded ? (xEnd - dxMin) : (wndSizeX * ipDepth);
+    const int procInputSize = padded ? (procInputWidth * (yMax - yMin)) : (procInputWidth * wndSizeY);
+
+    /// !!!! Load the image buffer into shared memory !!!!
+    // Calculate the number of warps that are in this block.
+    // For coalesced access rules, we want these guys to be grouped on a row
+    const int numWarps = blockDim.x / 32;
+
+    // Not enough threads to even fill a single warp...
+    // This will not be ultra-efficient
+    if (numWarps <= 1)
+    {
+        const int startCol = dxMin + threadIdx.x;
+
+        for (int iY = 0, imgIdx = yMin * iStride;
+                imgIdx < endImgIdx;
+                ++iY, imgIdx += iStride)
+        {
+            for (int iX = startCol; iX < xEnd; iX += blockDim.x)
+            {
+                #pragma unroll
+                for (int k = 0; k < numImagesPerThread; ++k)
+                {
+                    const Real iVal = lLastInput[imgIdx + (k * ipImgSize) + iX];
+
+                    shared_input[(k * procInputSize) + (iY * procInputWidth + iX - dxMin)] = iVal;
+                }
+            }
+        }
+    }
+    else
+    {
+        const int warpsPerRow = round_up(numWarps, yMax - yMin);
+        const int simulRows = numWarps / warpsPerRow;
+
+        // Let each warp do a separate row
+        const int startRow = threadIdx.x / (32 * warpsPerRow);
+        const int startCol = dxMin + (threadIdx.x % (32 * warpsPerRow));
+
+        for (int iY = startRow, imgIdx = (yMin + startRow) * iStride;
+                 imgIdx < endImgIdx;
+                 iY += simulRows, imgIdx += (simulRows * iStride))
+        {
+            for (int iX = startCol; iX < xEnd; iX += (32 * warpsPerRow))
+            {
+                #pragma unroll
+                for (int k = 0; k < numImagesPerThread; ++k)
+                {
+                    const Real iVal = lLastInput[imgIdx + (k * ipImgSize) + iX];
+
+                    shared_input[(k * procInputSize) + (iY * procInputWidth + iX - dxMin)] = iVal;
+                }
+            }
+        }
+    }
+
+    __syncthreads();
+
+    // Now that the input buffer has been loaded, we need to write into the weight
+    // gradient buffer.
+    // The simple form of the equation is:
+    // W_g = err * input^T
+
+    // We will use the current streaming multiprocessor as the destination buffer.
+    // This should help reduce atomic conflict
+    uint32_t smIdx = get_smid();
+
+    Real *lWeightsGrad = gWeightsGrad[smIdx];
+    Real *lBiasGrad = gBiasGrad[smIdx];
+
+    // Each thread will process a row of this outer product. The upshot of this
+    // is that we can keep the output error value cached as a local value.
+    // The input values are also in shared memory, so the expensive part of this
+    // operation is writing into the gradient buffer
+    Real opErrVals[numImagesPerThread];
+    #pragma unroll
+    for (int i = 0; i < numImagesPerThread; ++i)
+    {
+        opErrVals[i] = lOutputErrors[i * opImgSize       // Index the output error image
+                                  + destY * opImgStride  // Index the row of the output image
+                                  + destX * opDepth      // Index the column block of the output image
+                                  + threadIdx.x];        // Index the output error value
+    }
+
+    // Peel vectors of 8
+    const int vecProcX = procInputWidth & ~0x7;
+    const int vecTailX = procInputWidth & 0x7;
+
+    const int vecXend = dxMin + vecProcX;
+
+    int weightsIdx = padded ? (dIdx + kfSkipStride) : dIdx;
+
+    int ipIdx = 0;
+    for (int iY = yMin; iY < yMax; ++iY)
+    {
+        for (int iX = dxMin; iX < vecXend; iX += 8)
+        {
+            #pragma unroll
+            for (int i = 0; i < 8; ++i)
+            {
+                // We can do a pre-sum of the various images before writing
+                // it into the gradient buffer, which in effect cuts the number
+                // of atomic operations proportionally to the number of images
+                // per thread
+                Real val = 0.0f;
+
+                #pragma unroll
+                for (int k = 0; k < numImagesPerThread; ++k)
+                {
+                    const Real iVal = shared_input[ipIdx + (k * procInputSize) + i];
+
+                    val += opErrVals[k] * iVal;
+                }
+
+                Real *pWeight = lWeightsGrad + weightsIdx + i * opDepth;
+
+                atomicAdd(pWeight, val);
+            }
+
+            ipIdx += 8;
+            weightsIdx += 8 * opDepth;
+        }
+
+        for (int v = 0; v < vecTailX; ++v)
+        {
+            Real val = 0.0f;
+
+            #pragma unroll
+            for (int k = 0; k < numImagesPerThread; ++k)
+            {
+                const Real iVal = shared_input[ipIdx + (k * procInputSize) + v];
+
+                val += opErrVals[k] * iVal;
+            }
+
+            Real *pWeight = lWeightsGrad + weightsIdx + v * opDepth;
+
+            atomicAdd(pWeight, val);
+        }
+    }
+
+    // Don't forget about the biases!
+    #pragma unroll
+    for (int k = 0; k < numImagesPerThread; ++k)
+    {
+        lBiasGrad[dIdx] += opErrVals[k];
+    }
+}
+
+void CuConvoLayer::Impl::ComputeErrorGradient(const Params& lastInput,
+                                              const Params& lastOutput,
+                                              const Params& outputErrors)
+{
+    const int ipWidth = lastInput.Width;
+    const int ipHeight = lastInput.Height;
+    const int ipDepth = lastInput.Depth;
+    const int batchSize = lastInput.Cols;
+
+    const int opWidth = lastOutput.Width;
+    const int opHeight = lastOutput.Height;
+    const int opDepth = lastOutput.Depth;
+
+    InitCacheWeightGrads();
+
+    const CuMat &mLastInput = lastInput.GetCudaMatrix(_handle);
+    const CuMat &mOutputErrors = outputErrors.GetCudaMatrix(_handle);
+
+    // Set all of the gradients to zero
+    _cacheWeightGrads.SetConstant(0.0f);
+    _cacheBiasGrads.SetConstant(0.0f);
+    _weights.WeightsGrad.SetConstant(0.0f);
+    _weights.BiasGrad.SetConstant(0.0f);
+
+    cudaError_t err = cudaSetDevice(_handle.Device);
+
+    if (err != cudaSuccess)
+        throw runtime_error("Unable to set the device.");
+
+    if (opDepth > 1024)
+        throw runtime_error("Output depths greater than 1024 are not supported.");
+
+    uint32_t blockDepth = opDepth;
+
+    dim3 blockSize(blockDepth, 1, 1);
+    dim3 gridSize = round_up(blockDepth * batchSize, opWidth, opHeight, blockSize);
+
+    uint32_t smemSize = _windowSizeX * _windowSizeY * ipDepth * sizeof(Real);
+
+
+}
+
 void CuConvoLayer::Impl::ApplyGradient()
 {
+    cudaStreamSynchronize(_errWeightsStream);
+
     _weights.ApplyGradient();
+
+    cudaStreamSynchronize(_errWeightsStream);
 }
 
 void CuConvoLayer::Impl::SyncToDevice(const CWeights& hWeights, bool gradToo)
@@ -644,3 +947,73 @@ void CuConvoLayer::Impl::SetWeightDecay(Real rate)
 {
     _weights.WeightDecay = rate;
 }
+
+void CuConvoLayer::Impl::InitCacheWeightGrads()
+{
+    if (d_cacheWeightGrads)
+        return;
+
+    static const uint32_t s_numSMS = 16;
+
+    // Each SM will get it's own weights gradient buffer. It would be much smarter if layers shared
+    // buffers like this. Two convo layers don't need different buffers
+    _cacheWeightGrads.Resize(_weights.WeightsGrad.Rows(), _weights.WeightsGrad.Cols() * s_numSMS);
+    _cacheBiasGrads.Resize(_weights.BiasGrad.Rows(), _weights.BiasGrad.Cols() * s_numSMS);
+
+    cudaMalloc(&d_cacheWeightGrads, sizeof(Real*) * s_numSMS);
+    cudaMalloc(&d_cacheBiasGrads, sizeof(Real*) * s_numSMS);
+
+    Real *dWeightBuff = _cacheWeightGrads.Buff();
+    Real *dBiasBuff = _cacheBiasGrads.Buff();
+
+    Real *hWeightBuffs[s_numSMS],
+         *hBiasBuffs[s_numSMS];
+    for (uint32_t i = 0; i < s_numSMS; ++i)
+    {
+        hWeightBuffs[i] = dWeightBuff + (i * _weights.WeightsGrad.Size());
+        hBiasBuffs[i] = dBiasBuff + (i * _weights.BiasGrad.Size());
+    }
+
+    // Copy the gradient buffer pointers to the device
+    cudaMemcpy(d_cacheWeightGrads, hWeightBuffs, sizeof(hWeightBuffs), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_cacheBiasGrads, hBiasBuffs, sizeof(hBiasBuffs), cudaMemcpyHostToDevice);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

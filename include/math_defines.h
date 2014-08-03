@@ -57,4 +57,15 @@ struct CuContext
 	{
 		return !(*this == b);
 	}
+
+	cudaStream_t GetStream() const
+	{
+	    cudaStream_t ret;
+	    cublasGetStream_v2(CublasHandle, &ret);
+	    return ret;
+	}
+	void SetStream(cudaStream_t stream)
+	{
+	    cublasSetStream_v2(CublasHandle, stream);
+	}
 };

@@ -141,6 +141,18 @@ void CuWeights::SetHandle(const CuContext& handle)
 	BiasIncrement.SetHandle(handle);
 }
 
+void CuWeights::SetStream(cudaStream_t stream)
+{
+    Weights.SetStream(stream);
+    Biases.SetStream(stream);
+
+    WeightsGrad.SetStream(stream);
+    BiasGrad.SetStream(stream);
+
+    WeightsIncrement.SetStream(stream);
+    BiasIncrement.SetStream(stream);
+}
+
 void CuWeights::ApplyGradient()
 {
     if (Momentum)

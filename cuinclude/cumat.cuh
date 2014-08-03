@@ -46,6 +46,7 @@ public:
 	bool SingleOwner() const;
 
 	CuContext Handle() const { return _handle; }
+	CuContext &Handle() { return _handle; }
 	uint32_t Rows() const { return _rows; }
 	uint32_t Cols() const { return _cols; }
 	uint32_t Size() const { return _rows * _cols; }
@@ -137,6 +138,8 @@ public:
 	Real Sum() const;
 
 	void SetHandle(const CuContext &handle) { _handle = handle; }
+
+	void SetStream(cudaStream_t stream) { _handle.SetStream(stream); }
 
 	void SetSharedModify(bool val) { _sharedMod = val; }
 
