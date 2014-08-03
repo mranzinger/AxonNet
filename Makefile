@@ -4,7 +4,7 @@ ARCHITECTURE ?= -msse4.2
 FLAGS=-std=c++11 -g $(ARCHITECTURE)
 DFLAGS=$(FLAGS) -D_DEBUG
 UTRFLAGS=$(FLAGS) -O2 -DEIGEN_FAST_MATH
-RFLAGS=$(FLAGS) -O3 -DEIGEN_NO_DEBUG -DEIGEN_FAST_MATH
+RFLAGS=$(FLAGS) -O3 -DEIGEN_NO_DEBUG -DEIGEN_FAST_MATH -fopenmp
 
 THIRD_PARTY   ?= ../ThirdParty
 EIGEN_PATH    ?= $(THIRD_PARTY)/eigen-3-2-1
@@ -80,7 +80,7 @@ LIBS_BASE=-L$(BOOST_PATH)/lib \
 		  -lboost_system -lboost_filesystem -lboost_program_options \
 		  -lboost_thread -lpthread
 		  
-LIBS=$(LIBS_BASE) -laxcomm -laxser -laxutil
+LIBS=$(LIBS_BASE) -laxcomm -laxser -laxutil -lgomp
 LIBS_D=$(LIBS_BASE) -laxcommd -laxserd -laxutild
 
 CUDA_LIBS=$(CUDA_INSTALL_LIBS) $(LIBS)

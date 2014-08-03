@@ -84,29 +84,35 @@ Params SoftmaxLayer::SBackprop(const Params &lastInput, const Params &lastOutput
 
 	const CMatrix &mLastOp = lastOutput.GetHostMatrix();
 
-	// Compute the full Jacobian for each of the output error vectors
-	RMatrix m(lastOutput.Rows, lastOutput.Rows);
+	int cEnd = lastOutput.Cols;
 
-	for (int col = 0, cEnd = lastOutput.Cols; col < cEnd; ++col)
+	// The derivative of softmax requires a full jacobian computation.
+	// Because this can be a HUGE matrix for larger softmaxes, it is better
+	// to just compute the jacobian on the fly
+    #pragma omp parallel for
+	for (int col = 0; col < cEnd; ++col)
 	{
 		auto vLastOutput = mLastOp.col(col);
-
-		for (int y = 0; y < m.outerSize(); ++y)
-		{
-			for (int x = 0; x < m.innerSize(); ++x)
-			{
-			    const Real kroenecker = (x == y) ? 1.0f : 0.0f;
-
-			    const Real val = vLastOutput(y) * (kroenecker - vLastOutput(x));
-
-				m(y, x) = val;
-			}
-		}
-
 		auto vOutputError = outputErrors.GetHostMatrix().col(col);
-		auto vInputError = inputErrors.GetHostMatrix().col(col);
+        auto vInputError = inputErrors.GetHostMatrix().col(col);
 
-		vInputError = m * vOutputError;
+        for (int y = 0; y < inputErrors.Rows; ++y)
+        {
+            Real sum = 0.0f;
+
+            for (int x = 0; x < inputErrors.Rows; ++x)
+            {
+                const Real kroenecker = (x == y) ? 1.0f : 0.0f;
+
+                const Real dv = vLastOutput(y) * (kroenecker - vLastOutput(x));
+
+                const Real val = dv * vOutputError(x);
+
+                sum += val;
+            }
+
+            vInputError(y) = sum;
+        }
 	}
 
 	return move(inputErrors);
