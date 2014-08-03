@@ -636,7 +636,7 @@ Params CuConvoLayer::Impl::GetInputErrors(const Params& lastInput, const Params&
     uint32_t smemSize = moduleSize * sizeof(Real);
 
     uint32_t numImagesPerThread = 1;
-    for (int i = 8; i > 1; --i)
+    for (int i = 4; i > 1; --i)
     {
         if ((batchSize % i) == 0)
         {
@@ -683,18 +683,6 @@ Params CuConvoLayer::Impl::GetInputErrors(const Params& lastInput, const Params&
         break;
     case 4:
         PADDED_B(4);
-        break;
-    case 5:
-        PADDED_B(5);
-        break;
-    case 6:
-        PADDED_B(6);
-        break;
-    case 7:
-        PADDED_B(7);
-        break;
-    case 8:
-        PADDED_B(8);
         break;
     }
 
