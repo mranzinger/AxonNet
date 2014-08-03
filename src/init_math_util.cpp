@@ -67,9 +67,10 @@ void FanInitializeWeights(Real *iter, Real *end, int wtSize)
     if (wtSize <= 0)
         wtSize = end - iter;
 
-	float fanIn = 6.0f / sqrt(float(wtSize));
+	float fanIn = 1.0f / sqrt(float(wtSize));
 
-	uniform_real_distribution<Real> dist(-fanIn, fanIn);
+	//uniform_real_distribution<Real> dist(-fanIn, fanIn);
+	normal_distribution<Real> dist(0, fanIn);
 
 	for (Real &val : make_range(iter, end))
 		val = dist(engine);
