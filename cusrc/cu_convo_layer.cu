@@ -638,11 +638,12 @@ Params CuConvoLayer::Impl::GetInputErrors(const Params& lastInput, const Params&
 
     bool padded = _padWidth > 0 || _padHeight > 0;
 
+
     // The BP kernel computes the input errors
 #define LAUNCH_BP_KERNEL(p) \
             CuConvoLayer_NaiveBackprop \
                 <p> \
-                <<<gridSize, blockSize, smemSize>>> \
+                <<<gridSize, blockSize, smemSize, _errInputStream>>> \
                     (mOutputErrors.Buff(), mInputErrors.Buff(), \
                      _weights.Weights.Buff(), \
                      ipWidth, ipHeight, ipDepth, \
@@ -872,6 +873,30 @@ __global__ void CuConvoLayer_ComputeWeightGrad(
     }
 }
 
+template<uint32_t NumBuffs>
+__global__ void CuConvoLayer_SumGradients(const Real **grads,
+                                          Real *dest,
+                                          uint32_t gradBuffSize,
+                                          )
+{
+    const uint32_t tIdx = blockDim.x * blockIdx.x + threadIdx.x;
+
+    if (tIdx >= gradBuffSize)
+        return;
+
+    Real sum = 0.0f;
+
+    #pragma unroll
+    for (uint32_t k = 0; k < NumBuffs; ++k)
+    {
+        const Real val = grads[k][tIdx];
+
+        sum += val;
+    }
+
+    dest[tIdx] = sum;
+}
+
 void CuConvoLayer::Impl::ComputeErrorGradient(const Params& lastInput,
                                               const Params& lastOutput,
                                               const Params& outputErrors)
@@ -911,7 +936,80 @@ void CuConvoLayer::Impl::ComputeErrorGradient(const Params& lastInput,
 
     uint32_t smemSize = _windowSizeX * _windowSizeY * ipDepth * sizeof(Real);
 
+    uint32_t numImagesPerThread = 1;
+    for (int i = 4; i > 1; --i)
+    {
+        if ((batchSize % i) == 0)
+        {
+            numImagesPerThread = i;
+            break;
+        }
+    }
 
+    smemSize *= numImagesPerThread;
+    gridSize.x /= numImagesPerThread;
+
+    bool padded = _padWidth > 0 || _padHeight > 0;
+
+#define LAUNCH_BP_KERNEL(p, v) \
+    CuConvoLayer_ComputeWeightGrad \
+        <p, v> \
+        <<<gridSize, blockSize, smemSize, _errWeightsStream>>> \
+            (mOutputErrors.Buff(), mLastInput.Buff(), \
+             d_cacheWeightGrads, d_cacheBiasGrads, \
+             ipWidth, ipHeight, ipDepth, \
+             opWidth, opHeight, opDepth, \
+             _windowSizeX, _windowSizeY, \
+             _strideX, _strideY, \
+             _padWidth, _padHeight)
+
+#define PADDED_B(v) \
+    if (padded) \
+        LAUNCH_BP_KERNEL(true, v); \
+    else \
+        LAUNCH_BP_KERNEL(false, v)
+
+    switch (numImagesPerThread)
+    {
+    case 1:
+        PADDED_B(1);
+        break;
+    case 2:
+        PADDED_B(2);
+        break;
+    case 3:
+        PADDED_B(3);
+        break;
+    case 4:
+        PADDED_B(4);
+        break;
+    }
+
+#undef PADDED_B
+#undef LAUNCH_BP_KERNEL
+
+    blockSize = dim3(min(1024, _weights.WeightsGrad.Size()), 1, 1);
+    gridSize = round_up(_weights.WeightsGrad.Size(), 1, 1, blockSize);
+
+    // Sum all of the partial weights buffers
+    CuConvoLayer_SumGradients
+        <16>
+        <<<gridSize, blockSize, 0, _errWeightsStream>>>
+            (d_cacheWeightGrads,
+             _weights.WeightsGrad.Buff(),
+             _weights.WeightsGrad.Size()
+             );
+
+    blockSize = dim3(min(1024, _weights.BiasGrad.Size()), 1, 1);
+    gridSize = round_up(_weights.BiasGrad.Size(), 1, 1, blockSize);
+
+    CuConvoLayer_SumGradients
+        <16>
+        <<<gridSize, blockSize, 0, _errWeightsStream>>>
+            (d_cacheBiasGrads,
+             _weights.BiasGrad.Buff(),
+             _weights.BiasGrad.Size()
+             );
 }
 
 void CuConvoLayer::Impl::ApplyGradient()
