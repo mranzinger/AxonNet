@@ -191,6 +191,8 @@ void NeuralNet::Train(ITrainProvider &provider,
             Test(provider, batchSize, chkRoot, testNum++);
         }
     }
+
+    Test(provider, batchSize, chkRoot, testNum++);
 }
 
 void NeuralNet::ApplyGradient()
