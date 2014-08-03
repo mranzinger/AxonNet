@@ -863,6 +863,9 @@ __global__ void CuConvoLayer_ComputeWeightGrad(
 
             atomicAdd(pWeight, val);
         }
+
+        ipIdx += vecTailX;
+        weightsIdx += (padded ? kInnerSkipStride : 0) + vecTailX * opDepth;
     }
 
     // Don't forget about the biases!
@@ -874,9 +877,9 @@ __global__ void CuConvoLayer_ComputeWeightGrad(
 }
 
 template<uint32_t NumBuffs>
-__global__ void CuConvoLayer_SumGradients(const Real **grads,
+__global__ void CuConvoLayer_SumGradients(Real **grads,
                                           Real *dest,
-                                          uint32_t gradBuffSize,
+                                          uint32_t gradBuffSize
                                           )
 {
     const uint32_t tIdx = blockDim.x * blockIdx.x + threadIdx.x;
