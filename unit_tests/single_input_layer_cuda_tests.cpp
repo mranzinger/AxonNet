@@ -139,10 +139,10 @@ TEST(SingleInputCuda, BackpropLinear)
     TTestBackprop<LinearLayer>("", 32 * 32 * 5, 100);
 }
 
-/*TEST(SingleInputCuda, BackpropConvo)
+TEST(SingleInputCuda, BackpropConvo)
 {
     TTestBackprop<ConvoLayer>("", 5, 20, 4, 4, 1, 1);
-}*/
+}
 
 TEST(SingleInputCuda, BackpropMaxPool)
 {

@@ -852,7 +852,9 @@ __global__ void CuConvoLayer_ComputeWeightGrad(
     #pragma unroll
     for (int k = 0; k < numImagesPerThread; ++k)
     {
-        lBiasGrad[dIdx] += opErrVals[k];
+        Real *pBiasDest = lBiasGrad + dIdx;
+
+        atomicAdd(pBiasDest, opErrVals[k]);
     }
 }
 
