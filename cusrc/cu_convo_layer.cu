@@ -499,16 +499,14 @@ __global__ void CuConvoLayer_NaiveBackprop(const Real *gOutputErrors, Real *gInp
 
 		// Initially, load the output errors into the shared buffer.
 		// This enables us to keep memory accesses coalesced
+		for (int i = threadIdx.x; i < opDepth; i += blockDim.x)
 		{
-			for (int i = threadIdx.x; i < opDepth; i += blockDim.x)
+			#pragma unroll
+			for (int k = 0; k < numImagesPerThread; ++k)
 			{
-				#pragma unroll
-				for (int k = 0; k < numImagesPerThread; ++k)
-				{
-					const Real errVal = lOutputErrors[(k * opImgSize) + opErrIdx + i];
+				const Real errVal = lOutputErrors[(k * opImgSize) + opErrIdx + i];
 
-					shared_module[sOpErrStart + (k * opDepth) + i] = errVal;
-				}
+				shared_module[sOpErrStart + (k * opDepth) + i] = errVal;
 			}
 		}
 
@@ -528,12 +526,6 @@ __global__ void CuConvoLayer_NaiveBackprop(const Real *gOutputErrors, Real *gInp
 		{
 			//Real val = 0.0f;
 		    Real vals[numImagesPerThread] = { 0 };
-
-/*            #pragma unroll
-		    for (int k = 0; k < numImagesPerThread; ++k)
-		    {
-		        shared_module[k * ipModuleSize + i] = 0.0f;
-		    }*/
 
 			for (int wI = 0; wI < opDepth; ++wI)
 			{
