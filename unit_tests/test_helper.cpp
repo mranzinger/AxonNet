@@ -36,12 +36,15 @@ void AssertEquivalence(const MatTypeA &a, const MatTypeB &b, Real precision)
                 const Real aVal = a(row, col);
                 const Real bVal = b(row, col);
 
-                if (abs(aVal / bVal - 1.0f) > largestDev)
+                const Real dev = abs(aVal / bVal - 1.0f);
+
+                if (dev > largestDev)
                 {
                     laVal = aVal;
                     lbVal = bVal;
                     lRow = row;
                     lCol = col;
+                    largestDev = dev;
                 }
             }
         }
