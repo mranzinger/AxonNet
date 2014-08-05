@@ -35,6 +35,10 @@ NeuralNet::NeuralNet()
 	SetCost(make_shared<SumSqCost>());
 }
 
+NeuralNet::~NeuralNet()
+{
+}
+
 void NeuralNet::AddLayer(ILayer::Ptr layer)
 {
 	layer->SetNet(this);
@@ -252,6 +256,8 @@ void NeuralNet::Test(ITrainProvider &provider,
 
 	PrintStats(testNum, timeSec, testCost);
 }
+
+
 
 void NeuralNet::PrintStats(size_t iteration, double timeSec, const CostMap& costs)
 {
