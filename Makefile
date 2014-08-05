@@ -86,13 +86,19 @@ LIBS_D=$(LIBS_BASE) -laxcommd -laxserd -laxutild
 CUDA_LIBS=$(CUDA_INSTALL_LIBS) $(LIBS)
 CUDA_LIBS_D=$(CUDA_INSTALL_LIBS) $(LIBS_D)
 
-.PHONY: all clean setup
+.PHONY: all clean setup net test train
 
 all: debug release 
 
-debug: setup $(OBJS_D) $(CUDA_OBJS_D) lib/libaxnetd.so lib/libaxnet_unitd.so $(TRAINER_EXE_D) $(UNIT_EXE_D)
+debug: setup lib/libaxnetd.so $(TRAINER_EXE_D) $(UNIT_EXE_D)
 
-release: setup $(OBJS) $(CUDA_OBJS) lib/libaxnet.so lib/libaxnet_unit.so $(TRAINER_EXE) $(UNIT_EXE)
+release: setup lib/libaxnet.so $(TRAINER_EXE) $(UNIT_EXE)
+
+net: setup lib/libaxnetd.so lib/libaxnet.so
+
+test: setup $(UNIT_EXE_D) $(UNIT_EXE)
+
+train: setup $(TRAINER_EXE_D) $(TRAINER_EXE)
 
 $(OBJ_ROOT)/%.cpp.od: $(SRC_ROOT)/%.cpp
 	$(CC) $(DFLAGS) -c $< $(INCLUDES) -o $@ $(LIBS_D)
@@ -116,14 +122,14 @@ lib/libaxnet.so: $(OBJS) $(CUDA_OBJS)
                 $(OBJS) $(CUDA_OBJS) \
                 $(LIBS) $(CUDA_LIBS)
 
-$(TRAINER_EXE_D): $(TRAINER_SRC) lib/libaxnetd.so
+$(TRAINER_EXE_D): $(TRAINER_SRC)
 	$(CC) $(DFLAGS) $(TRAINER_SRC) -o $@ \
 		$(INCLUDES) $(CUDA_INCLUDES) \
                 -Llib \
                 -laxnetd \
                 $(LIBS_D) $(CUDA_LIBS_D)
 
-$(TRAINER_EXE): $(TRAINER_SRC) lib/libaxnet.so
+$(TRAINER_EXE): $(TRAINER_SRC)
 	$(CC) $(RFLAGS) $(TRAINER_SRC) -o $@ \
 		$(INCLUDES) $(CUDA_INCLUDES) \
                 -Llib \
@@ -142,32 +148,20 @@ $(OBJ_ROOT)/%.cu.od: $(UNIT_SRC_ROOT)/%.cu
 $(OBJ_ROOT)/%.cu.o: $(UNIT_SRC_ROOT)/%.cu
 	$(NVCC) $(RNVCCFLAGS) -D_UNIT_TESTS_ -c $< -o $@ $(CUDA_INCLUDES) -I$(UNIT_SRC_ROOT)/inc
 
-lib/libaxnet_unitd.so: $(UNIT_OBJS_D) lib/libaxnetd.so
-	$(CC) $(DFLAGS) -D_UNIT_TESTS_ -shared -o $@ \
-                -Llib \
-                $(OBJS_D) $(CUDA_OBJS_D) \
-                $(LIBS_D) $(CUDA_LIBS_D) \
-                -laxnetd
-
-lib/libaxnet_unit.so: $(UNIT_OBJS) lib/libaxnet.so
-	$(CC) $(RFLAGS) -D_UNIT_TESTS_ -shared -o $@ \
-                -Llib \
-                $(OBJS) $(CUDA_OBJS) \
-                $(LIBS) $(CUDA_LIBS) \
-                -laxnet
-
-$(UNIT_EXE_D): lib/libaxnet_unitd.so
+$(UNIT_EXE_D): $(UNIT_OBJS_D)
 	$(CC) $(DFLAGS) -D_UNIT_TESTS_ -o $@ \
+		$(UNIT_OBJS_D) \
 		-Llib \
         $(LIBS_D) $(CUDA_LIBS_D) \
-        -laxnetd -laxnet_unitd \
+        -laxnetd \
 		-lgtest_main -lpthread
 	
-$(UNIT_EXE): lib/libaxnet_unit.so
+$(UNIT_EXE): $(UNIT_OBJS)
 	$(CC) $(UTRFLAGS) -D_UNIT_TESTS_ -o $@ \
+		$(UNIT_OBJS) \
 		-Llib \
         $(LIBS) $(CUDA_LIBS) \
-		-laxnet -laxnet_unit \
+		-laxnet \
         -lgtest_main -lpthread
 
 setup:
