@@ -101,6 +101,7 @@ int main(int argc, char *argv [])
 
     // Load the network
     NeuralNet net;
+
     CJsonSerializer().DeserializeFromFile(networkFile, net);
 
     if (fs::exists(checkpointFile))
@@ -120,8 +121,6 @@ int main(int argc, char *argv [])
     }
 
     net.SetLearningRate(learningRate);
-
-	//string root = "/home/mike/dev/personal/mnist/";
 
     net.Train(loader, batchSize, 10000, testRate, checkpointRoot);
 }
