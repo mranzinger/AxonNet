@@ -493,6 +493,27 @@ __global__ void CuConvoLayer_NaiveBackprop(const Real *gOutputErrors, Real *gInp
 	// Compute the input error module.
 	// No need to worry about padding here
 	{
+		const int opErrIdx = destY * opWidth * opDepth + destX * opDepth;
+
+		const int sOpErrStart = numImagesPerThread * ipModuleSize;
+
+		// Initially, load the output errors into the shared buffer.
+		// This enables us to keep memory accesses coalesced
+		{
+			for (int i = threadIdx.x; i < opDepth; i += blockDim.x)
+			{
+				#pragma unroll
+				for (int k = 0; k < numImagesPerThread; ++k)
+				{
+					const Real errVal = lOutputErrors[(k * opImgSize) + opErrIdx + i];
+
+					shared_module[sOpErrStart + (k * opDepth) + i] = errVal;
+				}
+			}
+		}
+
+		__syncthreads();
+
 		const int weightsSize = ipModuleSize * opDepth;
 
 		// The weights matrix is column major, which means that each thread
@@ -500,21 +521,19 @@ __global__ void CuConvoLayer_NaiveBackprop(const Real *gOutputErrors, Real *gInp
 		const int startIdx = threadIdx.x * opDepth;
 		const int threadStride = blockDim.x * opDepth;
 
-		const int opErrIdx = destY * opWidth * opDepth + destX * opDepth;
-
 		// A thread block doesn't necessarily process the entire block
 		// at once
 		for (int currRow = startIdx, i = threadIdx.x; currRow < weightsSize;
 				currRow += threadStride, i += blockDim.x)
 		{
 			//Real val = 0.0f;
-		    //Real vals[numImagesPerThread] = { 0 };
+		    Real vals[numImagesPerThread] = { 0 };
 
-            #pragma unroll
+/*            #pragma unroll
 		    for (int k = 0; k < numImagesPerThread; ++k)
 		    {
 		        shared_module[k * ipModuleSize + i] = 0.0f;
-		    }
+		    }*/
 
 			for (int wI = 0; wI < opDepth; ++wI)
 			{
@@ -523,13 +542,24 @@ __global__ void CuConvoLayer_NaiveBackprop(const Real *gOutputErrors, Real *gInp
                 #pragma unroll
 				for (int k = 0; k < numImagesPerThread; ++k)
 				{
-				    const Real errVal = lOutputErrors[k * opImgSize + opErrIdx + wI];
+				    //const Real errVal = lOutputErrors[k * opImgSize + opErrIdx + wI];
 
-				    shared_module[(k * ipModuleSize) + i] += wVal * errVal;
+					//shared_module[(k * ipModuleSize) + i] += wVal * errVal;
+
+					const Real errVal = shared_module[sOpErrStart + (k * opDepth) + wI];
+
+				    vals[k] += wVal * errVal;
 				}
 			}
 
-			//shared_module[i] = val;
+			// Need to wait until everyone is done with the shared buffer before we re-write into it
+			__syncthreads();
+
+			#pragma unroll
+			for (int k = 0; k < numImagesPerThread; ++k)
+			{
+				shared_module[(k * ipModuleSize) + i] = vals[k];
+			}
 		}
 
 		// Ok, at this point, all of the input errors for this module are stored in
@@ -660,7 +690,7 @@ Params CuConvoLayer::Impl::GetInputErrors(const Params& lastInput, const Params&
     dim3 blockSize(patchSeg, 1, 1);
     dim3 gridSize = round_up(batchSize * patchSeg, opWidth, opHeight, blockSize);
 
-    uint32_t smemSize = moduleSize * sizeof(Real);
+    uint32_t smemSize = (moduleSize + opDepth) * sizeof(Real);
 
     uint32_t numImagesPerThread = 1;
     for (int i = 4; i > 1; --i)
