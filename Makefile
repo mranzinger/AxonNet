@@ -1,7 +1,7 @@
 CC=g++-4.7
 ARCHITECTURE ?= -msse4.2
 
-FLAGS=-std=c++11 -g $(ARCHITECTURE)
+FLAGS=-std=c++11 -g $(ARCHITECTURE) -fPIC
 DFLAGS=$(FLAGS) -D_DEBUG
 UTRFLAGS=$(FLAGS) -O2 -DEIGEN_FAST_MATH
 RFLAGS=$(FLAGS) -O3 -DEIGEN_NO_DEBUG -DEIGEN_FAST_MATH -fopenmp
@@ -19,7 +19,7 @@ NVCC              ?= $(CUDA_INSTALL_PATH)/bin/nvcc
 CUDA_INSTALL_LIBS := -lcudart -lcublas -lcuda -L$(CUDA_LIB_PATH)
 CUDA_SDK          ?= 6.0
 CUDA_ARCHITECTURE ?= -arch=sm_30
-NVCCFLAGS := --ptxas-options=-v -D_CUDA_COMPILE_ $(CUDA_ARCHITECTURE) -Xcudafe "--diag_suppress=boolean_controlling_expr_is_constant" -Xcudafe "--diag_suppress=code_is_unreachable"
+NVCCFLAGS := --ptxas-options=-v -D_CUDA_COMPILE_ $(CUDA_ARCHITECTURE) -Xcudafe "--diag_suppress=boolean_controlling_expr_is_constant" -Xcudafe "--diag_suppress=code_is_unreachable" -Xcompiler -fPIC
 DNVCCFLAGS := $(NVCCFLAGS) -G -g
 RNVCCFLAGS := $(NVCCFLAGS) -O3
 
@@ -86,13 +86,19 @@ LIBS_D=$(LIBS_BASE) -laxcommd -laxserd -laxutild
 CUDA_LIBS=$(CUDA_INSTALL_LIBS) $(LIBS)
 CUDA_LIBS_D=$(CUDA_INSTALL_LIBS) $(LIBS_D)
 
-.PHONY: all clean setup
+.PHONY: all clean setup net test train
 
 all: debug release 
 
-debug: setup $(OBJS_D) $(CUDA_OBJS_D) $(TRAINER_EXE_D) $(UNIT_EXE_D)
+debug: setup lib/libaxnetd.so $(TRAINER_EXE_D) $(UNIT_EXE_D)
 
-release: setup $(OBJS) $(CUDA_OBJS) $(TRAINER_EXE) $(UNIT_EXE)
+release: setup lib/libaxnet.so $(TRAINER_EXE) $(UNIT_EXE)
+
+net: setup lib/libaxnetd.so lib/libaxnet.so
+
+test: setup $(UNIT_EXE_D) $(UNIT_EXE)
+
+train: setup $(TRAINER_EXE_D) $(TRAINER_EXE)
 
 $(OBJ_ROOT)/%.cpp.od: $(SRC_ROOT)/%.cpp
 	$(CC) $(DFLAGS) -c $< $(INCLUDES) -o $@ $(LIBS_D)
@@ -106,20 +112,35 @@ $(OBJ_ROOT)/%.cu.od: $(CUDA_SRC_ROOT)/%.cu
 $(OBJ_ROOT)/%.cu.o: $(CUDA_SRC_ROOT)/%.cu
 	$(NVCC) $(RNVCCFLAGS) -c $< $(CUDA_INCLUDES) -o $@ $(CUDA_LIBS)
 
-$(TRAINER_EXE_D): $(TRAINER_SRC) $(OBJS_D) $(CUDA_OBJS_D)
+lib/libaxnetd.so: $(OBJS_D) $(CUDA_OBJS_D)
+	$(CC) $(DFLAGS) -shared -o $@ \
+                $(OBJS_D) $(CUDA_OBJS_D) \
+                $(LIBS_D) $(CUDA_LIBS_D)
+
+lib/libaxnet.so: $(OBJS) $(CUDA_OBJS)
+	$(CC) $(RFLAGS) -shared -o $@ \
+                $(OBJS) $(CUDA_OBJS) \
+                $(LIBS) $(CUDA_LIBS)
+
+$(TRAINER_EXE_D): $(TRAINER_SRC)
 	$(CC) $(DFLAGS) $(TRAINER_SRC) -o $@ \
-		$(INCLUDES) $(CUDA_INCLUDES) $(OBJS_D) $(CUDA_OBJS_D) $(LIBS_D) $(CUDA_LIBS_D)
+		$(INCLUDES) $(CUDA_INCLUDES) \
+                -Llib \
+                -laxnetd \
+                $(LIBS_D) $(CUDA_LIBS_D)
 
-$(TRAINER_EXE): $(TRAINER_SRC) $(OBJS) $(CUDA_OBJS)
+$(TRAINER_EXE): $(TRAINER_SRC)
 	$(CC) $(RFLAGS) $(TRAINER_SRC) -o $@ \
-		$(INCLUDES) $(CUDA_INCLUDES) $(OBJS) $(CUDA_OBJS) $(LIBS) $(CUDA_LIBS)
-
+		$(INCLUDES) $(CUDA_INCLUDES) \
+                -Llib \
+                -laxnet \
+                $(LIBS) $(CUDA_LIBS)
 
 $(OBJ_ROOT)/%.cpp.od: $(UNIT_SRC_ROOT)/%.cpp
 	$(CC) $(DFLAGS) -D_UNIT_TESTS_ -c $< -o $@ $(INCLUDES) -I$(UNIT_SRC_ROOT)/inc
 	
 $(OBJ_ROOT)/%.cpp.o: $(UNIT_SRC_ROOT)/%.cpp
-	$(CC) $(RFLAGS) -D_UNIT_TESTS_ -c $< -o $@ $(INCLUDES) -I$(UNIT_SRC_ROOT)/inc
+	$(CC) $(UTRFLAGS) -D_UNIT_TESTS_ -c $< -o $@ $(INCLUDES) -I$(UNIT_SRC_ROOT)/inc
 	
 $(OBJ_ROOT)/%.cu.od: $(UNIT_SRC_ROOT)/%.cu
 	$(NVCC) $(DNVCCFLAGS) -D_UNIT_TESTS_ -c $< -o $@ $(CUDA_INCLUDES) -I$(UNIT_SRC_ROOT)/inc
@@ -127,18 +148,24 @@ $(OBJ_ROOT)/%.cu.od: $(UNIT_SRC_ROOT)/%.cu
 $(OBJ_ROOT)/%.cu.o: $(UNIT_SRC_ROOT)/%.cu
 	$(NVCC) $(RNVCCFLAGS) -D_UNIT_TESTS_ -c $< -o $@ $(CUDA_INCLUDES) -I$(UNIT_SRC_ROOT)/inc
 
-$(UNIT_EXE_D): $(UNIT_SRC) $(OBJS_D) $(CUDA_OBJS_D) $(UNIT_OBJS_D)
+$(UNIT_EXE_D): $(UNIT_OBJS_D)
 	$(CC) $(DFLAGS) -D_UNIT_TESTS_ -o $@ \
-		$(INCLUDES) $(OBJS_D) $(CUDA_OBJS_D) $(UNIT_OBJS_D) $(LIBS_D) $(CUDA_LIBS_D) \
+		$(UNIT_OBJS_D) \
+		-Llib \
+        $(LIBS_D) $(CUDA_LIBS_D) \
+        -laxnetd \
 		-lgtest_main -lpthread
 	
-$(UNIT_EXE): $(UNIT_SRC) $(OBJS) $(CUDA_OBJS) $(UNIT_OBJS)
+$(UNIT_EXE): $(UNIT_OBJS)
 	$(CC) $(UTRFLAGS) -D_UNIT_TESTS_ -o $@ \
-		$(INCLUDES) $(OBJS) $(CUDA_OBJS) $(UNIT_OBJS) $(LIBS) $(CUDA_LIBS) \
-		-lgtest_main -lpthread
+		$(UNIT_OBJS) \
+		-Llib \
+        $(LIBS) $(CUDA_LIBS) \
+		-laxnet \
+        -lgtest_main -lpthread
 
 setup:
-	mkdir -p obj
+	mkdir -p obj lib
 
 clean:
-	rm -f obj/* $(TRAINER_EXE_D) $(TRAINER_EXE) $(UNIT_EXE_D) $(UNIT_EXE)
+	rm -f obj/* lib/* $(TRAINER_EXE_D) $(TRAINER_EXE) $(UNIT_EXE_D) $(UNIT_EXE)

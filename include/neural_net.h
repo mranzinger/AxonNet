@@ -30,6 +30,7 @@ private:
 
 public:
 	NeuralNet();
+	~NeuralNet();
 
 	void AddLayer(ILayer::Ptr layer);
 	void SetCost(ICost::Ptr cost);

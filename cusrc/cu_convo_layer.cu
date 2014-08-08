@@ -467,6 +467,7 @@ Params CuConvoLayer::Impl::Compute(const Params& input)
 template<bool padded, int numImagesPerThread>
 __global__ void CuConvoLayer_NaiveBackprop(const Real *gOutputErrors, Real *gInputErrors,
 										   const Real *gWeights,
+										   const int simulRows,
 										   const int ipWidth, const int ipHeight, const int ipDepth,
 										   const int opWidth, const int opHeight, const int opDepth,
 										   const int wndSizeX, const int wndSizeY,
@@ -492,6 +493,25 @@ __global__ void CuConvoLayer_NaiveBackprop(const Real *gOutputErrors, Real *gInp
 	// Compute the input error module.
 	// No need to worry about padding here
 	{
+		const int opErrIdx = destY * opWidth * opDepth + destX * opDepth;
+
+		const int sOpErrStart = numImagesPerThread * ipModuleSize;
+
+		// Initially, load the output errors into the shared buffer.
+		// This enables us to keep memory accesses coalesced
+		for (int i = threadIdx.x; i < opDepth; i += blockDim.x)
+		{
+			#pragma unroll
+			for (int k = 0; k < numImagesPerThread; ++k)
+			{
+				const Real errVal = lOutputErrors[(k * opImgSize) + opErrIdx + i];
+
+				shared_module[sOpErrStart + (k * opDepth) + i] = errVal;
+			}
+		}
+
+		__syncthreads();
+
 		const int weightsSize = ipModuleSize * opDepth;
 
 		// The weights matrix is column major, which means that each thread
@@ -499,21 +519,13 @@ __global__ void CuConvoLayer_NaiveBackprop(const Real *gOutputErrors, Real *gInp
 		const int startIdx = threadIdx.x * opDepth;
 		const int threadStride = blockDim.x * opDepth;
 
-		const int opErrIdx = destY * opWidth * opDepth + destX * opDepth;
-
 		// A thread block doesn't necessarily process the entire block
 		// at once
 		for (int currRow = startIdx, i = threadIdx.x; currRow < weightsSize;
 				currRow += threadStride, i += blockDim.x)
 		{
 			//Real val = 0.0f;
-		    //Real vals[numImagesPerThread] = { 0 };
-
-            #pragma unroll
-		    for (int k = 0; k < numImagesPerThread; ++k)
-		    {
-		        shared_module[k * ipModuleSize + i] = 0.0f;
-		    }
+		    Real vals[numImagesPerThread] = { 0 };
 
 			for (int wI = 0; wI < opDepth; ++wI)
 			{
@@ -522,13 +534,24 @@ __global__ void CuConvoLayer_NaiveBackprop(const Real *gOutputErrors, Real *gInp
                 #pragma unroll
 				for (int k = 0; k < numImagesPerThread; ++k)
 				{
-				    const Real errVal = lOutputErrors[k * opImgSize + opErrIdx + wI];
+				    //const Real errVal = lOutputErrors[k * opImgSize + opErrIdx + wI];
 
-				    shared_module[(k * ipModuleSize) + i] += wVal * errVal;
+					//shared_module[(k * ipModuleSize) + i] += wVal * errVal;
+
+					const Real errVal = shared_module[sOpErrStart + (k * opDepth) + wI];
+
+				    vals[k] += wVal * errVal;
 				}
 			}
 
-			//shared_module[i] = val;
+			// Need to wait until everyone is done with the shared buffer before we re-write into it
+			__syncthreads();
+
+			#pragma unroll
+			for (int k = 0; k < numImagesPerThread; ++k)
+			{
+				shared_module[(k * ipModuleSize) + i] = vals[k];
+			}
 		}
 
 		// Ok, at this point, all of the input errors for this module are stored in
@@ -541,23 +564,36 @@ __global__ void CuConvoLayer_NaiveBackprop(const Real *gOutputErrors, Real *gInp
 	const int srcX = padded ? (-padWidth + destX * strideX) : (destX * strideX);
     const int srcY = padded ? (-padHeight + destY * strideY) : (destY * strideY);
 
+    const int blockWidth = blockDim.x / simulRows;
+
+    const int threadY = threadIdx.x / blockWidth;
+
+    const int tIdxX = threadIdx.x % blockWidth;
+
     // We know that the thread block size is a factor of the module stride
-    const int yStart = max(srcY, 0);
+    const int oYStart = max(srcY, 0);
+
+    const int yStart = oYStart + threadY;
+
     const int yEnd = min(srcY + wndSizeY, ipHeight);
 
     const int xStart = max(srcX * ipDepth, 0);
     const int xEnd = min((srcX + wndSizeX), ipWidth) * ipDepth;
 
-    const int yOff = max(-srcY, 0);
+    const int yOff = max(-srcY, 0) + threadY;
     const int xOff = max(-srcX, 0) * ipDepth;
 
     const int moduleStride = wndSizeX * ipDepth;
 
     int opYIdx = yStart * ipImgStride;
     int ipYIdx = yOff * moduleStride;
-    for (int y = yStart; y < yEnd; ++y, opYIdx += ipImgStride, ipYIdx += moduleStride)
+
+    const int opYend = yEnd * ipImgStride;
+    const int opYstride = ipImgStride * simulRows;
+    const int ipYstride = moduleStride * simulRows;
+    for (; opYIdx < opYend; opYIdx += opYstride, ipYIdx += ipYstride)
     {
-    	for (int opX = xStart + threadIdx.x, ipX = xOff + threadIdx.x; opX < xEnd; opX += blockDim.x, ipX += blockDim.x)
+    	for (int opX = xStart + tIdxX, ipX = xOff + tIdxX; opX < xEnd; opX += blockWidth, ipX += blockWidth)
     	{
             #pragma unroll
     	    for (int k = 0; k < numImagesPerThread; ++k)
@@ -621,7 +657,20 @@ Params CuConvoLayer::Impl::GetInputErrors(const Params& lastInput, const Params&
 
     uint32_t moduleSize = _windowSizeX * _windowSizeY * ipDepth;
 
-    uint32_t patchSeg = _windowSizeX * ipDepth;
+    uint32_t simulRows = _windowSizeY;
+    uint32_t patchSeg = _windowSizeX * simulRows * ipDepth;
+
+    while (patchSeg > 1024 && simulRows > 1)
+    {
+    	--simulRows;
+    	if ((_windowSizeY % simulRows) == 0)
+    	{
+    		patchSeg = _windowSizeX * ipDepth * simulRows;
+    	}
+    }
+
+    patchSeg = _windowSizeX * ipDepth * simulRows;
+
     if (patchSeg > 1024)
         patchSeg = max(_windowSizeX, ipDepth);
     if (patchSeg > 1024)
@@ -633,7 +682,7 @@ Params CuConvoLayer::Impl::GetInputErrors(const Params& lastInput, const Params&
     dim3 blockSize(patchSeg, 1, 1);
     dim3 gridSize = round_up(batchSize * patchSeg, opWidth, opHeight, blockSize);
 
-    uint32_t smemSize = moduleSize * sizeof(Real);
+    uint32_t smemSize = (moduleSize + opDepth) * sizeof(Real);
 
     uint32_t numImagesPerThread = 1;
     for (int i = 4; i > 1; --i)
@@ -657,6 +706,7 @@ Params CuConvoLayer::Impl::GetInputErrors(const Params& lastInput, const Params&
                 <<<gridSize, blockSize, smemSize>>> \
                     (mOutputErrors.Buff(), mInputErrors.Buff(), \
                      _weights.Weights.Buff(), \
+                     simulRows, \
                      ipWidth, ipHeight, ipDepth, \
                      opWidth, opHeight, opDepth, \
                      _windowSizeX, _windowSizeY, \
