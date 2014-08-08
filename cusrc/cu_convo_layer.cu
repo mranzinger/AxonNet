@@ -650,7 +650,6 @@ Params CuConvoLayer::Impl::GetInputErrors(const Params& lastInput, const Params&
 
     bool padded = _padWidth > 0 || _padHeight > 0;
 
-
     // The BP kernel computes the input errors
 #define LAUNCH_BP_KERNEL(p, v) \
             CuConvoLayer_NaiveBackprop \
