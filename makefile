@@ -122,14 +122,14 @@ lib/libaxnet.so: $(OBJS) $(CUDA_OBJS)
                 $(OBJS) $(CUDA_OBJS) \
                 $(LIBS) $(CUDA_LIBS)
 
-$(TRAINER_EXE_D): $(TRAINER_SRC)
+$(TRAINER_EXE_D): $(TRAINER_SRC) lib/libaxnetd.so
 	$(CC) $(DFLAGS) $(TRAINER_SRC) -o $@ \
 		$(INCLUDES) $(CUDA_INCLUDES) \
                 -Llib \
                 -laxnetd \
                 $(LIBS_D) $(CUDA_LIBS_D)
 
-$(TRAINER_EXE): $(TRAINER_SRC)
+$(TRAINER_EXE): $(TRAINER_SRC) lib/libaxnet.so
 	$(CC) $(RFLAGS) $(TRAINER_SRC) -o $@ \
 		$(INCLUDES) $(CUDA_INCLUDES) \
                 -Llib \

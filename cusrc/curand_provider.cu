@@ -6,6 +6,8 @@
 
 #include <cuda_runtime.h>
 
+#include "cumath_functions.cuh"
+
 using namespace std;
 
 CURandProvider *CURandProvider::s_instance = NULL;
